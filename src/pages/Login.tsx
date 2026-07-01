@@ -120,7 +120,7 @@ export function Login() {
       {isDesktop && theme === 'dark' ? <VideoBackground /> : <TechBackground />}
 
       <header className="flex items-center justify-between px-6 pt-6 md:pt-4 md:shrink-0">
-        <Logo size="lg" />
+        <Logo size="md" />
         <ThemeToggle />
       </header>
 
