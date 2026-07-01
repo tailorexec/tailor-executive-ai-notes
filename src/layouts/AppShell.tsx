@@ -28,7 +28,7 @@ function Sidebar() {
 
   return (
     <aside className="hidden md:flex fixed inset-y-0 left-0 w-64 flex-col border-r border-surface-border bg-surface-card z-40">
-      <div className="px-6 pt-7 pb-6">
+      <div className="px-4 pt-7 pb-6">
         <Logo size="sm" showTagline />
       </div>
 

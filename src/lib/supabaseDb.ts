@@ -11,6 +11,21 @@ function client() {
   return supabase
 }
 
+/** Remove sessao persistida (auto-recuperacao de estado corrompido no navegador). */
+function purgeAuthStorage() {
+  try {
+    Object.keys(localStorage)
+      .filter((k) => k.startsWith('sb-'))
+      .forEach((k) => localStorage.removeItem(k))
+  } catch {
+    /* ignore */
+  }
+}
+
+function isFetchHeaderError(e: unknown): boolean {
+  return e instanceof TypeError || /ISO-8859-1|headers|fetch/i.test((e as Error)?.message ?? '')
+}
+
 function rowToProfile(r: Record<string, unknown>): Profile {
   return {
     id: r.id as string,
@@ -26,11 +41,17 @@ function rowToProfile(r: Record<string, unknown>): Profile {
 export const supabaseDb: Db = {
   async getCurrentProfile() {
     const sb = client()
-    const { data: auth } = await sb.auth.getUser()
-    if (!auth.user) return null
-    const { data, error } = await sb.from('profiles').select('*').eq('id', auth.user.id).single()
-    if (error || !data) return null
-    return rowToProfile(data)
+    try {
+      const { data: auth } = await sb.auth.getUser()
+      if (!auth.user) return null
+      const { data, error } = await sb.from('profiles').select('*').eq('id', auth.user.id).single()
+      if (error || !data) return null
+      return rowToProfile(data)
+    } catch (e) {
+      // Sessao corrompida no navegador -> limpa e recomeca sem sessao.
+      if (isFetchHeaderError(e)) purgeAuthStorage()
+      return null
+    }
   },
 
   async signIn(email, password) {
