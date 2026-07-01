@@ -33,6 +33,10 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         navigateFallbackDenylist: [/^\/api/],
+        // Atualiza o app imediatamente ao publicar (evita servir versao antiga em cache).
+        clientsClaim: true,
+        skipWaiting: true,
+        cleanupOutdatedCaches: true,
       },
     }),
   ],
