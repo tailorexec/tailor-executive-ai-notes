@@ -50,7 +50,14 @@ async function claude(model: string, system: string, user: string, maxTokens = 1
   })
   if (!res.ok) throw new Error(`Anthropic ${res.status}: ${await res.text()}`)
   const data = await res.json()
-  return data.content?.[0]?.text ?? ''
+  // Pega TODOS os blocos de texto (Sonnet pode incluir um bloco de "thinking" antes).
+  const blocks = Array.isArray(data.content) ? data.content : []
+  const text = blocks
+    .filter((b: { type?: string }) => b?.type === 'text')
+    .map((b: { text?: string }) => b.text ?? '')
+    .join('\n')
+    .trim()
+  return text
 }
 
 function extractJson<T>(text: string, fallback: T): T {
