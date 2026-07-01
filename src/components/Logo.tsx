@@ -1,30 +1,34 @@
 import { useTheme } from '../theme/ThemeProvider'
 
-/** Logo oficial Tailor (troca conforme o tema) + subtitulo opcional. */
+/** Logo oficial ANA by Tailor (troca conforme o tema). Altura responsiva. */
 export function Logo({
   className = '',
-  showTagline = false,
   size = 'md',
 }: {
   className?: string
+  /** mantido por compatibilidade; nao usado (a logo ja traz o subtitulo) */
   showTagline?: boolean
   size?: 'sm' | 'md' | 'lg'
 }) {
   const { theme } = useTheme()
   // logo-light.png = texto preto (tema claro); logo-dark.png = texto branco (tema escuro).
   const src = theme === 'dark' ? '/logo-dark.png' : '/logo-light.png'
-  const h = size === 'lg' ? 58 : size === 'sm' ? 34 : 46
+  // Alturas responsivas (a logo e larga ~6.5:1, entao menor no mobile para nao estourar).
+  const cls =
+    size === 'lg'
+      ? 'h-8 sm:h-11 lg:h-14'
+      : size === 'sm'
+        ? 'h-7'
+        : 'h-8 md:h-9'
 
   return (
-    <div className={`inline-flex items-center gap-3 ${className}`}>
-      <img src={src} alt="Tailor" style={{ height: h }} className="w-auto object-contain select-none" draggable={false} />
-      {showTagline && (
-        <span className="pl-3 border-l border-surface-border text-content-secondary font-semibold leading-tight text-xs uppercase tracking-wide">
-          Executive
-          <br />
-          A.I Pro
-        </span>
-      )}
+    <div className={`inline-flex items-center ${className}`}>
+      <img
+        src={src}
+        alt="ANA by Tailor"
+        className={`w-auto object-contain select-none ${cls}`}
+        draggable={false}
+      />
     </div>
   )
 }

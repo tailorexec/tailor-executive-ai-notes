@@ -116,9 +116,9 @@ export function Settings() {
         <Row icon={<LogOut size={20} />} label="Sair" danger onClick={signOut} right={<span />} />
       </div>
 
-      <div className="flex flex-col items-center gap-1 pb-4 text-content-muted">
-        <Logo size="sm" showTagline />
-        <p className="text-xs">Executive AI Notes • v0.1.0</p>
+      <div className="flex flex-col items-center gap-2 pb-4 text-content-muted">
+        <Logo size="md" />
+        <p className="text-xs">ANA by Tailor • v0.1.0</p>
       </div>
     </div>
   )
