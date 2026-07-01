@@ -41,17 +41,21 @@ function useIsDesktop() {
 function VideoBackground() {
   // Enfeite bem sutil, so no desktop (nao baixa no mobile), sem travar a pagina.
   return (
-    <video
-      className="pointer-events-none fixed inset-0 -z-20 h-full w-full object-cover opacity-[0.18]"
-      autoPlay
-      muted
-      loop
-      playsInline
-      preload="metadata"
-      aria-hidden
-    >
-      <source src="/tailor_loop.mp4" type="video/mp4" />
-    </video>
+    <>
+      <video
+        className="pointer-events-none fixed inset-0 -z-20 h-full w-full object-cover opacity-70 dark:opacity-60"
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="metadata"
+        aria-hidden
+      >
+        <source src="/tailor_loop.mp4" type="video/mp4" />
+      </video>
+      {/* Scrim leve para manter os textos legiveis sobre o video */}
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-surface-bg/45" />
+    </>
   )
 }
 
