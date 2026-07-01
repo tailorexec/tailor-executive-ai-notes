@@ -48,6 +48,8 @@ export interface Note {
   title: string
   emoji?: string | null
   type: NoteSourceType
+  template: string
+  context: string
   folder: string | null
   duration_seconds: number
   audio_url: string | null

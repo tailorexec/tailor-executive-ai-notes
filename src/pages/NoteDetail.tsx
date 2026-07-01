@@ -25,6 +25,7 @@ import { AudioPlayer } from '../components/AudioPlayer'
 import { deleteAudio } from '../lib/audioStore'
 import type { ChatMessage, Note } from '../lib/types'
 import { uid } from '../lib/db'
+import { templateLabel } from '../lib/templates'
 import { ShareSheet } from './ShareSheet'
 import { FeedbackSheet } from './FeedbackSheet'
 
@@ -85,7 +86,7 @@ export function NoteDetail() {
     if (!note) return
     setBusy('detailed')
     try {
-      const detailed = await generateDetailed(note.transcript)
+      const detailed = await generateDetailed(note.transcript, { template: note.template, context: note.context })
       const updated = await db.updateNote(note.id, { detailed_summary: detailed })
       if (profile) await db.logUsage(profile.id, 'ai_detailed', note.id)
       setNote(updated)
@@ -99,7 +100,7 @@ export function NoteDetail() {
     if (!note) return
     setBusy('analysis')
     try {
-      const analysis = await generateAnalysis(note.transcript)
+      const analysis = await generateAnalysis(note.transcript, { template: note.template, context: note.context })
       const updated = await db.updateNote(note.id, { analysis })
       if (profile) await db.logUsage(profile.id, 'ai_analysis', note.id)
       setNote(updated)
@@ -187,6 +188,11 @@ export function NoteDetail() {
           {note.duration_seconds ? ` • ${fmtDuration(note.duration_seconds)}` : ''}
           {note.folder ? ` • ${note.folder}` : ''}
         </p>
+        {note.template && note.template !== 'geral' && (
+          <span className="inline-block mt-2 text-[11px] font-medium uppercase tracking-wide text-brand-500 bg-brand-500/10 border border-brand-500/20 rounded-full px-2.5 py-1">
+            {templateLabel(note.template)}
+          </span>
+        )}
       </header>
 
       <div className="px-5 flex-1">

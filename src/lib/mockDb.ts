@@ -162,6 +162,8 @@ export const mockDb: Db = {
       title: input.title,
       emoji: input.emoji ?? null,
       type: input.type ?? 'recording',
+      template: input.template ?? 'geral',
+      context: input.context ?? '',
       folder: input.folder ?? null,
       duration_seconds: input.duration_seconds ?? 0,
       audio_url: input.audio_url ?? null,

@@ -19,6 +19,7 @@ import { generateActionItems, generateSummary, transcribeAudio } from '../lib/ai
 import { saveAudio } from '../lib/audioStore'
 import { fmtClock, fmtDuration } from '../lib/format'
 import { Spinner } from '../components/ui'
+import { TEMPLATES } from '../lib/templates'
 import type { NoteSourceType } from '../lib/types'
 
 type Mode = 'record' | 'meeting' | 'upload' | 'file' | 'link'
@@ -33,6 +34,9 @@ export function Capture() {
   const recorder = useRecorder()
 
   const [title, setTitle] = useState('')
+  const [template, setTemplate] = useState('geral')
+  const [context, setContext] = useState('')
+  const [diarize, setDiarize] = useState(false)
   const [textInput, setTextInput] = useState('')
   const [processing, setProcessing] = useState(false)
   const [step, setStep] = useState(0)
@@ -92,24 +96,28 @@ export function Capture() {
       if (opts.audioBlob) {
         setStep(0)
         await db.logUsage(profile.id, 'recording')
-        const res = await transcribeAudio(opts.audioBlob)
+        const res = await transcribeAudio(opts.audioBlob, { diarize })
         transcript = res.transcript
         language = res.language
         await db.logUsage(profile.id, 'transcription')
       }
 
+      const meta = { template, context }
+
       setStep(1)
-      const summary = await generateSummary(transcript)
+      const summary = await generateSummary(transcript, meta)
       await db.logUsage(profile.id, 'ai_summary')
 
       setStep(2)
-      const actionItems = await generateActionItems(transcript)
+      const actionItems = await generateActionItems(transcript, meta)
 
       setStep(3)
       let note = await db.createNote({
         user_id: profile.id,
         title: title.trim() || opts.fallbackTitle,
         type: opts.type,
+        template,
+        context,
         duration_seconds: opts.duration ?? 0,
         language,
         transcript,
@@ -226,7 +234,7 @@ export function Capture() {
         </h1>
       </header>
 
-      <div className="mb-6">
+      <div className="mb-4">
         <label className="label">Titulo (opcional)</label>
         <input
           className="input"
@@ -235,6 +243,55 @@ export function Capture() {
           onChange={(e) => setTitle(e.target.value)}
         />
       </div>
+
+      <div className="mb-6">
+        <label className="label">Tema da reuniao</label>
+        <div className="flex flex-wrap gap-2 mb-2">
+          {TEMPLATES.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setTemplate(t.id)}
+              className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
+                template === t.id
+                  ? 'bg-brand-500 border-brand-500 text-white'
+                  : 'bg-surface-elevated border-surface-border text-content-secondary'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-content-muted mb-3">
+          {TEMPLATES.find((t) => t.id === template)?.hint} A IA resume e analisa no formato certo deste tipo.
+        </p>
+        <input
+          className="input"
+          placeholder="Contexto (opcional): ex. cliente X, renovacao de contrato"
+          value={context}
+          onChange={(e) => setContext(e.target.value)}
+        />
+      </div>
+
+      {(mode === 'record' || mode === 'meeting' || mode === 'upload') && (
+        <button
+          type="button"
+          onClick={() => setDiarize((v) => !v)}
+          className="w-full flex items-center gap-3 card px-4 py-3 mb-6 text-left"
+        >
+          <span
+            className={`h-6 w-11 rounded-full transition-colors relative shrink-0 ${diarize ? 'bg-brand-500' : 'bg-surface-border'}`}
+          >
+            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${diarize ? 'translate-x-5' : 'translate-x-0.5'}`} />
+          </span>
+          <span className="min-w-0">
+            <span className="block font-medium text-sm">Identificar quem falou</span>
+            <span className="block text-xs text-content-muted">
+              Separa os falantes na transcricao. Mais preciso, com custo um pouco maior.
+            </span>
+          </span>
+        </button>
+      )}
 
       {error && (
         <div className="text-sm text-brand-400 bg-brand-500/10 border border-brand-500/20 rounded-xl px-4 py-3 mb-4">

@@ -27,6 +27,25 @@ function wrap(transcript: string): string {
   return `<<<INICIO_DADOS>>>\n${clipped}\n<<<FIM_DADOS>>>`
 }
 
+// Ajuste por tema (template) + contexto livre.
+const THEME: Record<string, string> = {
+  entrevista:
+    'Esta e uma ENTREVISTA DE CANDIDATO. Destaque competencias observadas, fit cultural, pontos fortes e de atencao, e termine com uma recomendacao (avancar ou nao).',
+  comercial:
+    'Esta e uma REUNIAO COMERCIAL. Destaque dores do cliente, objecoes, orcamento/valores, proximos passos e a probabilidade de fechamento.',
+  um_a_um:
+    'Esta e uma reuniao 1:1. Destaque combinados, blockers, desenvolvimento da pessoa e follow-ups.',
+  board:
+    'Esta e uma reuniao de BOARD/DIRETORIA. Destaque decisoes estrategicas, metricas, riscos e responsaveis.',
+}
+
+function themeHint(template?: string, context?: string): string {
+  let s = template && THEME[template] ? ' ' + THEME[template] : ''
+  const ctx = (context ?? '').slice(0, 1000).trim()
+  if (ctx) s += ` Contexto informado pelo usuario: ${ctx}.`
+  return s
+}
+
 const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -75,13 +94,14 @@ Deno.serve(async (req) => {
     const body = await req.json()
     const task = body.task as string
     const transcript = (body.transcript as string) ?? ''
+    const hint = themeHint(body.template as string, body.context as string)
     let out: Record<string, unknown> = {}
 
     if (task === 'summary') {
       const text = await claude(
         HAIKU,
         'Voce e um assistente executivo. Resuma reunioes de forma clara, precisa e acionavel, em portugues do Brasil. Nunca invente informacoes. Use bullets curtos comecando com "- ".' + GUARD,
-        `Resuma a reuniao em 5 a 8 bullets objetivos, destacando decisoes e proximos passos.\n\n${wrap(transcript)}`,
+        `Resuma a reuniao em 5 a 8 bullets objetivos, destacando decisoes e proximos passos.${hint}\n\n${wrap(transcript)}`,
         800,
       )
       out = { summary: text.trim() }
@@ -89,7 +109,7 @@ Deno.serve(async (req) => {
       const text = await claude(
         SONNET,
         'Voce e um consultor senior. Produza resumos executivos detalhados, estruturados e fieis ao conteudo, em portugues do Brasil. Use markdown com secoes (##).' + GUARD,
-        `Gere um resumo DETALHADO e inteligente da reuniao com as secoes: ## Visao geral, ## Pontos discutidos, ## Decisoes, ## Riscos, ## Proximos passos. Seja fiel aos dados.\n\n${wrap(transcript)}`,
+        `Gere um resumo DETALHADO e inteligente da reuniao com as secoes: ## Visao geral, ## Pontos discutidos, ## Decisoes, ## Riscos, ## Proximos passos. Seja fiel aos dados.${hint}\n\n${wrap(transcript)}`,
         2500,
       )
       out = { detailed: text.trim() }
@@ -107,7 +127,7 @@ Deno.serve(async (req) => {
         'Voce e um coach de reunioes executivas. Analise objetivamente e responda APENAS com JSON valido.' + GUARD,
         `Analise a reuniao e retorne um JSON com o formato exato:
 {"overallScore":number(0-100),"tone":string,"strengths":string[],"improvements":string[],"questionsAsked":string[],"suggestedQuestions":string[],"pacing":string,"keyPoints":string[],"risks":string[]}
-Foque em: tom, perguntas feitas e sugeridas, ritmo/andamento, pontos fortes, melhorias e dicas praticas. Em portugues do Brasil.\n\n${wrap(transcript)}`,
+Foque em: tom, perguntas feitas e sugeridas, ritmo/andamento, pontos fortes, melhorias e dicas praticas. Em portugues do Brasil.${hint}\n\n${wrap(transcript)}`,
         2000,
       )
       out = {
@@ -129,6 +149,19 @@ Foque em: tom, perguntas feitas e sugeridas, ritmo/andamento, pontos fortes, mel
         1500,
       )
       out = { feedback: text.trim() }
+    } else if (task === 'search') {
+      const question = String(body.question ?? '').slice(0, 500)
+      const notes = ((body.notes as { title: string; date: string; summary: string }[]) ?? []).slice(0, 80)
+      const corpus = notes
+        .map((n, i) => `[${i + 1}] ${n.title} (${n.date})\n${(n.summary ?? '').slice(0, 1200)}`)
+        .join('\n\n')
+      const text = await claude(
+        HAIKU,
+        'Voce responde perguntas com base APENAS no conjunto de notas de reuniao fornecido. Cite os titulos das notas relevantes. Se nao houver base, diga que nao encontrou. Portugues do Brasil.' + GUARD,
+        `NOTAS:\n<<<INICIO_DADOS>>>\n${corpus}\n<<<FIM_DADOS>>>\n\nPERGUNTA (do usuario, responda-a): ${question}`,
+        1200,
+      )
+      out = { answer: text.trim() }
     } else if (task === 'chat') {
       const question = String(body.question ?? '').slice(0, 2000)
       const history = ((body.history as { role: string; content: string }[]) ?? []).slice(-10)

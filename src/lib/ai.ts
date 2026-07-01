@@ -18,6 +18,8 @@ import {
   mockFeedback,
   mockSummary,
   mockTranscript,
+  mockDiarizedTranscript,
+  mockAskAll,
 } from './aiMock'
 import type { ActionItem, MeetingAnalysis } from './types'
 
@@ -30,13 +32,17 @@ async function invoke<T>(fn: string, body: Record<string, unknown>): Promise<T> 
   return data as T
 }
 
-export async function transcribeAudio(audio: Blob): Promise<{ transcript: string; language: string }> {
+export async function transcribeAudio(
+  audio: Blob,
+  opts: { diarize?: boolean } = {},
+): Promise<{ transcript: string; language: string }> {
   if (config.mockMode) {
-    await delay(1200)
-    return { transcript: mockTranscript(), language: 'pt-BR' }
+    await delay(opts.diarize ? 1800 : 1200)
+    return { transcript: opts.diarize ? mockDiarizedTranscript() : mockTranscript(), language: 'pt-BR' }
   }
   const form = new FormData()
   form.append('file', audio, 'audio.webm')
+  if (opts.diarize) form.append('diarize', 'true')
   // Edge function reads multipart and forwards to the transcription provider.
   if (!supabase) throw new Error('Supabase nao configurado')
   const { data, error } = await supabase.functions.invoke('transcribe', { body: form })
@@ -44,39 +50,44 @@ export async function transcribeAudio(audio: Blob): Promise<{ transcript: string
   return data as { transcript: string; language: string }
 }
 
-export async function generateSummary(transcript: string): Promise<string> {
+export interface AiMeta {
+  template?: string
+  context?: string
+}
+
+export async function generateSummary(transcript: string, meta: AiMeta = {}): Promise<string> {
   if (config.mockMode) {
     await delay(700)
     return mockSummary(transcript)
   }
-  const r = await invoke<{ summary: string }>('ai', { task: 'summary', transcript })
+  const r = await invoke<{ summary: string }>('ai', { task: 'summary', transcript, ...meta })
   return r.summary
 }
 
-export async function generateDetailed(transcript: string): Promise<string> {
+export async function generateDetailed(transcript: string, meta: AiMeta = {}): Promise<string> {
   if (config.mockMode) {
     await delay(1200)
     return mockDetailed(transcript)
   }
-  const r = await invoke<{ detailed: string }>('ai', { task: 'detailed', transcript })
+  const r = await invoke<{ detailed: string }>('ai', { task: 'detailed', transcript, ...meta })
   return r.detailed
 }
 
-export async function generateActionItems(transcript: string): Promise<ActionItem[]> {
+export async function generateActionItems(transcript: string, meta: AiMeta = {}): Promise<ActionItem[]> {
   if (config.mockMode) {
     await delay(500)
     return mockActionItems(transcript)
   }
-  const r = await invoke<{ actionItems: ActionItem[] }>('ai', { task: 'action_items', transcript })
+  const r = await invoke<{ actionItems: ActionItem[] }>('ai', { task: 'action_items', transcript, ...meta })
   return r.actionItems
 }
 
-export async function generateAnalysis(transcript: string): Promise<MeetingAnalysis> {
+export async function generateAnalysis(transcript: string, meta: AiMeta = {}): Promise<MeetingAnalysis> {
   if (config.mockMode) {
     await delay(1400)
     return mockAnalysis(transcript)
   }
-  const r = await invoke<{ analysis: MeetingAnalysis }>('ai', { task: 'analysis', transcript })
+  const r = await invoke<{ analysis: MeetingAnalysis }>('ai', { task: 'analysis', transcript, ...meta })
   return r.analysis
 }
 
@@ -90,6 +101,25 @@ export async function generateFeedback(
   }
   const r = await invoke<{ feedback: string }>('ai', { task: 'feedback', transcript, audience })
   return r.feedback
+}
+
+export interface NoteDigest {
+  title: string
+  created_at: string
+  summary: string
+}
+
+/** Busca semantica: pergunta em linguagem natural sobre TODAS as notas. */
+export async function askAllNotes(question: string, notes: NoteDigest[]): Promise<string> {
+  if (config.mockMode) {
+    await delay(800)
+    return mockAskAll(question, notes)
+  }
+  const digest = notes
+    .slice(0, 80)
+    .map((n) => ({ title: n.title, date: n.created_at, summary: n.summary }))
+  const r = await invoke<{ answer: string }>('ai', { task: 'search', question, notes: digest })
+  return r.answer
 }
 
 export async function chatWithNote(

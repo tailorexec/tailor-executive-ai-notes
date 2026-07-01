@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Eye,
@@ -9,6 +9,7 @@ import {
   Share2,
   Headphones,
   MessageSquare,
+  Plus,
 } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
 import { Logo } from '../components/Logo'
@@ -24,6 +25,35 @@ const FEATURES = [
   { icon: <Share2 size={18} />, title: 'Compartilhamento', desc: 'WhatsApp, PDF, Word, e-mail e com parceiros.' },
   { icon: <MessageSquare size={18} />, title: 'Converse com a nota', desc: 'Pergunte à IA e gere narração por voz.' },
 ]
+
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)')
+    const update = () => setIsDesktop(mq.matches)
+    update()
+    mq.addEventListener('change', update)
+    return () => mq.removeEventListener('change', update)
+  }, [])
+  return isDesktop
+}
+
+function VideoBackground() {
+  // Enfeite bem sutil, so no desktop (nao baixa no mobile), sem travar a pagina.
+  return (
+    <video
+      className="pointer-events-none fixed inset-0 -z-20 h-full w-full object-cover opacity-[0.18]"
+      autoPlay
+      muted
+      loop
+      playsInline
+      preload="metadata"
+      aria-hidden
+    >
+      <source src="/tailor_loop.mp4" type="video/mp4" />
+    </video>
+  )
+}
 
 function TechBackground() {
   return (
@@ -78,8 +108,11 @@ export function Login() {
     }
   }
 
+  const isDesktop = useIsDesktop()
+
   return (
     <div className="min-h-screen flex flex-col safe-top">
+      {isDesktop && <VideoBackground />}
       <TechBackground />
 
       <header className="flex items-center justify-between px-6 pt-6">
@@ -90,9 +123,10 @@ export function Login() {
       <main className="flex-1 flex flex-col items-center px-6 py-10 w-full max-w-6xl mx-auto">
         {/* Hero */}
         <div className="text-center max-w-2xl">
-          <span className="inline-block text-xs font-semibold tracking-wider uppercase text-brand-500 bg-brand-500/10 border border-brand-500/20 rounded-full px-3 py-1 mb-5">
-            Tailor Executive AI Notes
-          </span>
+          <div className="inline-flex flex-col items-center text-brand-500 bg-brand-500/10 border border-brand-500/20 rounded-2xl px-4 py-2 mb-5 leading-tight">
+            <span className="font-display font-bold tracking-[0.2em] text-lg">TENA</span>
+            <span className="text-[10px] font-semibold uppercase tracking-wide">Tailor Executive Notes AI</span>
+          </div>
           <h1 className="font-display text-4xl sm:text-5xl font-bold leading-tight">
             Ferramenta Inteligente para Executivos
           </h1>
@@ -119,6 +153,12 @@ export function Login() {
                   </div>
                 </div>
               ))}
+              <div className="card p-4 flex items-center gap-3 border-dashed">
+                <div className="grid place-items-center h-9 w-9 rounded-xl bg-brand-500/10 text-brand-500 shrink-0">
+                  <Plus size={18} />
+                </div>
+                <p className="font-medium text-sm">e muito mais</p>
+              </div>
             </div>
           </div>
 

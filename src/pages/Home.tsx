@@ -10,6 +10,7 @@ import {
   Headphones,
   ChevronRight,
   NotebookPen,
+  Sparkles,
 } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
 import { db } from '../lib/api'
@@ -17,6 +18,7 @@ import type { Note } from '../lib/types'
 import { fmtDate, fmtDuration } from '../lib/format'
 import { Avatar, EmptyState, Sheet, Spinner, Chip } from '../components/ui'
 import { ThemeToggle } from '../components/ThemeToggle'
+import { AskNotesSheet } from './AskNotesSheet'
 
 const TYPE_ICON: Record<Note['type'], React.ReactNode> = {
   recording: <Mic size={18} />,
@@ -33,6 +35,7 @@ export function Home() {
   const [query, setQuery] = useState('')
   const [folder, setFolder] = useState<string>('all')
   const [newOpen, setNewOpen] = useState(false)
+  const [askOpen, setAskOpen] = useState(false)
 
   useEffect(() => {
     if (!profile) return
@@ -76,7 +79,7 @@ export function Home() {
         </div>
       </header>
 
-      <div className="relative mb-4">
+      <div className="relative mb-3">
         <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-content-muted" />
         <input
           className="input pl-11"
@@ -85,6 +88,14 @@ export function Home() {
           onChange={(e) => setQuery(e.target.value)}
         />
       </div>
+
+      <button
+        onClick={() => setAskOpen(true)}
+        className="w-full flex items-center gap-2.5 bg-brand-500/10 border border-brand-500/20 text-brand-500 rounded-xl px-4 py-2.5 mb-4 text-sm font-medium hover:bg-brand-500/15 transition-colors"
+      >
+        <Sparkles size={16} />
+        Conversar com todas as reunioes
+      </button>
 
       {folders.length > 0 && (
         <div className="flex gap-2 overflow-x-auto pb-2 mb-2 -mx-1 px-1">
@@ -155,6 +166,8 @@ export function Home() {
         <NotebookPen size={18} />
         Nova nota
       </button>
+
+      {askOpen && <AskNotesSheet open={askOpen} onClose={() => setAskOpen(false)} notes={notes ?? []} />}
 
       <Sheet open={newOpen} onClose={() => setNewOpen(false)} title="Nova nota">
         <div className="space-y-3">

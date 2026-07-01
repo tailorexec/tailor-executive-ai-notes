@@ -119,6 +119,18 @@ export function mockTranscript(): string {
   return SAMPLE_TRANSCRIPT.replace(/\n/g, ' ').trim()
 }
 
+/** Simula transcricao com identificacao de falantes (diarizacao). */
+export function mockDiarizedTranscript(): string {
+  return [
+    'Falante A: Bom dia a todos, obrigado por participarem desta reuniao de alinhamento.',
+    'Falante B: Bom dia. O objetivo de hoje e definir a estrutura do time de marketing.',
+    'Falante A: Atualmente a gerencia esta vaga porque a Ana foi realocada para o comercial.',
+    'Falante B: Qual e o orcamento disponivel para as novas contratacoes?',
+    'Falante A: O orcamento anual gira em torno de dois milhoes, com forte gasto em eventos.',
+    'Falante B: Combinado, vamos preparar um kick-off do projeto e um cronograma de busca.',
+  ].join('\n')
+}
+
 export function mockFeedback(transcript: string, audience: 'cliente' | 'candidato'): string {
   const s = sentences(transcript)
   const pts = pick(s, 3).map((x) => `- ${x.replace(/[.!?]+$/, '')}.`).join('\n')
@@ -138,6 +150,19 @@ export function mockFeedback(transcript: string, audience: 'cliente' | 'candidat
     '',
     fecho,
   ].join('\n')
+}
+
+export function mockAskAll(
+  question: string,
+  notes: { title: string; summary: string }[],
+): string {
+  const words = question.toLowerCase().split(/\s+/).filter((w) => w.length > 4)
+  const hits = notes.filter((n) =>
+    words.some((w) => `${n.title} ${n.summary}`.toLowerCase().includes(w)),
+  )
+  if (!hits.length) return 'Nao encontrei essa informacao nas suas reunioes.'
+  const refs = hits.slice(0, 3).map((h) => `- ${h.title}`).join('\n')
+  return `Com base nas suas reunioes, encontrei referencias em:\n${refs}\n\n(No modo real, a IA sintetiza a resposta a partir do conteudo dessas notas.)`
 }
 
 export function mockChatReply(question: string, transcript: string): string {
