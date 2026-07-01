@@ -13,7 +13,7 @@ export function Logo({
   const { theme } = useTheme()
   // logo-light.png = texto preto (tema claro); logo-dark.png = texto branco (tema escuro).
   const src = theme === 'dark' ? '/logo-dark.png' : '/logo-light.png'
-  const h = size === 'lg' ? 44 : size === 'sm' ? 26 : 34
+  const h = size === 'lg' ? 58 : size === 'sm' ? 34 : 46
 
   return (
     <div className={`inline-flex items-center gap-3 ${className}`}>

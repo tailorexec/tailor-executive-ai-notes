@@ -128,10 +128,6 @@ export function Login() {
       <main className="flex-1 min-h-0 flex flex-col items-center lg:justify-center px-6 py-10 md:py-4 lg:py-5 w-full max-w-6xl mx-auto">
         {/* Hero */}
         <div className="text-center max-w-2xl">
-          <div className="inline-flex flex-col items-center text-brand-500 bg-brand-500/10 border border-brand-500/20 rounded-2xl px-4 py-2 mb-5 md:mb-3 leading-tight">
-            <span className="font-display font-bold tracking-[0.2em] text-lg md:text-base">TENA</span>
-            <span className="text-[10px] font-semibold uppercase tracking-wide">Tailor Executive Notes AI</span>
-          </div>
           <h1 className="font-display text-4xl sm:text-5xl md:text-3xl lg:text-4xl font-bold leading-tight dark:[text-shadow:0_2px_14px_rgba(0,0,0,0.55)]">
             Ferramenta Inteligente para Executivos
           </h1>
@@ -142,7 +138,7 @@ export function Login() {
         </div>
 
         {/* Conteudo: funcionalidades + login */}
-        <div className="grid lg:grid-cols-2 gap-8 md:gap-5 lg:gap-8 lg:items-stretch w-full mt-12 md:mt-6">
+        <div className="grid lg:grid-cols-2 gap-8 md:gap-5 lg:gap-8 lg:items-stretch w-full max-w-4xl mx-auto mt-10 md:mt-6">
           {/* Funcionalidades */}
           <div className="order-2 lg:order-1">
             <h2 className="font-display text-lg md:text-base font-semibold mb-4 md:mb-3">O que a plataforma faz</h2>
@@ -168,7 +164,7 @@ export function Login() {
           </div>
 
           {/* Login */}
-          <div className="order-1 lg:order-2 w-full max-w-md mx-auto lg:mx-0 lg:ml-auto h-full">
+          <div className="order-1 lg:order-2 w-full max-w-md mx-auto h-full">
             <div className="card p-6 sm:p-8 md:p-6 shadow-float h-full flex flex-col justify-center">
               <h2 className="font-display text-2xl font-bold">Entrar</h2>
               <p className="text-content-secondary mt-1 mb-6 md:mb-4">Acesse sua conta corporativa.</p>
