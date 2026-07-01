@@ -38,6 +38,7 @@ export function Capture() {
   const [context, setContext] = useState('')
   const [diarize, setDiarize] = useState(false)
   const [textInput, setTextInput] = useState('')
+  const [fileName, setFileName] = useState<string | null>(null)
   const [processing, setProcessing] = useState(false)
   const [step, setStep] = useState(0)
   const [error, setError] = useState<string | null>(null)
@@ -161,27 +162,28 @@ export function Capture() {
     })
   }
 
+  // Apenas CARREGA o arquivo (nao processa). O processamento so ocorre ao clicar em "Processar".
   async function onFileText(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    setError(null)
+    setFileName(file.name)
     const isText = /\.(txt|md|csv)$/i.test(file.name)
-    const content = isText ? await file.text() : ''
-    await finalize({
-      type: 'file',
-      transcript: content || `Documento importado: ${file.name}. (Extracao de conteudo sera feita no servidor.)`,
-      fallbackTitle: file.name.replace(/\.[^.]+$/, ''),
-    })
+    setTextInput(isText ? await file.text() : '')
   }
 
   async function onSubmitText() {
-    if (!textInput.trim()) {
-      setError('Cole um texto ou link para continuar.')
+    const content = textInput.trim()
+    if (!content && !fileName) {
+      setError('Selecione um arquivo ou cole um texto para continuar.')
       return
     }
     await finalize({
       type: mode === 'link' ? 'link' : 'file',
-      transcript: textInput.trim(),
-      fallbackTitle: mode === 'link' ? 'Conteudo do link' : 'Nota de texto',
+      transcript:
+        content ||
+        `Documento importado: ${fileName}. (Extracao de conteudo sera feita no servidor.)`,
+      fallbackTitle: mode === 'link' ? 'Conteudo do link' : fileName?.replace(/\.[^.]+$/, '') || 'Nota de texto',
     })
   }
 
@@ -427,9 +429,15 @@ export function Capture() {
             className="card w-full py-10 flex flex-col items-center gap-3 border-dashed hover:border-brand-500/50"
           >
             <FileText size={32} className="text-brand-500" />
-            <p className="font-medium">Selecionar PDF, TXT, DOCX...</p>
+            <p className="font-medium">{fileName ? 'Trocar arquivo' : 'Selecionar PDF, TXT, DOCX...'}</p>
+            {fileName && <p className="text-sm text-content-secondary">{fileName}</p>}
           </button>
           <input ref={fileRef} type="file" accept=".pdf,.txt,.md,.csv,.doc,.docx" className="hidden" onChange={onFileText} />
+          {fileName && (
+            <p className="text-xs text-content-muted -mt-1">
+              Arquivo selecionado. Revise o texto (se aplicavel) e clique em "Processar" — nada e gerado antes disso.
+            </p>
+          )}
           <div className="text-center text-content-muted text-sm">ou cole o texto abaixo</div>
           <textarea
             className="input min-h-[160px] resize-none"

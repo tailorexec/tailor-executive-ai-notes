@@ -193,6 +193,7 @@ export const mockDb: Db = {
       summary: input.summary ?? '',
       detailed_summary: input.detailed_summary ?? null,
       analysis: input.analysis ?? null,
+      mindmap: input.mindmap ?? null,
       action_items: input.action_items ?? [],
       chat: input.chat ?? [],
       shared_with: input.shared_with ?? [],

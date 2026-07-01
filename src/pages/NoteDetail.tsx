@@ -14,10 +14,11 @@ import {
   Trash2,
   MessageSquare,
   MessageSquareQuote,
+  Network,
 } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
 import { db } from '../lib/api'
-import { chatWithNote, generateAnalysis, generateDetailed } from '../lib/ai'
+import { chatWithNote, generateAnalysis, generateDetailed, generateMindMap } from '../lib/ai'
 import { speak, stopSpeaking, ttsSupported } from '../lib/tts'
 import { fmtDateTime, fmtDuration } from '../lib/format'
 import { Spinner } from '../components/ui'
@@ -29,7 +30,7 @@ import { templateLabel } from '../lib/templates'
 import { ShareSheet } from './ShareSheet'
 import { FeedbackSheet } from './FeedbackSheet'
 
-type Tab = 'summary' | 'detailed' | 'analysis' | 'transcript'
+type Tab = 'summary' | 'detailed' | 'analysis' | 'mindmap' | 'transcript'
 
 export function NoteDetail() {
   const { id } = useParams()
@@ -37,7 +38,7 @@ export function NoteDetail() {
   const { profile } = useAuth()
   const [note, setNote] = useState<Note | null | undefined>(undefined)
   const [tab, setTab] = useState<Tab>('summary')
-  const [busy, setBusy] = useState<null | 'detailed' | 'analysis'>(null)
+  const [busy, setBusy] = useState<null | 'detailed' | 'analysis' | 'mindmap'>(null)
   const [narrating, setNarrating] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
   const [feedbackOpen, setFeedbackOpen] = useState(false)
@@ -110,6 +111,20 @@ export function NoteDetail() {
     }
   }
 
+  async function runMindMap() {
+    if (!note) return
+    setBusy('mindmap')
+    try {
+      const mindmap = await generateMindMap(note.transcript, { template: note.template, context: note.context })
+      const updated = await db.updateNote(note.id, { mindmap })
+      if (profile) await db.logUsage(profile.id, 'ai_analysis', note.id)
+      setNote(updated)
+      setTab('mindmap')
+    } finally {
+      setBusy(null)
+    }
+  }
+
   function toggleNarration() {
     if (narrating) {
       stopSpeaking()
@@ -163,6 +178,7 @@ export function NoteDetail() {
     { key: 'summary', label: 'Resumo', icon: <FileText size={16} /> },
     { key: 'detailed', label: 'Detalhado', icon: <Sparkles size={16} /> },
     { key: 'analysis', label: 'Analise', icon: <BarChart3 size={16} /> },
+    { key: 'mindmap', label: 'Mapa mental', icon: <Network size={16} /> },
     { key: 'transcript', label: 'Transcricao', icon: <ScrollText size={16} /> },
   ]
 
@@ -313,6 +329,18 @@ export function NoteDetail() {
                 subtitle="Tom, perguntas feitas, sugestoes, ritmo e pontos de melhoria."
                 loading={busy === 'analysis'}
                 onClick={runAnalysis}
+              />
+            ))}
+
+          {tab === 'mindmap' &&
+            (note.mindmap ? (
+              <MindMapView map={note.mindmap} />
+            ) : (
+              <GenerateCta
+                title="Mapa mental"
+                subtitle="Organiza a reuniao em um mapa: tema central, ramos e sub-topicos."
+                loading={busy === 'mindmap'}
+                onClick={runMindMap}
               />
             ))}
 
@@ -474,6 +502,35 @@ function AnalysisView({ analysis }: { analysis: NonNullable<Note['analysis']> })
       <AnalysisSection title="Perguntas sugeridas" items={analysis.suggestedQuestions} accent />
       <AnalysisSection title="Pontos-chave" items={analysis.keyPoints} />
       <AnalysisSection title="Riscos" items={analysis.risks} />
+    </div>
+  )
+}
+
+function MindMapView({ map }: { map: NonNullable<Note['mindmap']> }) {
+  return (
+    <div className="space-y-5">
+      <div className="flex justify-center">
+        <div className="px-5 py-3 rounded-2xl bg-brand-500 text-white font-display font-bold text-lg shadow-float text-center">
+          {map.central}
+        </div>
+      </div>
+      <div className="grid sm:grid-cols-2 gap-3">
+        {map.branches.map((b, i) => (
+          <div key={i} className="card overflow-hidden">
+            <div className="px-4 py-2.5 bg-brand-500/10 text-brand-500 font-semibold border-b border-surface-border">
+              {b.title}
+            </div>
+            <ul className="p-4 space-y-2">
+              {b.children.map((c, j) => (
+                <li key={j} className="flex gap-2">
+                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-brand-500 shrink-0" />
+                  <span className="text-sm">{c}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

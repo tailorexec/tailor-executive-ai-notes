@@ -35,6 +35,15 @@ export interface MeetingAnalysis {
   risks: string[]
 }
 
+export interface MindMapBranch {
+  title: string
+  children: string[]
+}
+export interface MindMap {
+  central: string
+  branches: MindMapBranch[]
+}
+
 export interface ChatMessage {
   id: string
   role: 'user' | 'assistant'
@@ -58,6 +67,7 @@ export interface Note {
   summary: string
   detailed_summary: string | null
   analysis: MeetingAnalysis | null
+  mindmap: MindMap | null
   action_items: ActionItem[]
   chat: ChatMessage[]
   shared_with: string[] // profile ids

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Phone, Delete, Square, ShieldAlert, Mic } from 'lucide-react'
+import { ArrowLeft, Phone, Delete, Square, ShieldAlert, Mic, MessageCircle } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
 import { useRecorder } from '../lib/useRecorder'
 import { db } from '../lib/api'
@@ -18,6 +18,7 @@ export function Dialer() {
   const [inCall, setInCall] = useState(false)
   const [consentOpen, setConsentOpen] = useState(false)
   const [processing, setProcessing] = useState(false)
+  const [via, setVia] = useState<'phone' | 'whatsapp'>('phone')
 
   function press(k: string) {
     setNumber((n) => (n + k).slice(0, 20))
@@ -31,11 +32,18 @@ export function Dialer() {
     setConsentOpen(true)
   }
 
-  async function startCall() {
+  async function startCall(method: 'phone' | 'whatsapp') {
     setConsentOpen(false)
-    // Abre o discador nativo do aparelho...
-    window.location.href = `tel:${number.replace(/[^\d+*#]/g, '')}`
-    // ...e inicia a gravacao por microfone (viva-voz).
+    setVia(method)
+    if (method === 'whatsapp') {
+      // Abre a conversa do WhatsApp (o usuario toca no botao de chamada de voz).
+      const digits = number.replace(/[^\d]/g, '')
+      window.open(`https://wa.me/${digits}`, '_blank')
+    } else {
+      // Abre o discador nativo do aparelho.
+      window.location.href = `tel:${number.replace(/[^\d+*#]/g, '')}`
+    }
+    // Inicia a gravacao por microfone (viva-voz).
     await recorder.start()
     setInCall(true)
   }
@@ -54,7 +62,7 @@ export function Dialer() {
       const actionItems = await generateActionItems(transcript)
       const note = await db.createNote({
         user_id: profile.id,
-        title: `Ligacao ${number}`,
+        title: `${via === 'whatsapp' ? 'WhatsApp' : 'Ligacao'} ${number}`,
         type: 'call',
         duration_seconds: res.durationSeconds,
         language,
@@ -166,12 +174,22 @@ export function Dialer() {
             responsavel pelo uso desta gravacao.
           </p>
         </div>
-        <div className="flex gap-3">
-          <button className="btn-outline flex-1" onClick={() => setConsentOpen(false)}>
-            Cancelar
+        <p className="text-sm font-medium mb-2">Como deseja ligar? (a gravacao inicia junto)</p>
+        <div className="space-y-2">
+          <button
+            className="btn bg-green-600 hover:bg-green-700 text-white w-full"
+            onClick={() => startCall('whatsapp')}
+          >
+            <MessageCircle size={18} /> Ligar pelo WhatsApp e gravar
           </button>
-          <button className="btn bg-green-600 hover:bg-green-700 text-white flex-1" onClick={startCall}>
-            Ligar e gravar
+          <button
+            className="btn bg-green-600 hover:bg-green-700 text-white w-full"
+            onClick={() => startCall('phone')}
+          >
+            <Phone size={18} /> Ligar pelo telefone e gravar
+          </button>
+          <button className="btn-outline w-full" onClick={() => setConsentOpen(false)}>
+            Cancelar
           </button>
         </div>
       </Sheet>

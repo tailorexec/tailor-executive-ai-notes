@@ -136,6 +136,14 @@ Foque em: tom, perguntas feitas e sugeridas, ritmo/andamento, pontos fortes, mel
           suggestedQuestions: [], pacing: '', keyPoints: [], risks: [],
         }),
       }
+    } else if (task === 'mindmap') {
+      const text = await claude(
+        HAIKU,
+        'Voce cria mapas mentais de reunioes de forma clara. Responda APENAS com JSON valido.' + GUARD,
+        `Crie um mapa mental do conteudo. Retorne JSON no formato exato: {"central":string,"branches":[{"title":string,"children":string[]}]}. Use de 3 a 6 branches, cada uma com 2 a 5 filhos curtos. Em portugues do Brasil.${hint}\n\n${wrap(transcript)}`,
+        1500,
+      )
+      out = { mindmap: extractJson(text, { central: 'Reuniao', branches: [] }) }
     } else if (task === 'feedback') {
       const audience = body.audience === 'candidato' ? 'candidato' : 'cliente'
       const alvo =

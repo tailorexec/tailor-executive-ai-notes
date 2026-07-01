@@ -131,6 +131,19 @@ export function mockDiarizedTranscript(): string {
   ].join('\n')
 }
 
+export function mockMindMap(transcript: string) {
+  const s = sentences(transcript).map((x) => x.replace(/[.!?]+$/, ''))
+  return {
+    central: 'Reuniao',
+    branches: [
+      { title: 'Objetivos', children: pick(s, 2) },
+      { title: 'Pontos discutidos', children: s.slice(2, 5) },
+      { title: 'Decisoes', children: s.slice(5, 7) },
+      { title: 'Proximos passos', children: ['Definir responsaveis', 'Acompanhar prazos'] },
+    ],
+  }
+}
+
 export function mockFeedback(transcript: string, audience: 'cliente' | 'candidato'): string {
   const s = sentences(transcript)
   const pts = pick(s, 3).map((x) => `- ${x.replace(/[.!?]+$/, '')}.`).join('\n')

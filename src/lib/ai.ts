@@ -20,8 +20,9 @@ import {
   mockTranscript,
   mockDiarizedTranscript,
   mockAskAll,
+  mockMindMap,
 } from './aiMock'
-import type { ActionItem, MeetingAnalysis } from './types'
+import type { ActionItem, MeetingAnalysis, MindMap } from './types'
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
@@ -89,6 +90,15 @@ export async function generateAnalysis(transcript: string, meta: AiMeta = {}): P
   }
   const r = await invoke<{ analysis: MeetingAnalysis }>('ai', { task: 'analysis', transcript, ...meta })
   return r.analysis
+}
+
+export async function generateMindMap(transcript: string, meta: AiMeta = {}): Promise<MindMap> {
+  if (config.mockMode) {
+    await delay(900)
+    return mockMindMap(transcript)
+  }
+  const r = await invoke<{ mindmap: MindMap }>('ai', { task: 'mindmap', transcript, ...meta })
+  return r.mindmap
 }
 
 export async function generateFeedback(
