@@ -15,6 +15,7 @@ import {
   mockActionItems,
   mockChatReply,
   mockDetailed,
+  mockFeedback,
   mockSummary,
   mockTranscript,
 } from './aiMock'
@@ -77,6 +78,18 @@ export async function generateAnalysis(transcript: string): Promise<MeetingAnaly
   }
   const r = await invoke<{ analysis: MeetingAnalysis }>('ai', { task: 'analysis', transcript })
   return r.analysis
+}
+
+export async function generateFeedback(
+  transcript: string,
+  audience: 'cliente' | 'candidato',
+): Promise<string> {
+  if (config.mockMode) {
+    await delay(1000)
+    return mockFeedback(transcript, audience)
+  }
+  const r = await invoke<{ feedback: string }>('ai', { task: 'feedback', transcript, audience })
+  return r.feedback
 }
 
 export async function chatWithNote(

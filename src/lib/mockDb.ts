@@ -123,8 +123,29 @@ export const mockDb: Db = {
     seed()
     const notes = read<Note[]>(K.notes, [])
     return notes
-      .filter((n) => n.user_id === userId || n.shared_with.includes(userId))
+      .filter((n) => !n.deleted_at && (n.user_id === userId || n.shared_with.includes(userId)))
       .sort((a, b) => b.created_at.localeCompare(a.created_at))
+  },
+
+  async listTrash(userId) {
+    const notes = read<Note[]>(K.notes, [])
+    return notes
+      .filter((n) => n.deleted_at && n.user_id === userId)
+      .sort((a, b) => (b.deleted_at ?? '').localeCompare(a.deleted_at ?? ''))
+  },
+
+  async restoreNote(id) {
+    const notes = read<Note[]>(K.notes, [])
+    const idx = notes.findIndex((n) => n.id === id)
+    if (idx !== -1) {
+      notes[idx].deleted_at = null
+      write(K.notes, notes)
+    }
+  },
+
+  async deleteNotePermanent(id) {
+    const notes = read<Note[]>(K.notes, [])
+    write(K.notes, notes.filter((n) => n.id !== id))
   },
 
   async getNote(id) {
@@ -153,6 +174,7 @@ export const mockDb: Db = {
       chat: input.chat ?? [],
       shared_with: input.shared_with ?? [],
       status: input.status ?? 'processing',
+      deleted_at: null,
       created_at: now,
       updated_at: now,
     }
@@ -172,10 +194,11 @@ export const mockDb: Db = {
 
   async deleteNote(id) {
     const notes = read<Note[]>(K.notes, [])
-    write(
-      K.notes,
-      notes.filter((n) => n.id !== id),
-    )
+    const idx = notes.findIndex((n) => n.id === id)
+    if (idx !== -1) {
+      notes[idx].deleted_at = new Date().toISOString()
+      write(K.notes, notes)
+    }
   },
 
   async logUsage(userId, type, noteId = null) {

@@ -119,6 +119,27 @@ export function mockTranscript(): string {
   return SAMPLE_TRANSCRIPT.replace(/\n/g, ' ').trim()
 }
 
+export function mockFeedback(transcript: string, audience: 'cliente' | 'candidato'): string {
+  const s = sentences(transcript)
+  const pts = pick(s, 3).map((x) => `- ${x.replace(/[.!?]+$/, '')}.`).join('\n')
+  const saud = audience === 'candidato' ? 'Ola,' : 'Prezado(a),'
+  const fecho =
+    audience === 'candidato'
+      ? 'Agradecemos sua participacao no processo e seguimos a disposicao.'
+      : 'Agradecemos a reuniao e seguimos a disposicao para os proximos passos.'
+  return [
+    saud,
+    '',
+    audience === 'candidato'
+      ? 'Obrigado pela conversa. Compartilho abaixo um feedback da nossa interacao:'
+      : 'Obrigado pela reuniao. Segue um resumo com os pontos principais e proximos passos:',
+    '',
+    pts || '- (pontos principais)',
+    '',
+    fecho,
+  ].join('\n')
+}
+
 export function mockChatReply(question: string, transcript: string): string {
   const s = sentences(transcript)
   const hit = s.find((x) =>

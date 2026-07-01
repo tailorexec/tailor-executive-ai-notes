@@ -4,6 +4,9 @@ import { useAuth } from '../auth/AuthProvider'
 import { Logo } from '../components/Logo'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { Avatar } from '../components/ui'
+import { AnnouncementBanner } from '../components/AnnouncementBanner'
+import { useAppSettings } from '../app/SettingsProvider'
+import { Maintenance } from '../pages/Maintenance'
 
 const HIDE_MOBILE_NAV_ON = ['/nota/', '/capturar', '/discador']
 
@@ -129,13 +132,25 @@ function BottomNav() {
 
 export function AppShell() {
   const location = useLocation()
+  const { isAdmin } = useAuth()
+  const { settings } = useAppSettings()
   const hideMobileNav = HIDE_MOBILE_NAV_ON.some((p) => location.pathname.startsWith(p))
+
+  // Modo manutencao: bloqueia todos exceto admin.
+  if (settings?.maintenance_enabled && !isAdmin) {
+    return <Maintenance settings={settings} />
+  }
 
   return (
     <div className="min-h-screen bg-surface-bg">
       <Sidebar />
       <div className="md:pl-64">
         <main className={`mx-auto w-full max-w-5xl ${hideMobileNav ? '' : 'pb-28 md:pb-10'}`}>
+          {!hideMobileNav && (
+            <div className="px-5 pt-4">
+              <AnnouncementBanner />
+            </div>
+          )}
           <Outlet />
         </main>
       </div>

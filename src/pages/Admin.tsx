@@ -14,6 +14,7 @@ import { db } from '../lib/api'
 import type { AdminUserRow } from '../lib/types'
 import { Avatar, Spinner } from '../components/ui'
 import { fmtRelative } from '../lib/format'
+import { AdminSettings } from './AdminSettings'
 
 function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
   return (
@@ -84,6 +85,8 @@ export function Admin() {
         </div>
       ) : (
         <>
+          <AdminSettings />
+
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
             <StatCard icon={<Users size={16} />} label="Usuarios" value={totals.users} />
             <StatCard icon={<NotebookPen size={16} />} label="Notas" value={totals.notes} />

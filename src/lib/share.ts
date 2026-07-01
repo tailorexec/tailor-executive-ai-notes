@@ -107,3 +107,13 @@ export async function nativeShare(note: Note): Promise<boolean> {
 export async function copyToClipboard(note: Note): Promise<void> {
   await navigator.clipboard.writeText(noteToPlainText(note))
 }
+
+/** Baixa a transcricao como .txt para o usuario guardar onde quiser. */
+export function exportTranscript(note: Note): void {
+  const content = note.transcript?.trim() || 'Transcricao indisponivel.'
+  downloadBlob(new Blob([content], { type: 'text/plain;charset=utf-8' }), `${slug(note.title)}-transcricao.txt`)
+}
+
+export function slugify(s: string): string {
+  return slug(s)
+}

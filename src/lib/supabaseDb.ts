@@ -143,10 +143,32 @@ export const supabaseDb: Db = {
     const { data, error } = await client()
       .from('notes')
       .select('*')
+      .is('deleted_at', null)
       .or(`user_id.eq.${userId},shared_with.cs.{${userId}}`)
       .order('created_at', { ascending: false })
     if (error) throw error
     return (data ?? []) as unknown as Note[]
+  },
+
+  async listTrash(userId) {
+    const { data, error } = await client()
+      .from('notes')
+      .select('*')
+      .eq('user_id', userId)
+      .not('deleted_at', 'is', null)
+      .order('deleted_at', { ascending: false })
+    if (error) throw error
+    return (data ?? []) as unknown as Note[]
+  },
+
+  async restoreNote(id) {
+    const { error } = await client().from('notes').update({ deleted_at: null }).eq('id', id)
+    if (error) throw error
+  },
+
+  async deleteNotePermanent(id) {
+    const { error } = await client().from('notes').delete().eq('id', id)
+    if (error) throw error
   },
 
   async getNote(id) {
@@ -173,7 +195,11 @@ export const supabaseDb: Db = {
   },
 
   async deleteNote(id) {
-    const { error } = await client().from('notes').delete().eq('id', id)
+    // Soft-delete: vai para a lixeira.
+    const { error } = await client()
+      .from('notes')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', id)
     if (error) throw error
   },
 

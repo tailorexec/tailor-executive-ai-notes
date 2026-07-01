@@ -87,6 +87,26 @@ export async function getAudioUrl(ref: string | null): Promise<string | null> {
   return data?.signedUrl ?? null
 }
 
+/** Baixa o arquivo de audio para o dispositivo do usuario. */
+export async function downloadAudio(ref: string | null, filename: string): Promise<boolean> {
+  const url = await getAudioUrl(ref)
+  if (!url) return false
+  try {
+    const blob = await (await fetch(url)).blob()
+    const objUrl = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = objUrl
+    a.download = filename
+    a.click()
+    setTimeout(() => URL.revokeObjectURL(objUrl), 2000)
+    return true
+  } catch {
+    // fallback: abre em nova aba
+    window.open(url, '_blank')
+    return true
+  }
+}
+
 export async function deleteAudio(ref: string | null): Promise<void> {
   if (!ref) return
   if (ref.startsWith('idb:')) return idbDelete(ref.slice(4))

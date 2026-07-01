@@ -60,6 +60,7 @@ export interface Note {
   chat: ChatMessage[]
   shared_with: string[] // profile ids
   status: 'processing' | 'ready' | 'error'
+  deleted_at: string | null
   created_at: string
   updated_at: string
 }
@@ -71,6 +72,7 @@ export type UsageEventType =
   | 'ai_detailed'
   | 'ai_analysis'
   | 'ai_chat'
+  | 'ai_feedback'
   | 'tts'
 
 export interface UsageEvent {
@@ -79,6 +81,20 @@ export interface UsageEvent {
   note_id: string | null
   type: UsageEventType
   created_at: string
+}
+
+export type AnnouncementType = 'info' | 'warning' | 'maintenance' | 'promo'
+
+export interface AppSettings {
+  announcement_enabled: boolean
+  announcement_type: AnnouncementType
+  announcement_message: string
+  announcement_starts_at: string | null
+  announcement_ends_at: string | null
+  announcement_version: number
+  maintenance_enabled: boolean
+  maintenance_message: string
+  maintenance_eta: string
 }
 
 /** Linha agregada usada no painel de administrador. */

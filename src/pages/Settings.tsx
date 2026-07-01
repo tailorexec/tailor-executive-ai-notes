@@ -9,6 +9,7 @@ import {
   Sun,
   Bell,
   HelpCircle,
+  Trash2,
 } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
 import { useTheme } from '../theme/ThemeProvider'
@@ -97,6 +98,11 @@ export function Settings() {
           }
         />
         <Row icon={<Bell size={20} />} label="Notificacoes" />
+      </div>
+
+      <p className="text-xs uppercase tracking-wide text-content-muted mb-2 px-1">Meus dados</p>
+      <div className="card divide-y divide-surface-border mb-6">
+        <Row icon={<Trash2 size={20} />} label="Lixeira" onClick={() => navigate('/lixeira')} />
       </div>
 
       <p className="text-xs uppercase tracking-wide text-content-muted mb-2 px-1">Suporte</p>

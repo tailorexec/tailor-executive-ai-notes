@@ -13,6 +13,7 @@ import {
   ScrollText,
   Trash2,
   MessageSquare,
+  MessageSquareQuote,
 } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
 import { db } from '../lib/api'
@@ -25,6 +26,7 @@ import { deleteAudio } from '../lib/audioStore'
 import type { ChatMessage, Note } from '../lib/types'
 import { uid } from '../lib/db'
 import { ShareSheet } from './ShareSheet'
+import { FeedbackSheet } from './FeedbackSheet'
 
 type Tab = 'summary' | 'detailed' | 'analysis' | 'transcript'
 
@@ -37,6 +39,7 @@ export function NoteDetail() {
   const [busy, setBusy] = useState<null | 'detailed' | 'analysis'>(null)
   const [narrating, setNarrating] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
+  const [feedbackOpen, setFeedbackOpen] = useState(false)
   const [chatInput, setChatInput] = useState('')
   const [chatBusy, setChatBusy] = useState(false)
   const chatEndRef = useRef<HTMLDivElement | null>(null)
@@ -209,6 +212,12 @@ export function NoteDetail() {
             onClick={runAnalysis}
             disabled={busy !== null}
           />
+          <ActionButton
+            icon={<MessageSquareQuote size={18} />}
+            label="Gerar feedback"
+            hint="Cliente ou candidato"
+            onClick={() => setFeedbackOpen(true)}
+          />
           {ttsSupported() && (
             <ActionButton
               icon={narrating ? <Square size={18} /> : <Volume2 size={18} />}
@@ -356,6 +365,7 @@ export function NoteDetail() {
       {shareOpen && (
         <ShareSheet note={note} open={shareOpen} onClose={() => setShareOpen(false)} onUpdated={setNote} />
       )}
+      {feedbackOpen && <FeedbackSheet note={note} open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />}
     </div>
   )
 }

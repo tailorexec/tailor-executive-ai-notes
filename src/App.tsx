@@ -10,6 +10,7 @@ import { Capture } from './pages/Capture'
 import { Dialer } from './pages/Dialer'
 import { Settings } from './pages/Settings'
 import { Admin } from './pages/Admin'
+import { TrashPage } from './pages/Trash'
 import type { ReactNode } from 'react'
 
 function FullscreenLoader() {
@@ -61,6 +62,7 @@ export default function App() {
         <Route path="/capturar" element={<Capture />} />
         <Route path="/discador" element={<Dialer />} />
         <Route path="/config" element={<Settings />} />
+        <Route path="/lixeira" element={<TrashPage />} />
         <Route
           path="/admin"
           element={

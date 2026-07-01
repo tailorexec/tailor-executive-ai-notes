@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { FileText, FileType, Mail, Copy, Check, Users, Share as ShareIcon } from 'lucide-react'
+import { FileText, FileType, Mail, Copy, Check, Users, Share as ShareIcon, AudioLines, ScrollText } from 'lucide-react'
 import { db } from '../lib/api'
 import { useAuth } from '../auth/AuthProvider'
 import type { Note, Profile } from '../lib/types'
@@ -8,10 +8,13 @@ import {
   copyToClipboard,
   exportPdf,
   exportWord,
+  exportTranscript,
   nativeShare,
   shareEmail,
   shareWhatsApp,
+  slugify,
 } from '../lib/share'
+import { downloadAudio } from '../lib/audioStore'
 
 function WhatsAppIcon({ size = 20 }: { size?: number }) {
   return (
@@ -62,6 +65,10 @@ export function ShareSheet({
     { label: 'E-mail', icon: <Mail size={20} />, onClick: () => shareEmail(note) },
     { label: 'PDF', icon: <FileText size={20} />, onClick: () => exportPdf(note) },
     { label: 'Word', icon: <FileType size={20} />, onClick: () => exportWord(note) },
+    { label: 'Transcricao', icon: <ScrollText size={20} />, onClick: () => exportTranscript(note) },
+    ...(note.audio_url
+      ? [{ label: 'Audio', icon: <AudioLines size={20} />, onClick: () => downloadAudio(note.audio_url, `${slugify(note.title)}.webm`) }]
+      : []),
     { label: copied ? 'Copiado' : 'Copiar', icon: copied ? <Check size={20} /> : <Copy size={20} />, onClick: onCopy },
   ]
 

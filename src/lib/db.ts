@@ -26,7 +26,12 @@ export interface Db {
   getNote(id: string): Promise<Note | null>
   createNote(input: Partial<Note> & { user_id: string; title: string }): Promise<Note>
   updateNote(id: string, patch: Partial<Note>): Promise<Note>
+  /** Soft-delete: manda para a lixeira. */
   deleteNote(id: string): Promise<void>
+  listTrash(userId: string): Promise<Note[]>
+  restoreNote(id: string): Promise<void>
+  /** Remove definitivamente (o audio deve ser apagado pelo chamador). */
+  deleteNotePermanent(id: string): Promise<void>
 
   // --- usage / admin ---
   logUsage(userId: string, type: UsageEventType, noteId?: string | null): Promise<void>

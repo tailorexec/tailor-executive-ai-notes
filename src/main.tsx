@@ -5,6 +5,7 @@ import './index.css'
 import App from './App'
 import { ThemeProvider } from './theme/ThemeProvider'
 import { AuthProvider } from './auth/AuthProvider'
+import { SettingsProvider } from './app/SettingsProvider'
 import { initButtonShine } from './lib/buttonShine'
 
 initButtonShine()
@@ -14,7 +15,9 @@ createRoot(document.getElementById('root')!).render(
     <ThemeProvider>
       <BrowserRouter>
         <AuthProvider>
-          <App />
+          <SettingsProvider>
+            <App />
+          </SettingsProvider>
         </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>
