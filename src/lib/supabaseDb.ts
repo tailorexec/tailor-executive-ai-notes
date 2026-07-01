@@ -66,28 +66,33 @@ export const supabaseDb: Db = {
   async signUp(input: SignUpInput) {
     const sb = client()
     const email = input.email.trim().toLowerCase()
+    const firstName = input.first_name.trim()
+    const lastName = input.last_name.trim()
+    const phone = input.phone.trim()
+    const role = isAdminEmail(email) ? 'admin' : 'member'
+
     if (!isAllowedDomain(email)) {
       throw new Error(`Apenas e-mails @${config.allowedDomain} podem se cadastrar.`)
     }
 
     let data
     try {
+      // Keep auth metadata ASCII-only. Some browser/Supabase paths can surface
+      // user metadata through RequestInit headers before a request is sent.
       const res = await sb.auth.signUp({
         email,
         password: input.password,
         options: {
           data: {
-            first_name: input.first_name.trim(),
-            last_name: input.last_name.trim(),
-            phone: input.phone.trim(),
-            role: isAdminEmail(email) ? 'admin' : 'member',
+            role,
           },
         },
       })
       if (res.error) throw new Error(res.error.message)
       data = res.data
     } catch (e) {
-      if (e instanceof TypeError) {
+      if (isFetchHeaderError(e)) {
+        purgeAuthStorage()
         throw new Error('Nao foi possivel conectar ao servidor. Verifique sua conexao e as chaves do Supabase.')
       }
       throw e
@@ -107,17 +112,17 @@ export const supabaseDb: Db = {
     // A trigger handle_new_user cria o profile; garantimos com um fallback tolerante a RLS.
     const userId = data.user?.id
     if (userId) {
-      await sb
+      const { error: profileError } = await sb
         .from('profiles')
         .upsert({
           id: userId,
-          first_name: input.first_name.trim(),
-          last_name: input.last_name.trim(),
+          first_name: firstName,
+          last_name: lastName,
           email,
-          phone: input.phone.trim(),
-          role: isAdminEmail(email) ? 'admin' : 'member',
+          phone,
+          role,
         })
-        .then(undefined, () => {}) // ignora erro (o trigger ja cuidou)
+      if (profileError) throw profileError
     }
 
     // Pequena espera para a trigger materializar o profile, com retry.
