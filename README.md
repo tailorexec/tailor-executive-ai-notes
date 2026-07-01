@@ -54,6 +54,11 @@ Contas de teste:
    ```
 5. `npm run dev` — o app detecta as variaveis e passa a usar o backend real.
 
+### Vercel
+- No painel do Vercel, abra o projeto e vá em Settings → Environment Variables.
+- Adicione `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` com os valores do projeto do Supabase.
+- Refaça o deploy depois de salvar as variaveis para que o app pare de entrar em modo demonstração.
+
 ## Modelos de IA (custo x qualidade)
 
 | Tarefa                | Modelo               | Motivo                          |

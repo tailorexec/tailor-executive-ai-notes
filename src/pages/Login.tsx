@@ -117,7 +117,8 @@ export function Login() {
       {isDesktop ? <VideoBackground /> : <TechBackground />}
 
       <header className="flex items-center justify-between px-6 pt-6 md:pt-4 md:shrink-0">
-        <Logo size="md" showTagline />
+        {/* Smaller logo on the login page to match the compact ThemeToggle */}
+        <Logo size="sm" />
         <ThemeToggle />
       </header>
 
@@ -168,6 +169,16 @@ export function Login() {
             <div className="card p-6 sm:p-8 md:p-6 shadow-float h-full flex flex-col justify-center">
               <h2 className="font-display text-2xl font-bold">Entrar</h2>
               <p className="text-content-secondary mt-1 mb-6 md:mb-4">Acesse sua conta corporativa.</p>
+
+              {config.mockMode && (
+                <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
+                  <p className="font-medium">Modo demonstração ativo.</p>
+                  <p className="mt-1">
+                    Este ambiente não está usando o Supabase real. Para entrar com a conta corporativa,
+                    defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no Vercel ou no ambiente de deploy.
+                  </p>
+                </div>
+              )}
 
               <form onSubmit={onSubmit} className="space-y-4">
                 <div>

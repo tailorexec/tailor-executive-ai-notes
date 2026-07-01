@@ -11,7 +11,9 @@ export function Logo({
   size?: 'sm' | 'md' | 'lg'
 }) {
   const { theme } = useTheme()
-  const src = theme === 'dark' ? '/logo-dark.png' : '/logo-light.png'
+  // Use the light version when the page/theme is dark (light logo on dark background),
+  // and the dark version for the light theme. Previously this mapping was inverted.
+  const src = theme === 'dark' ? '/logo-light.png' : '/logo-dark.png'
   const h = size === 'lg' ? 60 : size === 'sm' ? 34 : 48
 
   return (

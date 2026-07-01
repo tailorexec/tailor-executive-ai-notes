@@ -56,11 +56,34 @@ export const supabaseDb: Db = {
 
   async signIn(email, password) {
     const sb = client()
-    const { error } = await sb.auth.signInWithPassword({ email: email.trim().toLowerCase(), password })
-    if (error) throw new Error('E-mail ou senha invalidos.')
-    const profile = await this.getCurrentProfile()
-    if (!profile) throw new Error('Perfil nao encontrado.')
-    return profile
+    try {
+      const { error } = await sb.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      })
+
+      if (error) {
+        const message = (error.message ?? '').toLowerCase()
+        if (message.includes('fetch') || message.includes('network') || message.includes('timeout')) {
+          throw new Error(
+            'Nao foi possivel conectar ao Supabase. Verifique as variaveis VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no ambiente (Vercel/Netlify) e se o projeto esta ativo.',
+          )
+        }
+        throw new Error('E-mail ou senha invalidos.')
+      }
+
+      const profile = await this.getCurrentProfile()
+      if (!profile) throw new Error('Perfil nao encontrado.')
+      return profile
+    } catch (e) {
+      if (isFetchHeaderError(e)) {
+        purgeAuthStorage()
+        throw new Error(
+          'Nao foi possivel conectar ao servidor. Verifique sua conexao e as chaves do Supabase no ambiente de deploy.',
+        )
+      }
+      throw e
+    }
   },
 
   async signUp(input: SignUpInput) {

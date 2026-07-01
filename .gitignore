@@ -14,3 +14,4 @@ yarn-error.log*
 supabase/.temp
 
 .vercel
+.env*
