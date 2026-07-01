@@ -167,6 +167,22 @@ export const supabaseDb: Db = {
     return (data ?? []).map(rowToProfile)
   },
 
+  async adminUpdateUser(id, patch) {
+    const { data, error } = await client().functions.invoke('admin-users', {
+      body: { action: 'update', id, ...patch },
+    })
+    if (error) throw error
+    if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error)
+  },
+
+  async adminDeleteUser(id) {
+    const { data, error } = await client().functions.invoke('admin-users', {
+      body: { action: 'delete', id },
+    })
+    if (error) throw error
+    if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error)
+  },
+
   async listNotes(userId) {
     const { data, error } = await client()
       .from('notes')

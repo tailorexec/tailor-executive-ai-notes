@@ -13,6 +13,7 @@ import {
   Plus,
 } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
+import { useTheme } from '../theme/ThemeProvider'
 import { Logo } from '../components/Logo'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { Spinner } from '../components/ui'
@@ -111,10 +112,12 @@ export function Login() {
   }
 
   const isDesktop = useIsDesktop()
+  const { theme } = useTheme()
 
   return (
-    <div className="min-h-screen md:h-screen flex flex-col safe-top md:overflow-hidden">
-      {isDesktop ? <VideoBackground /> : <TechBackground />}
+    <div className="min-h-screen lg:h-screen flex flex-col safe-top lg:overflow-hidden">
+      {/* Video (escuro) so no desktop + tema escuro; no claro/mobile usa o fundo tecnologico */}
+      {isDesktop && theme === 'dark' ? <VideoBackground /> : <TechBackground />}
 
       <header className="flex items-center justify-between px-6 pt-6 md:pt-4 md:shrink-0">
         {/* Smaller logo on the login page to match the compact ThemeToggle */}
@@ -122,17 +125,17 @@ export function Login() {
         <ThemeToggle />
       </header>
 
-      <main className="flex-1 min-h-0 flex flex-col items-center px-6 py-10 md:py-4 lg:py-5 w-full max-w-6xl mx-auto">
+      <main className="flex-1 min-h-0 flex flex-col items-center lg:justify-center px-6 py-10 md:py-4 lg:py-5 w-full max-w-6xl mx-auto">
         {/* Hero */}
         <div className="text-center max-w-2xl">
           <div className="inline-flex flex-col items-center text-brand-500 bg-brand-500/10 border border-brand-500/20 rounded-2xl px-4 py-2 mb-5 md:mb-3 leading-tight">
             <span className="font-display font-bold tracking-[0.2em] text-lg md:text-base">TENA</span>
             <span className="text-[10px] font-semibold uppercase tracking-wide">Tailor Executive Notes AI</span>
           </div>
-          <h1 className="font-display text-4xl sm:text-5xl md:text-3xl lg:text-4xl font-bold leading-tight [text-shadow:0_2px_14px_rgba(0,0,0,0.45)]">
+          <h1 className="font-display text-4xl sm:text-5xl md:text-3xl lg:text-4xl font-bold leading-tight dark:[text-shadow:0_2px_14px_rgba(0,0,0,0.55)]">
             Ferramenta Inteligente para Executivos
           </h1>
-          <p className="text-content-secondary mt-4 md:mt-2 text-lg md:text-sm lg:text-base [text-shadow:0_1px_10px_rgba(0,0,0,0.4)]">
+          <p className="text-content-secondary mt-4 md:mt-2 text-lg md:text-sm lg:text-base dark:[text-shadow:0_1px_10px_rgba(0,0,0,0.5)]">
             Grave, transcreva e transforme reuniões em decisões. A IA resume, analisa e organiza
             suas conversas — pensada para o dia a dia de quem lidera.
           </p>

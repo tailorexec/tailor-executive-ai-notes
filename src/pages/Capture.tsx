@@ -42,19 +42,14 @@ export function Capture() {
   const [step, setStep] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement | null>(null)
-  const startedRef = useRef(false)
 
   const autoStoppedRef = useRef(false)
   const isAudioMode = mode === 'record' || mode === 'meeting'
 
-  useEffect(() => {
-    // Grava simples inicia sozinho; reuniao exige clique do usuario (compartilhamento de tela).
-    if (mode === 'record' && !startedRef.current) {
-      startedRef.current = true
-      recorder.start()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  async function startRecord() {
+    autoStoppedRef.current = false
+    await recorder.start()
+  }
 
   // Encerra automaticamente ao atingir o limite de 2 horas.
   useEffect(() => {
@@ -334,14 +329,25 @@ export function Capture() {
                 </button>
               </div>
             )
+          ) : mode === 'record' && recorder.state === 'idle' && !recorder.error ? (
+            <div className="card p-6 text-center max-w-sm">
+              <div className="grid place-items-center h-16 w-16 rounded-full bg-brand-500/10 text-brand-500 mx-auto mb-4">
+                <Mic size={30} />
+              </div>
+              <h3 className="font-display font-semibold text-lg">Pronto para gravar</h3>
+              <p className="text-content-secondary mt-2 text-sm">
+                Preencha titulo, tema e contexto acima (opcionais) e inicie quando quiser.
+              </p>
+              <button className="btn-primary w-full mt-5" onClick={startRecord}>
+                <Mic size={18} /> Iniciar gravacao
+              </button>
+            </div>
           ) : recorder.error ? (
             <div className="text-center max-w-sm">
               <p className="text-brand-400 mb-4">{recorder.error}</p>
-              {mode === 'meeting' && (
-                <button className="btn-primary mx-auto" onClick={startMeeting}>
-                  Tentar novamente
-                </button>
-              )}
+              <button className="btn-primary mx-auto" onClick={mode === 'meeting' ? startMeeting : startRecord}>
+                Tentar novamente
+              </button>
             </div>
           ) : (
             <>

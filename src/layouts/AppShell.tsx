@@ -31,7 +31,7 @@ function Sidebar() {
 
   return (
     <aside className="hidden md:flex fixed inset-y-0 left-0 w-64 flex-col border-r border-surface-border bg-surface-card z-40">
-      <div className="px-4 pt-7 pb-6">
+      <div className="px-4 pt-7 pb-6 flex justify-center">
         <Logo size="sm" />
       </div>
 
@@ -40,7 +40,7 @@ function Sidebar() {
         className="btn-primary mx-4 mb-5 py-3 rounded-2xl"
       >
         <Sparkles size={18} />
-        Nova captura
+        Gravação Inteligente
       </button>
 
       <nav className="flex-1 px-3 space-y-1">

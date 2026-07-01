@@ -14,7 +14,7 @@ export function Logo({
   // Use the light version when the page/theme is dark (light logo on dark background),
   // and the dark version for the light theme. Previously this mapping was inverted.
   const src = theme === 'dark' ? '/logo-light.png' : '/logo-dark.png'
-  const h = size === 'lg' ? 60 : size === 'sm' ? 34 : 48
+  const h = size === 'lg' ? 44 : size === 'sm' ? 26 : 34
 
   return (
     <div className={`inline-flex items-center gap-3 ${className}`}>

@@ -108,7 +108,7 @@ export function Dialer() {
           <p className="font-display text-2xl font-bold">{number}</p>
           <p className="text-content-muted mt-1 mb-1">Gravando pelo microfone (viva-voz)</p>
           <p className="font-mono text-lg tabular-nums mb-10">{fmtClock(recorder.seconds)}</p>
-          <button onClick={endCall} className="btn-primary h-16 w-16 rounded-full p-0" aria-label="Encerrar">
+          <button onClick={endCall} className="btn bg-brand-500 hover:bg-brand-600 text-white h-16 w-16 rounded-full p-0" aria-label="Encerrar">
             <Square size={26} />
           </button>
         </div>
@@ -141,7 +141,7 @@ export function Dialer() {
             <button
               onClick={requestCall}
               disabled={!number.trim()}
-              className="btn-primary h-16 w-16 rounded-full p-0 disabled:opacity-40"
+              className="btn bg-green-600 hover:bg-green-700 text-white h-16 w-16 rounded-full p-0 disabled:opacity-40"
               aria-label="Ligar e gravar"
             >
               <Phone size={26} />
@@ -170,7 +170,7 @@ export function Dialer() {
           <button className="btn-outline flex-1" onClick={() => setConsentOpen(false)}>
             Cancelar
           </button>
-          <button className="btn-primary flex-1" onClick={startCall}>
+          <button className="btn bg-green-600 hover:bg-green-700 text-white flex-1" onClick={startCall}>
             Ligar e gravar
           </button>
         </div>

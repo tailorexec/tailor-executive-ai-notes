@@ -9,10 +9,13 @@ import {
   Search,
   Volume2,
   NotebookPen,
+  Pencil,
+  Trash2,
 } from 'lucide-react'
 import { db } from '../lib/api'
-import type { AdminUserRow } from '../lib/types'
-import { Avatar, Spinner } from '../components/ui'
+import { useAuth } from '../auth/AuthProvider'
+import type { AdminUserRow, Profile } from '../lib/types'
+import { Avatar, Sheet, Spinner } from '../components/ui'
 import { fmtRelative } from '../lib/format'
 import { AdminSettings } from './AdminSettings'
 
@@ -30,12 +33,50 @@ function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string
 
 export function Admin() {
   const navigate = useNavigate()
+  const { profile: me } = useAuth()
   const [rows, setRows] = useState<AdminUserRow[] | null>(null)
   const [query, setQuery] = useState('')
+  const [editing, setEditing] = useState<Profile | null>(null)
+  const [form, setForm] = useState({ first_name: '', last_name: '', email: '' })
+  const [busy, setBusy] = useState(false)
+  const [actionError, setActionError] = useState<string | null>(null)
 
-  useEffect(() => {
+  function load() {
     db.adminRows().then(setRows)
-  }, [])
+  }
+  useEffect(load, [])
+
+  function openEdit(p: Profile) {
+    setActionError(null)
+    setForm({ first_name: p.first_name, last_name: p.last_name, email: p.email })
+    setEditing(p)
+  }
+
+  async function saveEdit() {
+    if (!editing) return
+    setBusy(true)
+    setActionError(null)
+    try {
+      await db.adminUpdateUser(editing.id, form)
+      setEditing(null)
+      load()
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : 'Falha ao salvar.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function deleteUser(p: Profile) {
+    if (!confirm(`Excluir ${p.first_name} ${p.last_name} (${p.email})? Isso remove tambem as notas e dados dele. Nao pode ser desfeito.`))
+      return
+    try {
+      await db.adminDeleteUser(p.id)
+      load()
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Falha ao excluir.')
+    }
+  }
 
   const totals = useMemo(() => {
     if (!rows) return { users: 0, notes: 0, recordings: 0, transcriptions: 0, ai: 0, tts: 0 }
@@ -118,6 +159,7 @@ export function Admin() {
                   <th className="px-3 py-3 font-medium text-center">Sugestoes IA</th>
                   <th className="px-3 py-3 font-medium text-center">Narracoes</th>
                   <th className="px-4 py-3 font-medium">Ultima atividade</th>
+                  <th className="px-3 py-3 font-medium text-center">Acoes</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-border">
@@ -145,6 +187,25 @@ export function Admin() {
                     <td className="px-3 py-3 text-center tabular-nums">{r.aiSuggestions}</td>
                     <td className="px-3 py-3 text-center tabular-nums">{r.ttsCount}</td>
                     <td className="px-4 py-3 text-content-muted">{fmtRelative(r.lastActivity)}</td>
+                    <td className="px-3 py-3">
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          onClick={() => openEdit(r.profile)}
+                          className="grid place-items-center h-8 w-8 rounded-lg text-content-secondary hover:bg-surface-elevated"
+                          aria-label="Editar"
+                        >
+                          <Pencil size={16} />
+                        </button>
+                        <button
+                          onClick={() => deleteUser(r.profile)}
+                          disabled={r.profile.id === me?.id}
+                          className="grid place-items-center h-8 w-8 rounded-lg text-brand-500 hover:bg-brand-500/10 disabled:opacity-30"
+                          aria-label="Excluir"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -180,11 +241,53 @@ export function Admin() {
                     <p className="text-xs font-medium mt-1">{fmtRelative(r.lastActivity)}</p>
                   </div>
                 </div>
+                <div className="flex gap-2 mt-3">
+                  <button onClick={() => openEdit(r.profile)} className="btn-outline flex-1 h-9 text-sm">
+                    <Pencil size={15} /> Editar
+                  </button>
+                  <button
+                    onClick={() => deleteUser(r.profile)}
+                    disabled={r.profile.id === me?.id}
+                    className="btn-outline h-9 text-sm text-brand-500 disabled:opacity-30"
+                  >
+                    <Trash2 size={15} /> Excluir
+                  </button>
+                </div>
               </div>
             ))}
           </div>
         </>
       )}
+
+      <Sheet open={!!editing} onClose={() => setEditing(null)} title="Editar usuario">
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="label">Nome</label>
+              <input className="input" value={form.first_name} onChange={(e) => setForm({ ...form, first_name: e.target.value })} />
+            </div>
+            <div>
+              <label className="label">Sobrenome</label>
+              <input className="input" value={form.last_name} onChange={(e) => setForm({ ...form, last_name: e.target.value })} />
+            </div>
+          </div>
+          <div>
+            <label className="label">E-mail</label>
+            <input className="input" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+          </div>
+          {actionError && (
+            <div className="text-sm text-brand-400 bg-brand-500/10 border border-brand-500/20 rounded-xl px-4 py-3">
+              {actionError}
+            </div>
+          )}
+          <div className="flex gap-3 pt-1">
+            <button className="btn-outline flex-1" onClick={() => setEditing(null)}>Cancelar</button>
+            <button className="btn-primary flex-1" onClick={saveEdit} disabled={busy}>
+              {busy ? <Spinner /> : 'Salvar'}
+            </button>
+          </div>
+        </div>
+      </Sheet>
     </div>
   )
 }

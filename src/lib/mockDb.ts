@@ -119,6 +119,27 @@ export const mockDb: Db = {
     return getProfiles()
   },
 
+  async adminUpdateUser(id, patch) {
+    const profiles = getProfiles()
+    const idx = profiles.findIndex((p) => p.id === id)
+    if (idx === -1) return
+    profiles[idx] = {
+      ...profiles[idx],
+      first_name: patch.first_name,
+      last_name: patch.last_name,
+      email: patch.email.trim().toLowerCase(),
+    }
+    write(K.profiles, profiles)
+  },
+
+  async adminDeleteUser(id) {
+    write(K.profiles, getProfiles().filter((p) => p.id !== id))
+    const notes = read<Note[]>(K.notes, [])
+    write(K.notes, notes.filter((n) => n.user_id !== id))
+    const usage = read<UsageEvent[]>(K.usage, [])
+    write(K.usage, usage.filter((e) => e.user_id !== id))
+  },
+
   async listNotes(userId) {
     seed()
     const notes = read<Note[]>(K.notes, [])

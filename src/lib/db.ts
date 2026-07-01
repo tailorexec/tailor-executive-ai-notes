@@ -20,6 +20,10 @@ export interface Db {
 
   // --- profiles ---
   listProfiles(): Promise<Profile[]>
+  /** Admin: edita nome/e-mail de um usuario. */
+  adminUpdateUser(id: string, patch: { first_name: string; last_name: string; email: string }): Promise<void>
+  /** Admin: exclui um usuario e seus dados. */
+  adminDeleteUser(id: string): Promise<void>
 
   // --- notes ---
   listNotes(userId: string): Promise<Note[]>
