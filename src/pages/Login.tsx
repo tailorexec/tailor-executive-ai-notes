@@ -113,49 +113,49 @@ export function Login() {
   const isDesktop = useIsDesktop()
 
   return (
-    <div className="min-h-screen flex flex-col safe-top">
+    <div className="min-h-screen md:h-screen flex flex-col safe-top md:overflow-hidden">
       {isDesktop ? <VideoBackground /> : <TechBackground />}
 
-      <header className="flex items-center justify-between px-6 pt-6">
+      <header className="flex items-center justify-between px-6 pt-6 md:pt-4 md:shrink-0">
         <Logo size="md" showTagline />
         <ThemeToggle />
       </header>
 
-      <main className="flex-1 flex flex-col items-center px-6 py-10 w-full max-w-6xl mx-auto">
+      <main className="flex-1 min-h-0 flex flex-col items-center px-6 py-10 md:py-4 lg:py-5 w-full max-w-6xl mx-auto">
         {/* Hero */}
         <div className="text-center max-w-2xl">
-          <div className="inline-flex flex-col items-center text-brand-500 bg-brand-500/10 border border-brand-500/20 rounded-2xl px-4 py-2 mb-5 leading-tight">
-            <span className="font-display font-bold tracking-[0.2em] text-lg">TENA</span>
+          <div className="inline-flex flex-col items-center text-brand-500 bg-brand-500/10 border border-brand-500/20 rounded-2xl px-4 py-2 mb-5 md:mb-3 leading-tight">
+            <span className="font-display font-bold tracking-[0.2em] text-lg md:text-base">TENA</span>
             <span className="text-[10px] font-semibold uppercase tracking-wide">Tailor Executive Notes AI</span>
           </div>
-          <h1 className="font-display text-4xl sm:text-5xl font-bold leading-tight [text-shadow:0_2px_14px_rgba(0,0,0,0.45)]">
+          <h1 className="font-display text-4xl sm:text-5xl md:text-3xl lg:text-4xl font-bold leading-tight [text-shadow:0_2px_14px_rgba(0,0,0,0.45)]">
             Ferramenta Inteligente para Executivos
           </h1>
-          <p className="text-content-secondary mt-4 text-lg [text-shadow:0_1px_10px_rgba(0,0,0,0.4)]">
+          <p className="text-content-secondary mt-4 md:mt-2 text-lg md:text-sm lg:text-base [text-shadow:0_1px_10px_rgba(0,0,0,0.4)]">
             Grave, transcreva e transforme reuniões em decisões. A IA resume, analisa e organiza
             suas conversas — pensada para o dia a dia de quem lidera.
           </p>
         </div>
 
         {/* Conteudo: funcionalidades + login */}
-        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 lg:items-stretch w-full mt-12">
+        <div className="grid lg:grid-cols-2 gap-8 md:gap-5 lg:gap-8 lg:items-stretch w-full mt-12 md:mt-6">
           {/* Funcionalidades */}
           <div className="order-2 lg:order-1">
-            <h2 className="font-display text-lg font-semibold mb-4">O que a plataforma faz</h2>
-            <div className="grid sm:grid-cols-2 gap-3">
+            <h2 className="font-display text-lg md:text-base font-semibold mb-4 md:mb-3">O que a plataforma faz</h2>
+            <div className="grid sm:grid-cols-2 gap-3 md:gap-2">
               {FEATURES.map((f) => (
-                <div key={f.title} className="card p-4 flex gap-3">
-                  <div className="grid place-items-center h-9 w-9 rounded-xl bg-brand-500/10 text-brand-500 shrink-0">
+                <div key={f.title} className="card p-4 md:p-3 flex gap-3 md:gap-2">
+                  <div className="grid place-items-center h-9 w-9 md:h-8 md:w-8 rounded-xl bg-brand-500/10 text-brand-500 shrink-0">
                     {f.icon}
                   </div>
                   <div>
                     <p className="font-medium text-sm">{f.title}</p>
-                    <p className="text-content-muted text-xs mt-0.5 leading-relaxed">{f.desc}</p>
+                    <p className="text-content-muted text-xs mt-0.5 leading-relaxed md:leading-snug">{f.desc}</p>
                   </div>
                 </div>
               ))}
-              <div className="card p-4 flex items-center gap-3 border-dashed">
-                <div className="grid place-items-center h-9 w-9 rounded-xl bg-brand-500/10 text-brand-500 shrink-0">
+              <div className="card p-4 md:p-3 flex items-center gap-3 md:gap-2 border-dashed">
+                <div className="grid place-items-center h-9 w-9 md:h-8 md:w-8 rounded-xl bg-brand-500/10 text-brand-500 shrink-0">
                   <Plus size={18} />
                 </div>
                 <p className="font-medium text-sm">Feedbacks e muito mais</p>
@@ -165,9 +165,9 @@ export function Login() {
 
           {/* Login */}
           <div className="order-1 lg:order-2 w-full max-w-md mx-auto lg:mx-0 lg:ml-auto h-full">
-            <div className="card p-6 sm:p-8 shadow-float h-full flex flex-col justify-center">
+            <div className="card p-6 sm:p-8 md:p-6 shadow-float h-full flex flex-col justify-center">
               <h2 className="font-display text-2xl font-bold">Entrar</h2>
-              <p className="text-content-secondary mt-1 mb-6">Acesse sua conta corporativa.</p>
+              <p className="text-content-secondary mt-1 mb-6 md:mb-4">Acesse sua conta corporativa.</p>
 
               <form onSubmit={onSubmit} className="space-y-4">
                 <div>
@@ -237,7 +237,7 @@ export function Login() {
         </div>
       </main>
 
-      <footer className="text-center py-6 text-sm text-content-muted">
+      <footer className="text-center py-6 md:py-3 text-sm text-content-muted md:shrink-0">
         <a
           href="https://tailorexec.com.br"
           target="_blank"
