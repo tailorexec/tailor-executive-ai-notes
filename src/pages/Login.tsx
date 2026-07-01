@@ -41,21 +41,17 @@ function useIsDesktop() {
 function VideoBackground() {
   // Enfeite bem sutil, so no desktop (nao baixa no mobile), sem travar a pagina.
   return (
-    <>
-      <video
-        className="pointer-events-none fixed inset-0 -z-20 h-full w-full object-cover opacity-70 dark:opacity-60"
-        autoPlay
-        muted
-        loop
-        playsInline
-        preload="metadata"
-        aria-hidden
-      >
-        <source src="/tailor_loop.mp4" type="video/mp4" />
-      </video>
-      {/* Scrim leve para manter os textos legiveis sobre o video */}
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-surface-bg/45" />
-    </>
+    <video
+      className="pointer-events-none fixed inset-0 -z-20 h-full w-full object-cover"
+      autoPlay
+      muted
+      loop
+      playsInline
+      preload="metadata"
+      aria-hidden
+    >
+      <source src="/tailor_loop.mp4" type="video/mp4" />
+    </video>
   )
 }
 
@@ -116,8 +112,7 @@ export function Login() {
 
   return (
     <div className="min-h-screen flex flex-col safe-top">
-      {isDesktop && <VideoBackground />}
-      <TechBackground />
+      {isDesktop ? <VideoBackground /> : <TechBackground />}
 
       <header className="flex items-center justify-between px-6 pt-6">
         <Logo size="sm" showTagline />
@@ -131,10 +126,10 @@ export function Login() {
             <span className="font-display font-bold tracking-[0.2em] text-lg">TENA</span>
             <span className="text-[10px] font-semibold uppercase tracking-wide">Tailor Executive Notes AI</span>
           </div>
-          <h1 className="font-display text-4xl sm:text-5xl font-bold leading-tight">
+          <h1 className="font-display text-4xl sm:text-5xl font-bold leading-tight [text-shadow:0_2px_14px_rgba(0,0,0,0.45)]">
             Ferramenta Inteligente para Executivos
           </h1>
-          <p className="text-content-secondary mt-4 text-lg">
+          <p className="text-content-secondary mt-4 text-lg [text-shadow:0_1px_10px_rgba(0,0,0,0.4)]">
             Grave, transcreva e transforme reuniões em decisões. A IA resume, analisa e organiza
             suas conversas — pensada para o dia a dia de quem lidera.
           </p>
