@@ -1,0 +1,128 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---- Theme tokens (light default, dark override) ---- */
+@layer base {
+  :root {
+    --surface-bg: 245 244 242;      /* mist-ish light background */
+    --surface-card: 255 255 255;    /* white cards */
+    --surface-elevated: 255 255 255;
+    --surface-border: 226 224 220;  /* soft border */
+
+    --content-primary: 10 10 11;    /* near-ink text */
+    --content-secondary: 74 74 78;
+    --content-muted: 135 134 132;   /* graphite */
+
+    color-scheme: light;
+  }
+
+  .dark {
+    --surface-bg: 1 1 1;            /* ink */
+    --surface-card: 20 20 22;
+    --surface-elevated: 30 30 33;
+    --surface-border: 42 42 46;
+
+    --content-primary: 245 245 245;
+    --content-secondary: 190 190 192;
+    --content-muted: 135 134 132;
+
+    color-scheme: dark;
+  }
+
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-surface-bg text-content-primary font-sans antialiased;
+    overscroll-behavior-y: none;
+  }
+
+  /* Respect iOS safe areas */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-surface-card border border-surface-border rounded-2xl shadow-card;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 font-medium rounded-xl
+           transition-colors disabled:opacity-50 disabled:pointer-events-none
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60;
+  }
+  .btn-primary {
+    @apply btn bg-brand-500 hover:bg-brand-600 text-white px-4 py-2.5;
+  }
+  .btn-ghost {
+    @apply btn bg-surface-elevated hover:bg-surface-border text-content-primary px-4 py-2.5;
+  }
+  .btn-outline {
+    @apply btn border border-surface-border hover:bg-surface-elevated text-content-primary px-4 py-2.5;
+  }
+
+  .input {
+    @apply w-full bg-surface-elevated border border-surface-border rounded-xl px-4 py-3
+           text-content-primary placeholder:text-content-muted
+           focus:outline-none focus:ring-2 focus:ring-brand-400/50 focus:border-brand-400/50
+           transition-shadow;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-content-secondary mb-1.5;
+  }
+}
+
+/* Red translucent shine burst on button clicks (see buttonShine.ts) */
+.btn-shine {
+  position: fixed;
+  z-index: 9999;
+  width: 150px;
+  height: 150px;
+  margin: 0;
+  border-radius: 9999px;
+  pointer-events: none;
+  will-change: transform, opacity;
+  background: radial-gradient(
+    circle,
+    rgba(241, 12, 39, 0.55) 0%,
+    rgba(241, 12, 39, 0.25) 35%,
+    rgba(241, 12, 39, 0) 70%
+  );
+}
+
+/* Subtle press feedback for buttons */
+.btn:active,
+button:active {
+  transform: scale(0.98);
+}
+.btn,
+button {
+  transition: transform 0.08s ease;
+}
+
+/* Thin, unobtrusive scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--surface-border));
+  border-radius: 999px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
