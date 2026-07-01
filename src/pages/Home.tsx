@@ -7,6 +7,7 @@ import {
   FileText,
   Link2,
   Mic,
+  Headphones,
   ChevronRight,
   NotebookPen,
 } from 'lucide-react'
@@ -157,7 +158,8 @@ export function Home() {
 
       <Sheet open={newOpen} onClose={() => setNewOpen(false)} title="Nova nota">
         <div className="space-y-3">
-          <NewOption icon={<Mic size={20} />} label="Gravar audio" hint="Grave uma reuniao ao vivo" onClick={() => startCapture('record')} />
+          <NewOption icon={<Mic size={20} />} label="Gravar audio" hint="Grave presencial pelo microfone" onClick={() => startCapture('record')} />
+          <NewOption icon={<Headphones size={20} />} label="Gravar reuniao" hint="Zoom/Meet/Teams: audio da reuniao + seu mic" onClick={() => startCapture('meeting')} />
           <NewOption icon={<Upload size={20} />} label="Enviar audio" hint="Importe um arquivo de audio" onClick={() => startCapture('upload')} />
           <NewOption icon={<FileText size={20} />} label="PDF, arquivo ou texto" hint="Resuma um documento" onClick={() => startCapture('file')} />
           <NewOption icon={<Link2 size={20} />} label="Link da web" hint="Resuma o conteudo de um link" onClick={() => startCapture('link')} />

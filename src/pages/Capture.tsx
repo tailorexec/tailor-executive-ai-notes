@@ -1,8 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, Mic, Pause, Play, Square, Upload, FileText, Link2 } from 'lucide-react'
+import {
+  ArrowLeft,
+  Mic,
+  Pause,
+  Play,
+  Square,
+  Upload,
+  FileText,
+  Link2,
+  MonitorSmartphone,
+  Headphones,
+} from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
-import { useRecorder } from '../lib/useRecorder'
+import { useRecorder, canCaptureSystemAudio } from '../lib/useRecorder'
 import { db, config } from '../lib/api'
 import { generateActionItems, generateSummary, transcribeAudio } from '../lib/ai'
 import { saveAudio } from '../lib/audioStore'
@@ -10,7 +21,7 @@ import { fmtClock, fmtDuration } from '../lib/format'
 import { Spinner } from '../components/ui'
 import type { NoteSourceType } from '../lib/types'
 
-type Mode = 'record' | 'upload' | 'file' | 'link'
+type Mode = 'record' | 'meeting' | 'upload' | 'file' | 'link'
 
 const STEPS = ['Transcrevendo audio', 'Gerando resumo', 'Extraindo action items', 'Finalizando'] as const
 
@@ -30,8 +41,10 @@ export function Capture() {
   const startedRef = useRef(false)
 
   const autoStoppedRef = useRef(false)
+  const isAudioMode = mode === 'record' || mode === 'meeting'
 
   useEffect(() => {
+    // Grava simples inicia sozinho; reuniao exige clique do usuario (compartilhamento de tela).
     if (mode === 'record' && !startedRef.current) {
       startedRef.current = true
       recorder.start()
@@ -42,7 +55,8 @@ export function Capture() {
   // Encerra automaticamente ao atingir o limite de 2 horas.
   useEffect(() => {
     if (
-      mode === 'record' &&
+      isAudioMode &&
+      recorder.state === 'recording' &&
       recorder.seconds >= config.recordingMaxSeconds &&
       !autoStoppedRef.current
     ) {
@@ -51,6 +65,15 @@ export function Capture() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recorder.seconds])
+
+  // Reuniao: se o usuario parar o compartilhamento pelo navegador, finaliza.
+  useEffect(() => {
+    if (recorder.ended && !autoStoppedRef.current) {
+      autoStoppedRef.current = true
+      onStopRecording()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recorder.ended])
 
   async function finalize(opts: {
     type: NoteSourceType
@@ -110,12 +133,18 @@ export function Capture() {
 
   async function onStopRecording() {
     const res = await recorder.stop()
+    const today = new Date().toLocaleDateString('pt-BR')
     await finalize({
       type: 'recording',
       audioBlob: res.blob,
       duration: res.durationSeconds,
-      fallbackTitle: `Gravacao ${new Date().toLocaleDateString('pt-BR')}`,
+      fallbackTitle: mode === 'meeting' ? `Reuniao ${today}` : `Gravacao ${today}`,
     })
+  }
+
+  async function startMeeting() {
+    autoStoppedRef.current = false
+    await recorder.start({ system: true })
   }
 
   async function onUploadAudio(e: React.ChangeEvent<HTMLInputElement>) {
@@ -190,6 +219,7 @@ export function Capture() {
         </button>
         <h1 className="font-display text-xl font-bold">
           {mode === 'record' && 'Gravar audio'}
+          {mode === 'meeting' && 'Gravar reuniao'}
           {mode === 'upload' && 'Enviar audio'}
           {mode === 'file' && 'PDF, arquivo ou texto'}
           {mode === 'link' && 'Link da web'}
@@ -212,10 +242,50 @@ export function Capture() {
         </div>
       )}
 
-      {mode === 'record' && (
+      {isAudioMode && (
         <div className="flex-1 flex flex-col items-center justify-center pb-24">
-          {recorder.error ? (
-            <p className="text-brand-400 text-center mb-6">{recorder.error}</p>
+          {mode === 'meeting' && recorder.state === 'idle' && !recorder.error ? (
+            !canCaptureSystemAudio() ? (
+              <div className="card p-6 text-center max-w-sm">
+                <MonitorSmartphone size={36} className="text-brand-500 mx-auto mb-3" />
+                <h3 className="font-display font-semibold text-lg">Disponivel no desktop</h3>
+                <p className="text-content-secondary mt-2 text-sm">
+                  A captura do audio interno da reuniao (com fone) funciona no computador (Chrome/Edge).
+                  No celular, isso chega na versao app. Aqui voce pode usar "Gravar audio" pelo microfone.
+                </p>
+                <button className="btn-outline mt-5 mx-auto" onClick={() => navigate('/capturar?mode=record')}>
+                  <Mic size={18} /> Gravar pelo microfone
+                </button>
+              </div>
+            ) : (
+              <div className="card p-6 max-w-md">
+                <Headphones size={32} className="text-brand-500 mb-3" />
+                <h3 className="font-display font-semibold text-lg">Gravar a reuniao (mesmo de fone)</h3>
+                <ol className="text-content-secondary text-sm mt-3 space-y-2 list-decimal list-inside">
+                  <li>Abra sua reuniao (Zoom, Meet ou Teams) em uma aba/janela.</li>
+                  <li>Clique em "Iniciar" abaixo e escolha a aba da reuniao (ou a tela toda).</li>
+                  <li>
+                    <span className="text-content-primary font-medium">Marque "Compartilhar audio"</span> no
+                    dialogo do navegador.
+                  </li>
+                </ol>
+                <p className="text-xs text-content-muted mt-3">
+                  Gravamos o audio da reuniao + seu microfone juntos. Nada de video e enviado.
+                </p>
+                <button className="btn-primary w-full mt-5" onClick={startMeeting}>
+                  <Headphones size={18} /> Iniciar gravacao da reuniao
+                </button>
+              </div>
+            )
+          ) : recorder.error ? (
+            <div className="text-center max-w-sm">
+              <p className="text-brand-400 mb-4">{recorder.error}</p>
+              {mode === 'meeting' && (
+                <button className="btn-primary mx-auto" onClick={startMeeting}>
+                  Tentar novamente
+                </button>
+              )}
+            </div>
           ) : (
             <>
               <div className="relative mb-8">
@@ -224,12 +294,16 @@ export function Capture() {
                   style={{ transform: `scale(${1 + recorder.level * 0.8})`, transition: 'transform 80ms' }}
                 />
                 <div className="grid place-items-center h-28 w-28 rounded-full bg-brand-500 text-white relative">
-                  <Mic size={40} />
+                  {mode === 'meeting' ? <Headphones size={40} /> : <Mic size={40} />}
                 </div>
               </div>
               <p className="font-display text-4xl font-bold tabular-nums mb-2">{fmtClock(recorder.seconds)}</p>
               <p className="text-content-muted mb-1">
-                {recorder.state === 'paused' ? 'Pausado' : 'Gravando...'}
+                {recorder.state === 'paused'
+                  ? 'Pausado'
+                  : mode === 'meeting'
+                    ? 'Gravando reuniao (aba + microfone)...'
+                    : 'Gravando...'}
               </p>
               {(() => {
                 const remaining = config.recordingMaxSeconds - recorder.seconds
@@ -260,7 +334,9 @@ export function Capture() {
                 </button>
               </div>
               <p className="text-xs text-content-muted mt-8 max-w-xs text-center">
-                Dica: em reunioes por telefone, use o viva-voz para captar melhor as duas vozes.
+                {mode === 'meeting'
+                  ? 'Mantenha a aba da reuniao aberta. Encerrar aqui ou "Parar compartilhamento" finaliza a gravacao.'
+                  : 'Dica: em reunioes por telefone, use o viva-voz para captar melhor as duas vozes.'}
               </p>
             </>
           )}
