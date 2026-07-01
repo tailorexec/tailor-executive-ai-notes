@@ -9,6 +9,7 @@ import {
   Share2,
   Headphones,
   MessageSquare,
+  Phone,
   Plus,
 } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
@@ -24,6 +25,7 @@ const FEATURES = [
   { icon: <Headphones size={18} />, title: 'Gravar reunião', desc: 'Capta o áudio da reunião + seu microfone (desktop).' },
   { icon: <Share2 size={18} />, title: 'Compartilhamento', desc: 'WhatsApp, PDF, Word, e-mail e com parceiros.' },
   { icon: <MessageSquare size={18} />, title: 'Converse com a nota', desc: 'Pergunte à IA e gere narração por voz.' },
+  { icon: <Phone size={18} />, title: 'Transcrições de ligações telefônicas', desc: 'Suas ligações viram texto e resumo automaticamente.' },
 ]
 
 function useIsDesktop() {
@@ -42,7 +44,7 @@ function VideoBackground() {
   // Enfeite bem sutil, so no desktop (nao baixa no mobile), sem travar a pagina.
   return (
     <video
-      className="pointer-events-none fixed inset-0 -z-20 h-full w-full object-cover"
+      className="pointer-events-none fixed inset-0 -z-20 h-full w-full object-cover brightness-110 dark:brightness-[1.75] dark:contrast-125 dark:saturate-150"
       autoPlay
       muted
       loop
@@ -115,7 +117,7 @@ export function Login() {
       {isDesktop ? <VideoBackground /> : <TechBackground />}
 
       <header className="flex items-center justify-between px-6 pt-6">
-        <Logo size="sm" showTagline />
+        <Logo size="md" showTagline />
         <ThemeToggle />
       </header>
 
@@ -136,7 +138,7 @@ export function Login() {
         </div>
 
         {/* Conteudo: funcionalidades + login */}
-        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start w-full mt-12">
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 lg:items-stretch w-full mt-12">
           {/* Funcionalidades */}
           <div className="order-2 lg:order-1">
             <h2 className="font-display text-lg font-semibold mb-4">O que a plataforma faz</h2>
@@ -156,14 +158,14 @@ export function Login() {
                 <div className="grid place-items-center h-9 w-9 rounded-xl bg-brand-500/10 text-brand-500 shrink-0">
                   <Plus size={18} />
                 </div>
-                <p className="font-medium text-sm">e muito mais</p>
+                <p className="font-medium text-sm">Feedbacks e muito mais</p>
               </div>
             </div>
           </div>
 
           {/* Login */}
-          <div className="order-1 lg:order-2 w-full max-w-md mx-auto lg:mx-0 lg:ml-auto">
-            <div className="card p-6 sm:p-8 shadow-float">
+          <div className="order-1 lg:order-2 w-full max-w-md mx-auto lg:mx-0 lg:ml-auto h-full">
+            <div className="card p-6 sm:p-8 shadow-float h-full flex flex-col justify-center">
               <h2 className="font-display text-2xl font-bold">Entrar</h2>
               <p className="text-content-secondary mt-1 mb-6">Acesse sua conta corporativa.</p>
 

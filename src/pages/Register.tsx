@@ -77,7 +77,7 @@ export function Register() {
   return (
     <div className="min-h-screen flex flex-col bg-surface-bg safe-top">
       <header className="flex items-center justify-between px-6 pt-6">
-        <Logo size="sm" />
+        <Logo size="md" showTagline />
         <ThemeToggle />
       </header>
 

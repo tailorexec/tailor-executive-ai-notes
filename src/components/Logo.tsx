@@ -12,16 +12,16 @@ export function Logo({
 }) {
   const { theme } = useTheme()
   const src = theme === 'dark' ? '/logo-dark.png' : '/logo-light.png'
-  const h = size === 'lg' ? 46 : size === 'sm' ? 26 : 34
+  const h = size === 'lg' ? 60 : size === 'sm' ? 34 : 48
 
   return (
     <div className={`inline-flex items-center gap-3 ${className}`}>
       <img src={src} alt="Tailor" style={{ height: h }} className="w-auto object-contain select-none" draggable={false} />
       {showTagline && (
-        <span className="pl-3 border-l border-surface-border text-content-secondary font-medium leading-tight text-[11px] uppercase tracking-wide">
+        <span className="pl-3 border-l border-surface-border text-content-secondary font-semibold leading-tight text-xs uppercase tracking-wide">
           Executive
           <br />
-          A.I Note Pro
+          A.I Pro
         </span>
       )}
     </div>
