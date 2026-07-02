@@ -99,11 +99,11 @@ export function Home() {
 
   return (
     <div className="px-5 pt-6 safe-top">
-      <header className="flex items-start justify-between mb-5">
-        <h1 className="font-display text-3xl font-bold mt-1">Minhas notas</h1>
-        <div className="flex flex-col items-end gap-2">
-          {/* Logo ANA no topo direito (apenas mobile; no desktop fica na sidebar) */}
-          <Logo part="ana" heightClass="h-6" className="md:hidden" />
+      <header className="mb-5">
+        {/* Logo ANA no topo, alinhada a esquerda (apenas mobile; no desktop fica na sidebar) */}
+        <Logo part="ana" heightClass="h-6" className="md:hidden mb-3" />
+        <div className="flex items-center justify-between">
+          <h1 className="font-display text-3xl font-bold">Minhas notas</h1>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setFolderOpen(true)}
