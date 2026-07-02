@@ -2,30 +2,33 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Search,
-  FileAudio,
   Upload,
   FileText,
   Link2,
-  Mic,
   Headphones,
-  ChevronRight,
   NotebookPen,
   Sparkles,
+  Smartphone,
+  Monitor,
+  Video,
+  StickyNote,
+  GraduationCap,
 } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
 import { db } from '../lib/api'
 import type { Note } from '../lib/types'
-import { fmtDate, fmtDuration } from '../lib/format'
+import { fmtDate, fmtDuration, fmtTime } from '../lib/format'
 import { Avatar, EmptyState, Sheet, Spinner, Chip } from '../components/ui'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { AskNotesSheet } from './AskNotesSheet'
 
-const TYPE_ICON: Record<Note['type'], React.ReactNode> = {
-  recording: <Mic size={18} />,
-  call: <FileAudio size={18} />,
-  upload: <FileAudio size={18} />,
-  file: <FileText size={18} />,
-  link: <Link2 size={18} />,
+/** Icone de origem: diferencia como a nota foi criada. */
+function sourceIcon(n: Note): React.ReactNode {
+  if (n.type === 'video') return <Video size={18} />
+  if (n.type === 'file') return <StickyNote size={18} />
+  if (n.type === 'link') return <Link2 size={18} />
+  // audio (recording/upload/call): mostra o dispositivo de origem
+  return n.device === 'mobile' ? <Smartphone size={18} /> : <Monitor size={18} />
 }
 
 export function Home() {
@@ -79,6 +82,14 @@ export function Home() {
         </div>
       </header>
 
+      <div className="flex items-center gap-2.5 rounded-2xl px-4 py-2.5 mb-4 bg-gradient-to-r from-brand-500/15 to-brand-500/5 border border-brand-500/20">
+        <GraduationCap size={18} className="text-brand-500 shrink-0" />
+        <p className="text-sm text-content-secondary">
+          Deixe a <span className="font-semibold text-content-primary">ANA</span> ser sua assistente
+          inteligente com PhD.
+        </p>
+      </div>
+
       <div className="relative mb-3">
         <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-content-muted" />
         <input
@@ -126,32 +137,34 @@ export function Home() {
           }
         />
       ) : (
-        <ul className="space-y-3 mt-2">
+        <ul className="grid sm:grid-cols-2 gap-3 mt-2">
           {filtered.map((n) => (
             <li key={n.id}>
               <button
                 onClick={() => navigate(`/nota/${n.id}`)}
-                className="card w-full text-left px-4 py-4 flex items-center gap-4 hover:border-brand-500/40 transition-colors"
+                className="card w-full h-full text-left px-4 py-3.5 hover:border-brand-500/40 transition-colors"
               >
-                <div className="grid place-items-center h-11 w-11 rounded-full bg-brand-500/10 text-brand-500 shrink-0">
-                  {TYPE_ICON[n.type]}
+                {/* Topo: data + icone de origem */}
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-content-muted">{fmtDate(n.created_at)}</span>
+                  <span className="grid place-items-center h-7 w-7 rounded-full bg-brand-500/10 text-brand-500">
+                    {sourceIcon(n)}
+                  </span>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold truncate">{n.title}</h3>
-                    {n.status === 'processing' && (
-                      <span className="text-[10px] uppercase tracking-wide text-brand-400 bg-brand-500/10 px-1.5 py-0.5 rounded">
-                        processando
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sm text-content-muted mt-0.5">
-                    {fmtDate(n.created_at)}
-                    {n.duration_seconds ? ` • ${fmtDuration(n.duration_seconds)}` : ''}
-                    {n.folder ? ` • ${n.folder}` : ''}
-                  </p>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold truncate">{n.title}</h3>
+                  {n.status === 'processing' && (
+                    <span className="text-[10px] uppercase tracking-wide text-brand-400 bg-brand-500/10 px-1.5 py-0.5 rounded shrink-0">
+                      processando
+                    </span>
+                  )}
                 </div>
-                <ChevronRight size={18} className="text-content-muted shrink-0" />
+                {/* Abaixo do titulo: horario (+ duracao/pasta) */}
+                <p className="text-sm text-content-muted mt-1">
+                  {fmtTime(n.created_at)}
+                  {n.duration_seconds ? ` • ${fmtDuration(n.duration_seconds)}` : ''}
+                  {n.folder ? ` • ${n.folder}` : ''}
+                </p>
               </button>
             </li>
           ))}
@@ -171,8 +184,7 @@ export function Home() {
 
       <Sheet open={newOpen} onClose={() => setNewOpen(false)} title="Nova nota">
         <div className="space-y-3">
-          <NewOption icon={<Mic size={20} />} label="Gravar audio" hint="Grave presencial pelo microfone" onClick={() => startCapture('record')} />
-          <NewOption icon={<Headphones size={20} />} label="Gravar reuniao" hint="Zoom/Meet/Teams: audio da reuniao + seu mic" onClick={() => startCapture('meeting')} />
+          <NewOption icon={<Headphones size={20} />} label="Gravar reuniao" hint="Audio da reuniao + seu microfone" onClick={() => startCapture('meeting')} />
           <NewOption icon={<Upload size={20} />} label="Enviar audio" hint="Importe um arquivo de audio" onClick={() => startCapture('upload')} />
           <NewOption icon={<FileText size={20} />} label="PDF, arquivo ou texto" hint="Resuma um documento" onClick={() => startCapture('file')} />
           <NewOption icon={<Link2 size={20} />} label="Link da web" hint="Resuma o conteudo de um link" onClick={() => startCapture('link')} />

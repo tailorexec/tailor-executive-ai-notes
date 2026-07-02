@@ -9,16 +9,19 @@ import {
   Send,
   FileText,
   ListChecks,
-  BarChart3,
   ScrollText,
   Trash2,
   MessageSquare,
   MessageSquareQuote,
   Network,
+  MoreVertical,
+  Languages,
+  Pencil,
+  Copy,
 } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
 import { db, config } from '../lib/api'
-import { chatWithNote, generateAnalysis, generateDetailed, generateMindMap } from '../lib/ai'
+import { chatWithNote, generateMindMap } from '../lib/ai'
 import { speak, stopSpeaking, ttsSupported } from '../lib/tts'
 import { fmtDateTime, fmtDuration } from '../lib/format'
 import { Spinner } from '../components/ui'
@@ -29,8 +32,10 @@ import { uid } from '../lib/db'
 import { templateLabel } from '../lib/templates'
 import { ShareSheet } from './ShareSheet'
 import { FeedbackSheet } from './FeedbackSheet'
+import { TranslateSheet } from './TranslateSheet'
+import { Sheet } from '../components/ui'
 
-type Tab = 'summary' | 'detailed' | 'analysis' | 'mindmap' | 'transcript'
+type Tab = 'summary' | 'mindmap' | 'transcript'
 
 export function NoteDetail() {
   const { id } = useParams()
@@ -38,10 +43,14 @@ export function NoteDetail() {
   const { profile } = useAuth()
   const [note, setNote] = useState<Note | null | undefined>(undefined)
   const [tab, setTab] = useState<Tab>('summary')
-  const [busy, setBusy] = useState<null | 'detailed' | 'analysis' | 'mindmap'>(null)
+  const [busy, setBusy] = useState<null | 'mindmap'>(null)
   const [narrating, setNarrating] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
   const [feedbackOpen, setFeedbackOpen] = useState(false)
+  const [translateOpen, setTranslateOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [editField, setEditField] = useState<null | 'title' | 'summary'>(null)
+  const [editValue, setEditValue] = useState('')
   const [chatInput, setChatInput] = useState('')
   const [chatBusy, setChatBusy] = useState(false)
   const chatEndRef = useRef<HTMLDivElement | null>(null)
@@ -59,9 +68,6 @@ export function NoteDetail() {
   const narratableText = useMemo(() => {
     if (!note) return ''
     if (tab === 'transcript') return note.transcript
-    if (tab === 'detailed') return note.detailed_summary ?? note.summary
-    if (tab === 'analysis' && note.analysis)
-      return `Tom: ${note.analysis.tone}. Pontos-chave: ${note.analysis.keyPoints.join('. ')}.`
     return note.summary
   }, [note, tab])
 
@@ -83,32 +89,30 @@ export function NoteDetail() {
 
   const canEdit = note.user_id === profile?.id
 
-  async function runDetailed() {
+  function openEdit(field: 'title' | 'summary') {
     if (!note) return
-    setBusy('detailed')
-    try {
-      const detailed = await generateDetailed(note.transcript, { template: note.template, context: note.context })
-      const updated = await db.updateNote(note.id, { detailed_summary: detailed })
-      if (profile) await db.logUsage(profile.id, 'ai_detailed', note.id)
-      setNote(updated)
-      setTab('detailed')
-    } finally {
-      setBusy(null)
-    }
+    setMenuOpen(false)
+    setEditField(field)
+    setEditValue(field === 'title' ? note.title : note.summary)
   }
 
-  async function runAnalysis() {
+  async function saveEdit() {
+    if (!note || !editField) return
+    const patch = editField === 'title' ? { title: editValue.trim() } : { summary: editValue }
+    const updated = await db.updateNote(note.id, patch)
+    setNote(updated)
+    setEditField(null)
+  }
+
+  async function copyNote() {
     if (!note) return
-    setBusy('analysis')
-    try {
-      const analysis = await generateAnalysis(note.transcript, { template: note.template, context: note.context })
-      const updated = await db.updateNote(note.id, { analysis })
-      if (profile) await db.logUsage(profile.id, 'ai_analysis', note.id)
-      setNote(updated)
-      setTab('analysis')
-    } finally {
-      setBusy(null)
+    setMenuOpen(false)
+    const lines = [note.title, '', note.summary]
+    if (note.action_items.length) {
+      lines.push('', 'Action Items:')
+      note.action_items.forEach((a) => lines.push(`- ${a.text}${a.owner ? ` (${a.owner})` : ''}`))
     }
+    await navigator.clipboard.writeText(lines.join('\n'))
   }
 
   async function runMindMap() {
@@ -182,8 +186,6 @@ export function NoteDetail() {
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
     { key: 'summary', label: 'Resumo', icon: <FileText size={16} /> },
-    { key: 'detailed', label: 'Detalhado', icon: <Sparkles size={16} /> },
-    { key: 'analysis', label: 'Analise', icon: <BarChart3 size={16} /> },
     { key: 'mindmap', label: 'Mapa mental', icon: <Network size={16} /> },
     { key: 'transcript', label: 'Transcricao', icon: <ScrollText size={16} /> },
   ]
@@ -199,10 +201,41 @@ export function NoteDetail() {
           >
             <ArrowLeft size={18} />
           </button>
-          <button onClick={() => setShareOpen(true)} className="btn-primary rounded-full px-4 py-2">
-            <Share2 size={16} />
-            Compartilhar
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setShareOpen(true)} className="btn-primary rounded-full px-4 py-2">
+              <Share2 size={16} />
+              Compartilhar
+            </button>
+            <div className="relative">
+              <button
+                onClick={() => setMenuOpen((v) => !v)}
+                className="grid place-items-center h-10 w-10 rounded-full bg-surface-elevated border border-surface-border"
+                aria-label="Mais opcoes"
+              >
+                <MoreVertical size={18} />
+              </button>
+              {menuOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
+                  <div className="absolute right-0 mt-2 w-52 z-20 bg-surface-card border border-surface-border rounded-2xl shadow-float overflow-hidden py-1">
+                    {canEdit && (
+                      <button onClick={() => openEdit('title')} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left hover:bg-surface-elevated">
+                        <Pencil size={16} className="text-content-secondary" /> Editar titulo
+                      </button>
+                    )}
+                    {canEdit && (
+                      <button onClick={() => openEdit('summary')} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left hover:bg-surface-elevated">
+                        <FileText size={16} className="text-content-secondary" /> Editar resumo
+                      </button>
+                    )}
+                    <button onClick={copyNote} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left hover:bg-surface-elevated">
+                      <Copy size={16} className="text-content-secondary" /> Copiar nota
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         </div>
         <h1 className="font-display text-2xl font-bold leading-tight">{note.title}</h1>
         <p className="text-sm text-content-muted mt-1">
@@ -257,24 +290,16 @@ export function NoteDetail() {
         {/* Quick actions */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
           <ActionButton
-            icon={busy === 'detailed' ? <Spinner size={18} /> : <Sparkles size={18} />}
-            label={note.detailed_summary ? 'Regerar detalhado' : 'Gerar detalhado'}
-            hint="Mais inteligente (Sonnet)"
-            onClick={runDetailed}
-            disabled={busy !== null}
-          />
-          <ActionButton
-            icon={busy === 'analysis' ? <Spinner size={18} /> : <BarChart3 size={18} />}
-            label={note.analysis ? 'Reanalisar' : 'Analise de reuniao'}
-            hint="Tom, perguntas, dicas"
-            onClick={runAnalysis}
-            disabled={busy !== null}
-          />
-          <ActionButton
             icon={<MessageSquareQuote size={18} />}
             label="Gerar feedback"
             hint="Cliente ou candidato"
             onClick={() => setFeedbackOpen(true)}
+          />
+          <ActionButton
+            icon={<Languages size={18} />}
+            label="Traduzir"
+            hint="Outro idioma"
+            onClick={() => setTranslateOpen(true)}
           />
           {ttsSupported() && (
             <ActionButton
@@ -344,30 +369,6 @@ export function NoteDetail() {
             </>
           )}
 
-          {tab === 'detailed' &&
-            (note.detailed_summary ? (
-              <ProseBlock text={note.detailed_summary} />
-            ) : (
-              <GenerateCta
-                title="Resumo detalhado mais inteligente"
-                subtitle="Gera um resumo aprofundado com o modelo Sonnet."
-                loading={busy === 'detailed'}
-                onClick={runDetailed}
-              />
-            ))}
-
-          {tab === 'analysis' &&
-            (note.analysis ? (
-              <AnalysisView analysis={note.analysis} />
-            ) : (
-              <GenerateCta
-                title="Analise de reuniao"
-                subtitle="Tom, perguntas feitas, sugestoes, ritmo e pontos de melhoria."
-                loading={busy === 'analysis'}
-                onClick={runAnalysis}
-              />
-            ))}
-
           {tab === 'mindmap' &&
             (note.mindmap ? (
               <MindMapView map={note.mindmap} />
@@ -436,6 +437,19 @@ export function NoteDetail() {
         <ShareSheet note={note} open={shareOpen} onClose={() => setShareOpen(false)} onUpdated={setNote} />
       )}
       {feedbackOpen && <FeedbackSheet note={note} open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />}
+      {translateOpen && <TranslateSheet note={note} open={translateOpen} onClose={() => setTranslateOpen(false)} />}
+
+      <Sheet open={editField !== null} onClose={() => setEditField(null)} title={editField === 'title' ? 'Editar titulo' : 'Editar resumo'}>
+        {editField === 'title' ? (
+          <input className="input mb-4" value={editValue} onChange={(e) => setEditValue(e.target.value)} />
+        ) : (
+          <textarea className="input min-h-[220px] resize-y mb-4 leading-relaxed" value={editValue} onChange={(e) => setEditValue(e.target.value)} />
+        )}
+        <div className="flex gap-3">
+          <button className="btn-outline flex-1" onClick={() => setEditField(null)}>Cancelar</button>
+          <button className="btn-primary flex-1" onClick={saveEdit}>Salvar</button>
+        </div>
+      </Sheet>
     </div>
   )
 }
@@ -517,31 +531,6 @@ function ProseBlock({ text, empty, mono }: { text: string; empty?: string; mono?
   )
 }
 
-function AnalysisView({ analysis }: { analysis: NonNullable<Note['analysis']> }) {
-  return (
-    <div className="space-y-5">
-      {typeof analysis.overallScore === 'number' && (
-        <div className="card p-5 flex items-center gap-4">
-          <div className="grid place-items-center h-16 w-16 rounded-full bg-brand-500/10 text-brand-500 font-display font-bold text-xl">
-            {analysis.overallScore}
-          </div>
-          <div>
-            <p className="font-semibold">Qualidade da reuniao</p>
-            <p className="text-sm text-content-muted">{analysis.pacing}</p>
-          </div>
-        </div>
-      )}
-      <AnalysisSection title="Tom" items={[analysis.tone]} />
-      <AnalysisSection title="Pontos fortes" items={analysis.strengths} accent />
-      <AnalysisSection title="Melhorias sugeridas" items={analysis.improvements} />
-      <AnalysisSection title="Perguntas feitas" items={analysis.questionsAsked} />
-      <AnalysisSection title="Perguntas sugeridas" items={analysis.suggestedQuestions} accent />
-      <AnalysisSection title="Pontos-chave" items={analysis.keyPoints} />
-      <AnalysisSection title="Riscos" items={analysis.risks} />
-    </div>
-  )
-}
-
 function MindMapView({ map }: { map: NonNullable<Note['mindmap']> }) {
   return (
     <div className="space-y-5">
@@ -571,18 +560,3 @@ function MindMapView({ map }: { map: NonNullable<Note['mindmap']> }) {
   )
 }
 
-function AnalysisSection({ title, items, accent }: { title: string; items: string[]; accent?: boolean }) {
-  if (!items?.length) return null
-  return (
-    <div>
-      <h3 className="font-display font-semibold mb-2">{title}</h3>
-      <ul className="space-y-2">
-        {items.map((it, i) => (
-          <li key={i} className={`card px-4 py-3 ${accent ? 'border-brand-500/30' : ''}`}>
-            {it}
-          </li>
-        ))}
-      </ul>
-    </div>
-  )
-}

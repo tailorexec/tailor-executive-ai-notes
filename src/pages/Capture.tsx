@@ -17,6 +17,7 @@ import { useRecorder, canCaptureSystemAudio } from '../lib/useRecorder'
 import { db, config } from '../lib/api'
 import { generateActionItems, generateSummary, transcribeAudio } from '../lib/ai'
 import { saveAudio } from '../lib/audioStore'
+import { currentDevice } from '../lib/device'
 import { fmtClock, fmtDuration } from '../lib/format'
 import { Spinner } from '../components/ui'
 import { TEMPLATES } from '../lib/templates'
@@ -112,6 +113,7 @@ export function Capture() {
         user_id: profile.id,
         title: title.trim() || opts.fallbackTitle,
         type: opts.type,
+        device: currentDevice(),
         template,
         context,
         duration_seconds: opts.duration ?? 0,
@@ -231,44 +233,57 @@ export function Capture() {
         </h1>
       </header>
 
-      <div className="mb-4">
-        <label className="label">Titulo (opcional)</label>
-        <input
-          className="input"
-          placeholder="Ex: Reuniao comercial - Cliente X"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
-      </div>
-
-      <div className="mb-6">
-        <label className="label">Tema da reuniao</label>
-        <div className="flex flex-wrap gap-2 mb-2">
-          {TEMPLATES.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setTemplate(t.id)}
-              className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
-                template === t.id
-                  ? 'bg-brand-500 border-brand-500 text-white'
-                  : 'bg-surface-elevated border-surface-border text-content-secondary'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
+      {mode !== 'link' && (
+        <div className="mb-4">
+          <label className="label">Titulo (opcional)</label>
+          <input
+            className="input"
+            placeholder="Ex: Conversa com Cliente X"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
         </div>
-        <p className="text-xs text-content-muted mb-3">
-          {TEMPLATES.find((t) => t.id === template)?.hint} A IA resume e analisa no formato certo deste tipo.
-        </p>
+      )}
+
+      {(mode === 'record' || mode === 'meeting' || mode === 'upload') && (
+        <div className="mb-4">
+          <label className="label">{mode === 'upload' ? 'Tema do audio (opcional)' : 'Tema (opcional)'}</label>
+          <div className="flex flex-wrap gap-2 mb-2">
+            {TEMPLATES.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTemplate(t.id)}
+                className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
+                  template === t.id
+                    ? 'bg-brand-500 border-brand-500 text-white'
+                    : 'bg-surface-elevated border-surface-border text-content-secondary'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-content-muted">
+            {TEMPLATES.find((t) => t.id === template)?.hint}
+          </p>
+        </div>
+      )}
+
+      <div className="mb-3">
+        <label className="label">Contexto (opcional)</label>
         <input
           className="input"
-          placeholder="Contexto (opcional): ex. cliente X, renovacao de contrato"
+          placeholder="Ex: cliente X, renovacao de contrato"
           value={context}
           onChange={(e) => setContext(e.target.value)}
         />
       </div>
+
+      <p className="text-xs text-content-muted mb-6">
+        Todos os campos acima sao <span className="text-content-secondary font-medium">opcionais</span>. Se
+        nao preencher, a IA gera a transcricao e o resumo normalmente, sem contexto previo.
+      </p>
 
       {(mode === 'record' || mode === 'meeting' || mode === 'upload') && (
         <button

@@ -30,13 +30,11 @@ function wrap(transcript: string): string {
 // Ajuste por tema (template) + contexto livre.
 const THEME: Record<string, string> = {
   entrevista:
-    'Esta e uma ENTREVISTA DE CANDIDATO. Destaque competencias observadas, fit cultural, pontos fortes e de atencao, e termine com uma recomendacao (avancar ou nao).',
-  comercial:
-    'Esta e uma REUNIAO COMERCIAL. Destaque dores do cliente, objecoes, orcamento/valores, proximos passos e a probabilidade de fechamento.',
-  um_a_um:
-    'Esta e uma reuniao 1:1. Destaque combinados, blockers, desenvolvimento da pessoa e follow-ups.',
-  board:
-    'Esta e uma reuniao de BOARD/DIRETORIA. Destaque decisoes estrategicas, metricas, riscos e responsaveis.',
+    'Este e um conteudo de ENTREVISTA. Destaque competencias observadas, fit cultural, pontos fortes e de atencao, e termine com uma recomendacao (avancar ou nao).',
+  reuniao:
+    'Este e um conteudo de REUNIAO. Destaque decisoes, proximos passos, dores/oportunidades, valores citados e responsaveis.',
+  alinhamento:
+    'Este e um ALINHAMENTO. Destaque combinados, blockers, responsaveis e follow-ups.',
 }
 
 function themeHint(template?: string, context?: string): string {
@@ -136,6 +134,16 @@ Foque em: tom, perguntas feitas e sugeridas, ritmo/andamento, pontos fortes, mel
           suggestedQuestions: [], pacing: '', keyPoints: [], risks: [],
         }),
       }
+    } else if (task === 'translate') {
+      const target = String(body.target ?? 'ingles')
+      const input = String(body.text ?? '').slice(0, MAX_INPUT)
+      const text = await claude(
+        HAIKU,
+        `Traduza fielmente para ${target}, mantendo a formatacao (bullets, titulos, quebras). Responda APENAS com a traducao.` + GUARD,
+        wrap(input),
+        2500,
+      )
+      out = { text: text.trim() }
     } else if (task === 'mindmap') {
       const text = await claude(
         HAIKU,

@@ -207,6 +207,7 @@ export const mockDb: Db = {
       title: input.title,
       emoji: input.emoji ?? null,
       type: input.type ?? 'recording',
+      device: input.device ?? null,
       template: input.template ?? 'geral',
       context: input.context ?? '',
       folder: input.folder ?? null,

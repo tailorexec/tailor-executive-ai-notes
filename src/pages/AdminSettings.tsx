@@ -22,19 +22,6 @@ function fromLocalInput(v: string): string | null {
   return v ? new Date(v).toISOString() : null
 }
 
-function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <button
-      type="button"
-      onClick={() => onChange(!on)}
-      className={`h-6 w-11 rounded-full transition-colors relative shrink-0 ${on ? 'bg-brand-500' : 'bg-surface-border'}`}
-      aria-pressed={on}
-    >
-      <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${on ? 'translate-x-5' : 'translate-x-0.5'}`} />
-    </button>
-  )
-}
-
 export function AdminSettings() {
   const { refresh } = useAppSettings()
   const [s, setS] = useState<AppSettings | null>(null)
@@ -50,17 +37,17 @@ export function AdminSettings() {
   if (!s) return null
   const set = (patch: Partial<AppSettings>) => setS({ ...s, ...patch })
 
-  async function saveAnnouncement() {
+  async function saveAnnouncement(enabled: boolean) {
     if (!s) return
     setSavingAnn(true)
     try {
       const next = await updateAppSettings({
-        announcement_enabled: s.announcement_enabled,
+        announcement_enabled: enabled,
         announcement_type: s.announcement_type,
         announcement_message: s.announcement_message,
         announcement_starts_at: s.announcement_starts_at,
         announcement_ends_at: s.announcement_ends_at,
-        announcement_version: (s.announcement_version ?? 0) + 1, // reabre para quem havia fechado
+        announcement_version: (s.announcement_version ?? 0) + 1,
       })
       setS(next)
       await refresh()
@@ -71,12 +58,12 @@ export function AdminSettings() {
     }
   }
 
-  async function saveMaintenance() {
+  async function saveMaintenance(enabled: boolean) {
     if (!s) return
     setSavingMaint(true)
     try {
       const next = await updateAppSettings({
-        maintenance_enabled: s.maintenance_enabled,
+        maintenance_enabled: enabled,
         maintenance_message: s.maintenance_message,
         maintenance_eta: s.maintenance_eta,
       })
@@ -97,7 +84,11 @@ export function AdminSettings() {
           <h3 className="flex items-center gap-2 font-display font-semibold">
             <Megaphone size={18} className="text-brand-500" /> Faixa de avisos
           </h3>
-          <Toggle on={s.announcement_enabled} onChange={(v) => set({ announcement_enabled: v })} />
+          {s.announcement_enabled && (
+            <span className="text-[10px] uppercase tracking-wide bg-green-500/15 text-green-600 dark:text-green-400 px-2 py-0.5 rounded-full">
+              ativo
+            </span>
+          )}
         </div>
 
         <label className="label">Tipo</label>
@@ -125,32 +116,33 @@ export function AdminSettings() {
           onChange={(e) => set({ announcement_message: e.target.value })}
         />
 
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <div>
-            <label className="label">Inicio (opcional)</label>
-            <input
-              type="datetime-local"
-              className="input"
-              value={toLocalInput(s.announcement_starts_at)}
-              onChange={(e) => set({ announcement_starts_at: fromLocalInput(e.target.value) })}
-            />
-          </div>
-          <div>
-            <label className="label">Fim (opcional)</label>
-            <input
-              type="datetime-local"
-              className="input"
-              value={toLocalInput(s.announcement_ends_at)}
-              onChange={(e) => set({ announcement_ends_at: fromLocalInput(e.target.value) })}
-            />
-          </div>
+        <label className="label">Periodo (opcional)</label>
+        <div className="grid grid-cols-2 gap-3 mb-1">
+          <input
+            type="datetime-local"
+            className="input"
+            value={toLocalInput(s.announcement_starts_at)}
+            onChange={(e) => set({ announcement_starts_at: fromLocalInput(e.target.value) })}
+          />
+          <input
+            type="datetime-local"
+            className="input"
+            value={toLocalInput(s.announcement_ends_at)}
+            onChange={(e) => set({ announcement_ends_at: fromLocalInput(e.target.value) })}
+          />
         </div>
-        <p className="text-xs text-content-muted mb-4">Sem datas = fixo ate voce desativar.</p>
+        <p className="text-xs text-content-muted mb-4">Sem datas = fixo ate voce remover.</p>
 
-        <button className="btn-primary w-full" onClick={saveAnnouncement} disabled={savingAnn}>
-          {savingAnn ? <Spinner /> : okAnn ? <Check size={18} /> : null}
-          {okAnn ? 'Publicado' : 'Publicar aviso'}
-        </button>
+        {s.announcement_enabled ? (
+          <button className="btn-outline w-full text-brand-500" onClick={() => saveAnnouncement(false)} disabled={savingAnn}>
+            {savingAnn ? <Spinner /> : null} Remover aviso
+          </button>
+        ) : (
+          <button className="btn-primary w-full" onClick={() => saveAnnouncement(true)} disabled={savingAnn}>
+            {savingAnn ? <Spinner /> : okAnn ? <Check size={18} /> : null}
+            {okAnn ? 'Publicado' : 'Publicar aviso'}
+          </button>
+        )}
       </div>
 
       {/* Manutencao */}
@@ -159,14 +151,12 @@ export function AdminSettings() {
           <h3 className="flex items-center gap-2 font-display font-semibold">
             <Wrench size={18} className="text-brand-500" /> Modo manutencao
           </h3>
-          <Toggle on={s.maintenance_enabled} onChange={(v) => set({ maintenance_enabled: v })} />
+          {s.maintenance_enabled && (
+            <span className="text-[10px] uppercase tracking-wide bg-brand-500/15 text-brand-500 px-2 py-0.5 rounded-full">
+              ativo
+            </span>
+          )}
         </div>
-
-        {s.maintenance_enabled && (
-          <div className="text-xs text-brand-400 bg-brand-500/10 border border-brand-500/20 rounded-xl px-3 py-2 mb-3">
-            Ao salvar, o app fica bloqueado para todos os usuarios (voce, admin, continua com acesso).
-          </div>
-        )}
 
         <label className="label">Mensagem de manutencao</label>
         <textarea
@@ -184,10 +174,21 @@ export function AdminSettings() {
           onChange={(e) => set({ maintenance_eta: e.target.value })}
         />
 
-        <button className="btn-primary w-full" onClick={saveMaintenance} disabled={savingMaint}>
-          {savingMaint ? <Spinner /> : okMaint ? <Check size={18} /> : null}
-          {okMaint ? 'Salvo' : 'Salvar manutencao'}
-        </button>
+        {s.maintenance_enabled ? (
+          <button className="btn-outline w-full text-brand-500" onClick={() => saveMaintenance(false)} disabled={savingMaint}>
+            {savingMaint ? <Spinner /> : null} Remover manutencao
+          </button>
+        ) : (
+          <>
+            <div className="text-xs text-brand-400 bg-brand-500/10 border border-brand-500/20 rounded-xl px-3 py-2 mb-3">
+              Ao publicar, o app fica bloqueado para todos (voce, admin, continua com acesso).
+            </div>
+            <button className="btn-primary w-full" onClick={() => saveMaintenance(true)} disabled={savingMaint}>
+              {savingMaint ? <Spinner /> : okMaint ? <Check size={18} /> : null}
+              {okMaint ? 'Publicado' : 'Publicar manutencao'}
+            </button>
+          </>
+        )}
       </div>
     </div>
   )

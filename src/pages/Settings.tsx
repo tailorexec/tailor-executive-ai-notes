@@ -107,9 +107,9 @@ export function Settings() {
 
       <p className="text-xs uppercase tracking-wide text-content-muted mb-2 px-1">Suporte</p>
       <div className="card divide-y divide-surface-border mb-6">
-        <Row icon={<HelpCircle size={20} />} label="Central de ajuda" />
-        <Row icon={<ScrollText size={20} />} label="Termos de servico" />
-        <Row icon={<FileLock2 size={20} />} label="Politica de privacidade" />
+        <Row icon={<HelpCircle size={20} />} label="Central de ajuda" onClick={() => navigate('/ajuda')} />
+        <Row icon={<ScrollText size={20} />} label="Termos de servico" onClick={() => navigate('/termos')} />
+        <Row icon={<FileLock2 size={20} />} label="Politica de privacidade" onClick={() => navigate('/privacidade')} />
       </div>
 
       <div className="card mb-8">

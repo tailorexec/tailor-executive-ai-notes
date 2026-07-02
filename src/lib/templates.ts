@@ -1,26 +1,21 @@
-// "Reuniao por tema e contexto": ajuda a IA a resumir e analisar no formato
-// certo daquele tipo de reuniao.
+// "Tema" da nota: ajuda a IA a resumir/analisar no formato certo daquele tipo.
 
-export type NoteTemplate = 'geral' | 'entrevista' | 'comercial' | 'um_a_um' | 'board'
+export type NoteTemplate = 'geral' | 'entrevista' | 'reuniao' | 'alinhamento' | 'outros'
 
 export const TEMPLATES: { id: NoteTemplate; label: string; hint: string }[] = [
-  { id: 'geral', label: 'Geral', hint: 'Resumo padrao de reuniao.' },
+  { id: 'geral', label: 'Geral', hint: 'Resumo padrao do conteudo.' },
   {
     id: 'entrevista',
-    label: 'Entrevista de candidato',
+    label: 'Entrevista',
     hint: 'Competencias, fit cultural, pontos fortes/atencao e recomendacao.',
   },
   {
-    id: 'comercial',
-    label: 'Reuniao comercial',
-    hint: 'Dores, objecoes, orcamento e probabilidade de fechamento.',
+    id: 'reuniao',
+    label: 'Reuniao',
+    hint: 'Decisoes, proximos passos, dores/oportunidades e responsaveis.',
   },
-  { id: 'um_a_um', label: '1:1', hint: 'Combinados, blockers, desenvolvimento e follow-ups.' },
-  {
-    id: 'board',
-    label: 'Board / Diretoria',
-    hint: 'Decisoes estrategicas, metricas, riscos e responsaveis.',
-  },
+  { id: 'alinhamento', label: 'Alinhamento', hint: 'Combinados, responsaveis e follow-ups.' },
+  { id: 'outros', label: 'Outros', hint: 'Resumo geral do conteudo.' },
 ]
 
 export function templateLabel(id: string | null | undefined): string {

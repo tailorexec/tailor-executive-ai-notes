@@ -5,7 +5,7 @@
 /* ---- Theme tokens (light default, dark override) ---- */
 @layer base {
   :root {
-    --surface-bg: 245 244 242;      /* mist-ish light background */
+    --surface-bg: 243 241 236;      /* off-white (mais agradavel que branco puro) */
     --surface-card: 255 255 255;    /* white cards */
     --surface-elevated: 255 255 255;
     --surface-border: 226 224 220;  /* soft border */
@@ -40,9 +40,16 @@
     height: 100%;
   }
 
+  /* Trava o "puxar" para os lados/cima/baixo (pull-to-refresh e bounce) p/ navegacao fluida */
+  html,
+  body {
+    overscroll-behavior: none;
+  }
+
   body {
     @apply bg-surface-bg text-content-primary font-sans antialiased;
-    overscroll-behavior-y: none;
+    overscroll-behavior: none;
+    overflow-x: hidden;
   }
 
   /* Respect iOS safe areas */

@@ -11,6 +11,9 @@ import { Dialer } from './pages/Dialer'
 import { Settings } from './pages/Settings'
 import { Admin } from './pages/Admin'
 import { TrashPage } from './pages/Trash'
+import { Help } from './pages/Help'
+import { Terms } from './pages/Terms'
+import { Privacy } from './pages/Privacy'
 import type { ReactNode } from 'react'
 
 function FullscreenLoader() {
@@ -63,6 +66,9 @@ export default function App() {
         <Route path="/discador" element={<Dialer />} />
         <Route path="/config" element={<Settings />} />
         <Route path="/lixeira" element={<TrashPage />} />
+        <Route path="/ajuda" element={<Help />} />
+        <Route path="/termos" element={<Terms />} />
+        <Route path="/privacidade" element={<Privacy />} />
         <Route
           path="/admin"
           element={

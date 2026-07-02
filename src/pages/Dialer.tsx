@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Phone, Delete, Square, ShieldAlert, Mic, MessageCircle } from 'lucide-react'
+import { ArrowLeft, Phone, Delete, Square, ShieldAlert, Mic, MessageCircle, Trash2 } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
 import { useRecorder } from '../lib/useRecorder'
 import { db } from '../lib/api'
 import { generateActionItems, generateSummary, transcribeAudio } from '../lib/ai'
-import { fmtClock } from '../lib/format'
+import { currentDevice } from '../lib/device'
+import { fmtClock, fmtTime } from '../lib/format'
 import { Sheet, Spinner } from '../components/ui'
 
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#']
@@ -19,6 +20,18 @@ export function Dialer() {
   const [consentOpen, setConsentOpen] = useState(false)
   const [processing, setProcessing] = useState(false)
   const [via, setVia] = useState<'phone' | 'whatsapp'>('phone')
+  const [history, setHistory] = useState<{ number: string; via: string; at: string }[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('tailor.calls') || '[]')
+    } catch {
+      return []
+    }
+  })
+
+  function saveHistory(next: typeof history) {
+    setHistory(next)
+    localStorage.setItem('tailor.calls', JSON.stringify(next))
+  }
 
   function press(k: string) {
     setNumber((n) => (n + k).slice(0, 20))
@@ -35,17 +48,17 @@ export function Dialer() {
   async function startCall(method: 'phone' | 'whatsapp') {
     setConsentOpen(false)
     setVia(method)
-    if (method === 'whatsapp') {
-      // Abre a conversa do WhatsApp (o usuario toca no botao de chamada de voz).
-      const digits = number.replace(/[^\d]/g, '')
-      window.open(`https://wa.me/${digits}`, '_blank')
-    } else {
-      // Abre o discador nativo do aparelho.
-      window.location.href = `tel:${number.replace(/[^\d+*#]/g, '')}`
-    }
-    // Inicia a gravacao por microfone (viva-voz).
+    // 1) Pede o microfone primeiro (evita conflito entre o botao e a permissao).
     await recorder.start()
     setInCall(true)
+    // 2) Registra no historico.
+    saveHistory([{ number, via: method, at: new Date().toISOString() }, ...history].slice(0, 50))
+    // 3) Abre a chamada.
+    if (method === 'whatsapp') {
+      window.open(`https://wa.me/${number.replace(/[^\d]/g, '')}`, '_blank')
+    } else {
+      window.location.href = `tel:${number.replace(/[^\d+*#]/g, '')}`
+    }
   }
 
   async function endCall() {
@@ -64,6 +77,7 @@ export function Dialer() {
         user_id: profile.id,
         title: `${via === 'whatsapp' ? 'WhatsApp' : 'Ligacao'} ${number}`,
         type: 'call',
+        device: currentDevice(),
         duration_seconds: res.durationSeconds,
         language,
         transcript,
@@ -122,7 +136,7 @@ export function Dialer() {
         </div>
       ) : (
         <div className="flex-1 flex flex-col">
-          <div className="text-center py-8">
+          <div className="text-center py-6">
             <input
               className="w-full bg-transparent text-center font-display text-3xl font-bold outline-none tracking-wide"
               placeholder="Digite o numero"
@@ -131,6 +145,29 @@ export function Dialer() {
               inputMode="tel"
             />
           </div>
+
+          {history.length > 0 && (
+            <div className="max-w-sm mx-auto w-full mb-4">
+              <div className="flex items-center justify-between mb-1 px-1">
+                <p className="text-xs uppercase tracking-wide text-content-muted">Historico</p>
+                <button className="text-xs text-brand-500" onClick={() => saveHistory([])}>Limpar</button>
+              </div>
+              <div className="space-y-1 max-h-40 overflow-y-auto">
+                {history.map((h, i) => (
+                  <div key={i} className="flex items-center gap-2 rounded-xl bg-surface-elevated border border-surface-border px-3 py-2">
+                    <button onClick={() => setNumber(h.number)} className="flex items-center gap-2 flex-1 min-w-0 text-left">
+                      {h.via === 'whatsapp' ? <MessageCircle size={15} className="text-green-600 shrink-0" /> : <Phone size={15} className="text-content-muted shrink-0" />}
+                      <span className="font-medium truncate">{h.number}</span>
+                      <span className="text-xs text-content-muted ml-auto">{fmtTime(h.at)}</span>
+                    </button>
+                    <button onClick={() => saveHistory(history.filter((_, idx) => idx !== i))} aria-label="Apagar" className="text-content-muted hover:text-brand-500 shrink-0">
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-3 gap-4 max-w-xs mx-auto w-full mt-auto">
             {KEYS.map((k) => (
@@ -174,24 +211,26 @@ export function Dialer() {
             responsavel pelo uso desta gravacao.
           </p>
         </div>
-        <p className="text-sm font-medium mb-2">Como deseja ligar? (a gravacao inicia junto)</p>
-        <div className="space-y-2">
+        <p className="text-sm font-medium mb-3">Como deseja ligar? (a gravacao inicia junto)</p>
+        <div className="grid grid-cols-2 gap-3">
           <button
-            className="btn bg-green-600 hover:bg-green-700 text-white w-full"
             onClick={() => startCall('whatsapp')}
+            className="flex flex-col items-center justify-center gap-2 rounded-2xl py-5 bg-green-600 hover:bg-green-700 text-white font-medium transition-colors"
           >
-            <MessageCircle size={18} /> Ligar pelo WhatsApp e gravar
+            <MessageCircle size={26} />
+            WhatsApp
           </button>
           <button
-            className="btn bg-green-600 hover:bg-green-700 text-white w-full"
             onClick={() => startCall('phone')}
+            className="flex flex-col items-center justify-center gap-2 rounded-2xl py-5 bg-green-600 hover:bg-green-700 text-white font-medium transition-colors"
           >
-            <Phone size={18} /> Ligar pelo telefone e gravar
-          </button>
-          <button className="btn-outline w-full" onClick={() => setConsentOpen(false)}>
-            Cancelar
+            <Phone size={26} />
+            Telefone
           </button>
         </div>
+        <button className="btn-outline w-full mt-3" onClick={() => setConsentOpen(false)}>
+          Cancelar
+        </button>
       </Sheet>
     </div>
   )

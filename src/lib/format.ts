@@ -9,6 +9,10 @@ export function fmtDateTime(iso: string): string {
   return format(new Date(iso), "d 'de' MMM. yyyy, HH:mm", { locale: ptBR })
 }
 
+export function fmtTime(iso: string): string {
+  return format(new Date(iso), 'HH:mm', { locale: ptBR })
+}
+
 export function fmtRelative(iso: string | null): string {
   if (!iso) return '-'
   return formatDistanceToNow(new Date(iso), { locale: ptBR, addSuffix: true })

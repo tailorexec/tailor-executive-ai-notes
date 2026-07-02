@@ -12,7 +12,8 @@ export interface Profile {
   created_at: string
 }
 
-export type NoteSourceType = 'recording' | 'upload' | 'file' | 'link' | 'call'
+export type NoteSourceType = 'recording' | 'upload' | 'file' | 'link' | 'call' | 'video'
+export type NoteDevice = 'mobile' | 'desktop' | null
 
 export interface ActionItem {
   id: string
@@ -57,6 +58,7 @@ export interface Note {
   title: string
   emoji?: string | null
   type: NoteSourceType
+  device: NoteDevice
   template: string
   context: string
   folder: string | null

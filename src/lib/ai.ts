@@ -92,6 +92,15 @@ export async function generateAnalysis(transcript: string, meta: AiMeta = {}): P
   return r.analysis
 }
 
+export async function translateText(text: string, target: string): Promise<string> {
+  if (config.mockMode) {
+    await delay(700)
+    return `[${target}]\n${text}`
+  }
+  const r = await invoke<{ text: string }>('ai', { task: 'translate', text, target })
+  return r.text
+}
+
 export async function generateMindMap(transcript: string, meta: AiMeta = {}): Promise<MindMap> {
   if (config.mockMode) {
     await delay(900)

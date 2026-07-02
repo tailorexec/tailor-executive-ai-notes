@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Home, Phone, Settings as SettingsIcon, Sparkles, ShieldCheck } from 'lucide-react'
+import { Home, Phone, Settings as SettingsIcon, Sparkles, ShieldCheck, Mic } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
 import { Logo } from '../components/Logo'
 import { ThemeToggle } from '../components/ThemeToggle'
@@ -111,10 +111,10 @@ function BottomNav() {
           <div className="flex-1 flex justify-center">
             <button
               onClick={() => navigate('/capturar')}
-              aria-label="Nova captura com IA"
+              aria-label="Gravar audio"
               className="grid place-items-center h-14 w-14 -mt-8 rounded-full bg-brand-500 hover:bg-brand-600 text-white shadow-float ring-4 ring-surface-card transition-colors"
             >
-              <Sparkles size={24} />
+              <Mic size={24} />
             </button>
           </div>
 
