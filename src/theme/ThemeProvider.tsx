@@ -14,7 +14,8 @@ const KEY = 'tailor.theme'
 function initial(): Theme {
   const saved = localStorage.getItem(KEY) as Theme | null
   if (saved === 'light' || saved === 'dark') return saved
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  // Light e o tema primario (ignora a preferencia do SO); o usuario pode trocar no toggle.
+  return 'light'
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {

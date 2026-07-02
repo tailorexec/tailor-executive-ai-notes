@@ -1,11 +1,21 @@
 <!doctype html>
-<html lang="pt-BR" class="dark">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
-    <meta name="theme-color" content="#010101" />
+    <meta name="theme-color" content="#F5F4F2" />
+    <script>
+      // Aplica o tema salvo antes da 1a pintura (light e o padrao). Evita flash.
+      try {
+        var t = localStorage.getItem('tailor.theme')
+        var dark = t === 'dark'
+        document.documentElement.classList.toggle('dark', dark)
+        var m = document.querySelector('meta[name="theme-color"]')
+        if (m) m.setAttribute('content', dark ? '#010101' : '#F5F4F2')
+      } catch (e) {}
+    </script>
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Tailor Notes" />
