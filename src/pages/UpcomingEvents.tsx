@@ -33,6 +33,17 @@ export function UpcomingEvents() {
 
   useEffect(() => {
     if (isCalendarConnected()) refresh()
+    // Reverifica ao voltar o foco (apos o popup do Google): se o token foi salvo,
+    // atualiza o botao para "Ver meus eventos" mesmo que o callback nao tenha re-renderizado.
+    const onFocus = () => {
+      if (isCalendarConnected()) setNeedsAuth(false)
+    }
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onFocus)
+    return () => {
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onFocus)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -40,17 +51,19 @@ export function UpcomingEvents() {
     setLoading(true)
     try {
       const ok = await connectCalendar()
-      if (ok) {
-        await refresh()
+      // Fonte de verdade: o token salvo. Evita ficar preso em "Conectar".
+      if (ok || isCalendarConnected()) {
+        setNeedsAuth(false)
         setEventsOpen(true) // abre a lista de eventos assim que conecta
+        await refresh()
         toast('Google Calendar conectado')
       } else {
-        setLoading(false)
         toast('Conexão cancelada', 'info')
       }
     } catch {
-      setLoading(false)
       toast('Não foi possível conectar', 'error')
+    } finally {
+      setLoading(false)
     }
   }
 

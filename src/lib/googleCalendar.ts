@@ -62,8 +62,6 @@ export async function connectCalendar(): Promise<boolean> {
     const client = window.google.accounts.oauth2.initTokenClient({
       client_id: config.googleClientId,
       scope: SCOPE,
-      // Abre a tela de consentimento numa nova janela (popup).
-      ux_mode: 'popup',
       callback: (resp: { access_token?: string; expires_in?: number }) => {
         if (resp.access_token) {
           localStorage.setItem(

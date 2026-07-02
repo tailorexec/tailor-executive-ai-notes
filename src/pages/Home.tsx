@@ -16,6 +16,7 @@ import {
   Monitor,
   Video,
   StickyNote,
+  X,
   Folder as FolderIcon,
 } from 'lucide-react'
 import { AnaIcon } from '../components/AnaIcon'
@@ -57,7 +58,7 @@ export function Home() {
   const [newOpen, setNewOpen] = useState(false)
   const [askOpen, setAskOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
-  const [anaExpanded, setAnaExpanded] = useState(false)
+  const [fabOpen, setFabOpen] = useState(false)
 
   useEffect(() => {
     if (!profile) return
@@ -271,43 +272,50 @@ export function Home() {
         </ul>
       )}
 
-      {/* ANA flutuante (mobile): esquerda, acima do "Nova nota"; expande para a direita */}
-      <div className="md:hidden fixed left-5 bottom-40 z-30 flex justify-start">
-        {anaExpanded ? (
-          <button
-            onClick={() => {
-              setHelpOpen(true)
-              setAnaExpanded(false)
-            }}
-            className="flex items-center gap-2.5 rounded-full bg-brand-500 text-white shadow-float pl-2 pr-4 py-2 max-w-[80vw] animate-slide-up"
-          >
-            <span className="grid place-items-center h-10 w-10 rounded-full bg-white/15 shrink-0">
-              <AnaIcon size={22} />
-            </span>
-            <span className="text-sm font-medium text-left leading-tight">
-              {t('ana.float')}
-            </span>
-          </button>
-        ) : (
-          <button
-            onClick={() => setAnaExpanded(true)}
-            aria-label="Falar com a ANA"
-            className="relative grid place-items-center h-14 w-14 rounded-full bg-brand-500 text-white shadow-float"
-          >
-            <span className="absolute inset-0 rounded-full bg-brand-500 animate-ping opacity-40" />
-            <AnaIcon size={28} className="relative" />
-          </button>
+      {/* FAB unico: o icone da ANA (piscando) abre "Nova nota" e "Perguntar a ANA" */}
+      {fabOpen && <div className="fixed inset-0 z-30" onClick={() => setFabOpen(false)} />}
+      <div className="fixed right-5 bottom-24 md:bottom-8 z-40 flex flex-col items-end gap-3">
+        {fabOpen && (
+          <>
+            <button
+              onClick={() => {
+                setNewOpen(true)
+                setFabOpen(false)
+              }}
+              className="flex items-center gap-2.5 animate-slide-up"
+            >
+              <span className="text-sm font-medium bg-surface-card border border-surface-border shadow-float rounded-full px-3.5 py-1.5">
+                {t('home.newNote')}
+              </span>
+              <span className="grid place-items-center h-12 w-12 rounded-full bg-surface-card border border-surface-border text-brand-500 shadow-float shrink-0">
+                <NotebookPen size={20} />
+              </span>
+            </button>
+            <button
+              onClick={() => {
+                setHelpOpen(true)
+                setFabOpen(false)
+              }}
+              className="flex items-center gap-2.5 animate-slide-up"
+            >
+              <span className="text-sm font-medium bg-surface-card border border-surface-border shadow-float rounded-full px-3.5 py-1.5">
+                {t('sidebar.talkAna')}
+              </span>
+              <span className="grid place-items-center h-12 w-12 rounded-full bg-surface-card border border-surface-border text-brand-500 shadow-float shrink-0">
+                <AnaIcon size={22} />
+              </span>
+            </button>
+          </>
         )}
+        <button
+          onClick={() => setFabOpen((v) => !v)}
+          aria-label={fabOpen ? 'Fechar' : 'Ações'}
+          className="relative grid place-items-center h-14 w-14 rounded-full bg-brand-500 text-white shadow-float"
+        >
+          {!fabOpen && <span className="absolute inset-0 rounded-full bg-brand-500 animate-ping opacity-40" />}
+          {fabOpen ? <X size={26} className="relative" /> : <AnaIcon size={28} className="relative" />}
+        </button>
       </div>
-
-      {/* Floating "Nova nota" for discoverability (center star also opens capture) */}
-      <button
-        onClick={() => setNewOpen(true)}
-        className="fixed right-5 bottom-24 md:bottom-8 z-30 btn-primary shadow-float rounded-full pl-4 pr-5 py-3"
-      >
-        <NotebookPen size={18} />
-        {t('home.newNote')}
-      </button>
 
       {askOpen && <AskNotesSheet open={askOpen} onClose={() => setAskOpen(false)} notes={notes ?? []} />}
       {helpOpen && <HelpAssistant open={helpOpen} onClose={() => setHelpOpen(false)} />}
