@@ -117,3 +117,29 @@ export function exportTranscript(note: Note): void {
 export function slugify(s: string): string {
   return slug(s)
 }
+
+/** Exporta TODAS as notas do usuario em Markdown (pequeno, ideal p/ IA e Word). */
+export function exportNotesMarkdown(notes: Note[], ownerName = ''): void {
+  const parts: string[] = [`# Minhas notas — ANA by Tailor`, ownerName ? `_${ownerName}_` : '', '']
+  for (const n of notes) {
+    parts.push(`## ${n.title}`)
+    parts.push(
+      `_${fmtDate(n.created_at)}${n.duration_seconds ? ` · ${fmtDuration(n.duration_seconds)}` : ''}_`,
+      '',
+    )
+    if (n.summary?.trim()) {
+      parts.push('### Resumo', n.summary.trim(), '')
+    }
+    if (n.action_items?.length) {
+      parts.push('### Action Items')
+      n.action_items.forEach((a) => parts.push(`- [${a.done ? 'x' : ' '}] ${a.text}${a.owner ? ` (${a.owner})` : ''}`))
+      parts.push('')
+    }
+    if (n.transcript?.trim()) {
+      parts.push('### Transcricao', n.transcript.trim(), '')
+    }
+    parts.push('---', '')
+  }
+  const md = parts.join('\n')
+  downloadBlob(new Blob([md], { type: 'text/markdown;charset=utf-8' }), 'minhas-notas-tailor.md')
+}

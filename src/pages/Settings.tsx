@@ -14,12 +14,15 @@ import {
   LifeBuoy,
   Camera,
   Pencil,
+  Download,
 } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
 import { useTheme } from '../theme/ThemeProvider'
 import { Avatar, Sheet, Spinner } from '../components/ui'
 import { Logo } from '../components/Logo'
 import { uploadAvatar } from '../lib/avatar'
+import { db } from '../lib/api'
+import { exportNotesMarkdown } from '../lib/share'
 
 function Row({
   icon,
@@ -57,9 +60,21 @@ export function Settings() {
   const [last, setLast] = useState('')
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const fileRef = useRef<HTMLInputElement | null>(null)
 
   if (!profile) return null
+
+  async function exportData() {
+    if (!profile) return
+    setExporting(true)
+    try {
+      const notes = await db.listNotes(profile.id)
+      exportNotesMarkdown(notes, `${profile.first_name} ${profile.last_name}`)
+    } finally {
+      setExporting(false)
+    }
+  }
 
   function openEdit() {
     setFirst(profile!.first_name)
@@ -169,6 +184,12 @@ export function Settings() {
 
       <p className="text-xs uppercase tracking-wide text-content-muted mb-2 px-1">Meus dados</p>
       <div className="card divide-y divide-surface-border mb-6">
+        <Row
+          icon={<Download size={20} />}
+          label="Exportar meus dados (Markdown)"
+          onClick={exportData}
+          right={exporting ? <Spinner size={16} /> : undefined}
+        />
         <Row icon={<Trash2 size={20} />} label="Lixeira" onClick={() => navigate('/lixeira')} />
       </div>
 
