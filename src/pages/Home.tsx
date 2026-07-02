@@ -271,8 +271,8 @@ export function Home() {
         </ul>
       )}
 
-      {/* ANA flutuante (mobile): so o icone piscando; ao tocar, expande com a frase e abre o assistente */}
-      <div className="md:hidden fixed left-5 bottom-24 z-30">
+      {/* ANA flutuante (mobile): esquerda, acima do "Nova nota"; expande para a direita */}
+      <div className="md:hidden fixed left-5 bottom-40 z-30 flex justify-start">
         {anaExpanded ? (
           <button
             onClick={() => {
