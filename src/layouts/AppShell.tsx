@@ -9,27 +9,29 @@ import { AnnouncementBanner } from '../components/AnnouncementBanner'
 import { useAppSettings } from '../app/SettingsProvider'
 import { Maintenance } from '../pages/Maintenance'
 import { HelpAssistant } from '../pages/HelpAssistant'
+import { useT } from '../lib/i18n'
 
 const HIDE_MOBILE_NAV_ON = ['/nota/', '/capturar', '/discador']
 
 interface Item {
   to: string
   icon: React.ReactNode
-  label: string
+  labelKey: string
   adminOnly?: boolean
 }
 
 const ITEMS: Item[] = [
-  { to: '/', icon: <Home size={20} />, label: 'Notas' },
-  { to: '/discador', icon: <Phone size={20} />, label: 'Discador' },
-  { to: '/admin', icon: <ShieldCheck size={20} />, label: 'Admin', adminOnly: true },
-  { to: '/config', icon: <SettingsIcon size={20} />, label: 'Config' },
+  { to: '/', icon: <Home size={20} />, labelKey: 'nav.notes' },
+  { to: '/discador', icon: <Phone size={20} />, labelKey: 'nav.dialer' },
+  { to: '/admin', icon: <ShieldCheck size={20} />, labelKey: 'nav.admin', adminOnly: true },
+  { to: '/config', icon: <SettingsIcon size={20} />, labelKey: 'nav.config' },
 ]
 
 /* ---------- Desktop sidebar (SaaS layout) ---------- */
 function Sidebar() {
   const { isAdmin, profile } = useAuth()
   const navigate = useNavigate()
+  const t = useT()
   const [helpOpen, setHelpOpen] = useState(false)
 
   return (
@@ -43,10 +45,10 @@ function Sidebar() {
         className="btn-primary mx-4 mb-6 py-3 rounded-2xl shadow-float"
       >
         <Sparkles size={18} />
-        Gravação Inteligente
+        {t('sidebar.smartRec')}
       </button>
 
-      <p className="px-6 mb-2 text-[11px] font-semibold uppercase tracking-wider text-content-muted">Menu</p>
+      <p className="px-6 mb-2 text-[11px] font-semibold uppercase tracking-wider text-content-muted">{t('sidebar.menu')}</p>
       <nav className="flex-1 px-3 space-y-1">
         {ITEMS.filter((i) => !i.adminOnly || isAdmin).map((i) => (
           <NavLink
@@ -62,7 +64,7 @@ function Sidebar() {
             }
           >
             {i.icon}
-            {i.label}
+            {t(i.labelKey)}
           </NavLink>
         ))}
       </nav>
@@ -80,17 +82,13 @@ function Sidebar() {
                 <span className="absolute inset-0 rounded-lg bg-brand-500 animate-ping opacity-30" />
                 <AnaIcon size={15} className="relative" />
               </span>
-              <span className="text-sm font-semibold">Falar com a ANA</span>
+              <span className="text-sm font-semibold">{t('sidebar.talkAna')}</span>
             </span>
             <span className="block text-xs text-content-muted leading-snug">
-              Sua assistente com PhD. Tire dúvidas sobre o app.
+              {t('sidebar.anaSub')}
             </span>
           </span>
         </button>
-      </div>
-
-      <div className="px-3 pb-2 flex justify-center">
-        <Logo part="tailor" heightClass="h-5" className="opacity-80" />
       </div>
 
       <div className="p-3 border-t border-surface-border">
@@ -131,13 +129,14 @@ function NavItem({ to, icon, label }: { to: string; icon: React.ReactNode; label
 function BottomNav() {
   const { isAdmin } = useAuth()
   const navigate = useNavigate()
+  const t = useT()
 
   return (
     <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 safe-bottom">
       <div className="mx-auto max-w-2xl px-4 pb-3">
         <div className="relative flex items-center bg-surface-card/95 backdrop-blur border border-surface-border rounded-3xl shadow-float h-16 px-2">
-          <NavItem to="/" icon={<Home size={20} />} label="Notas" />
-          <NavItem to="/discador" icon={<Phone size={20} />} label="Discador" />
+          <NavItem to="/" icon={<Home size={20} />} label={t('nav.notes')} />
+          <NavItem to="/discador" icon={<Phone size={20} />} label={t('nav.dialer')} />
 
           <div className="flex-1 flex justify-center">
             <button
@@ -150,11 +149,11 @@ function BottomNav() {
           </div>
 
           {isAdmin ? (
-            <NavItem to="/admin" icon={<ShieldCheck size={20} />} label="Admin" />
+            <NavItem to="/admin" icon={<ShieldCheck size={20} />} label={t('nav.admin')} />
           ) : (
             <div className="flex-1" />
           )}
-          <NavItem to="/config" icon={<SettingsIcon size={20} />} label="Config" />
+          <NavItem to="/config" icon={<SettingsIcon size={20} />} label={t('nav.config')} />
         </div>
       </div>
     </nav>
@@ -176,7 +175,7 @@ export function AppShell() {
     <div className="min-h-screen bg-surface-bg">
       <Sidebar />
       <div className="md:pl-64">
-        <main className={`mx-auto w-full max-w-5xl ${hideMobileNav ? '' : 'pb-28 md:pb-10'}`}>
+        <main className={`mx-auto w-full max-w-6xl ${hideMobileNav ? '' : 'pb-28 md:pb-10'}`}>
           {!hideMobileNav && (
             <div className="px-5 pt-4">
               <AnnouncementBanner />

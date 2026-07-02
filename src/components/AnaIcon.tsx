@@ -1,35 +1,20 @@
-/** Icone da ANA: robo feminino (marias-chiquinhas, cilios e sorriso). Estilo lucide. */
+/** Icone da ANA: silhueta simples de um rosto feminino (preenchido, cor atual). */
 export function AnaIcon({ size = 18, className = '' }: { size?: number; className?: string }) {
   return (
     <svg
       width={size}
       height={size}
       viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.8}
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      fill="currentColor"
       className={className}
       aria-hidden="true"
     >
-      {/* antena */}
-      <path d="M12 3.6v2" />
-      <circle cx="12" cy="2.7" r="1.05" />
-      {/* cabeca */}
-      <rect x="6" y="5.6" width="12" height="11" rx="3.5" />
-      {/* marias-chiquinhas (feminino) */}
-      <circle cx="4.3" cy="11.4" r="1.7" />
-      <circle cx="19.7" cy="11.4" r="1.7" />
-      {/* olhos */}
-      <circle cx="9.5" cy="10.9" r="1.05" fill="currentColor" stroke="none" />
-      <circle cx="14.5" cy="10.9" r="1.05" fill="currentColor" stroke="none" />
-      {/* cilios */}
-      <path d="M8.1 9.4l.7.5M15.9 9.4l-.7.5" />
-      {/* sorriso */}
-      <path d="M9.7 13.5c1.1 1 3.5 1 4.6 0" />
-      {/* pernas */}
-      <path d="M9.5 16.6v1.8M14.5 16.6v1.8" />
+      {/* Rosto */}
+      <circle cx="12" cy="7.5" r="4.3" />
+      {/* Cabelo emoldurando o rosto (silhueta feminina) */}
+      <path d="M5.4 8.2c0-3.9 3-6.7 6.6-6.7s6.6 2.8 6.6 6.7c0 2.2-.5 4.6-1.3 6.1-.4-2.2-1.2-3.6-2-4.2.3-.6.5-1.3.5-2.1 0-2.4-1.7-4.1-3.8-4.1S8.2 5.6 8.2 8c0 .8.2 1.5.5 2.1-.8.6-1.6 2-2 4.2-.8-1.5-1.3-3.9-1.3-6.1z" />
+      {/* Ombros */}
+      <path d="M4.8 21.5c0-3.2 3.2-5 7.2-5s7.2 1.8 7.2 5z" />
     </svg>
   )
 }

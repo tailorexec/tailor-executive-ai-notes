@@ -31,6 +31,7 @@ import { FolderSheet } from './FolderSheet'
 import { getNotifPrefs, notify } from '../lib/notifications'
 import { UpcomingEvents } from './UpcomingEvents'
 import { HelpAssistant } from './HelpAssistant'
+import { useT } from '../lib/i18n'
 
 /** Icone de origem: diferencia como a nota foi criada. */
 function sourceIcon(n: Note): React.ReactNode {
@@ -46,6 +47,7 @@ function sourceIcon(n: Note): React.ReactNode {
 export function Home() {
   const { profile } = useAuth()
   const navigate = useNavigate()
+  const t = useT()
   const [notes, setNotes] = useState<Note[] | null>(null)
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<'recent' | 'oldest' | 'longest'>('recent')
@@ -55,6 +57,7 @@ export function Home() {
   const [newOpen, setNewOpen] = useState(false)
   const [askOpen, setAskOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
+  const [anaExpanded, setAnaExpanded] = useState(false)
 
   useEffect(() => {
     if (!profile) return
@@ -112,10 +115,11 @@ export function Home() {
     <div className="px-5 pt-5 md:pt-6 safe-top">
       <header className="mb-4">
         {/* Logo ANA no topo, centralizada (apenas mobile; no desktop fica na sidebar) */}
-        <Logo part="ana" heightClass="h-[26px]" className="md:hidden w-full justify-center mb-3" />
+        <Logo part="ana" heightClass="h-[27px]" className="md:hidden w-full justify-center mb-3" />
         <div className="flex items-center justify-between">
-          <h1 className="font-display text-3xl font-bold">Minhas notas</h1>
-          <div className="flex items-center gap-2">
+          <h1 className="font-display text-3xl font-bold">{t('home.title')}</h1>
+          {/* No desktop, os controles vao para o canto superior direito da tela */}
+          <div className="flex items-center gap-2 md:fixed md:top-5 md:right-8 md:z-40">
             <button
               onClick={() => setFolderOpen(true)}
               aria-label="Pastas"
@@ -133,29 +137,11 @@ export function Home() {
 
       <UpcomingEvents />
 
-      <button
-        onClick={() => setHelpOpen(true)}
-        className="md:hidden relative w-full overflow-hidden rounded-2xl mb-3 p-[1.5px] group text-left"
-      >
-        <span className="absolute inset-0 bg-[linear-gradient(110deg,#941010,#F10C27,#640816,#F10C27,#941010)] bg-[length:200%_100%] animate-shine opacity-80 group-hover:opacity-100" />
-        <span className="relative flex items-center gap-3 rounded-2xl bg-surface-card px-4 py-3">
-          <span className="relative grid place-items-center h-9 w-9 rounded-xl bg-brand-500 text-white shrink-0">
-            <span className="absolute inset-0 rounded-xl bg-brand-500 animate-ping opacity-30" />
-            <AnaIcon size={18} className="relative" />
-          </span>
-          <span className="text-sm leading-tight">
-            <span className="font-semibold">ANA:</span>
-            <span className="text-content-secondary"> Me deixe ser sua assistente, tenho PhD</span>
-            <span className="text-content-muted"> - ou me pergunte algo.</span>
-          </span>
-        </span>
-      </button>
-
       <div className="relative mb-3">
         <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-content-muted" />
         <input
           className="input pl-11"
-          placeholder="Pesquisar anotações e transcrições"
+          placeholder={t('home.search')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
@@ -169,8 +155,8 @@ export function Home() {
           <MessageSquare size={18} />
         </span>
         <span className="flex-1 min-w-0">
-          <span className="block font-medium text-sm">Conversar com todas as reuniões</span>
-          <span className="block text-xs text-content-muted">Pergunte à IA sobre qualquer nota</span>
+          <span className="block font-medium text-sm">{t('home.chatAll')}</span>
+          <span className="block text-xs text-content-muted">{t('home.chatAllSub')}</span>
         </span>
         <ChevronRight size={18} className="text-content-muted shrink-0" />
       </button>
@@ -178,7 +164,7 @@ export function Home() {
       {folderList.length > 0 && (
         <div className="flex gap-2 overflow-x-auto pb-2 mb-2 -mx-1 px-1">
           <Chip active={folderFilter === 'all'} onClick={() => setFolderFilter('all')}>
-            Todas
+            {t('home.all')}
           </Chip>
           {folderList.map((f) => (
             <Chip key={f.id} active={folderFilter === f.id} onClick={() => setFolderFilter(f.id)}>
@@ -194,7 +180,7 @@ export function Home() {
       {notes && filtered.length > 0 && (
         <div className="flex items-center justify-between mb-2 px-1">
           <span className="text-xs text-content-muted">
-            {filtered.length} {filtered.length === 1 ? 'nota' : 'notas'}
+            {filtered.length} {filtered.length === 1 ? t('home.noteOne') : t('home.noteMany')}
           </span>
           <div className="flex items-center gap-1.5 text-xs text-content-secondary">
             <ArrowDownUp size={14} />
@@ -204,16 +190,16 @@ export function Home() {
               className="bg-transparent focus:outline-none cursor-pointer"
               aria-label="Ordenar notas"
             >
-              <option value="recent">Mais recentes</option>
-              <option value="oldest">Mais antigas</option>
-              <option value="longest">Mais longas</option>
+              <option value="recent">{t('home.sortRecent')}</option>
+              <option value="oldest">{t('home.sortOldest')}</option>
+              <option value="longest">{t('home.sortLongest')}</option>
             </select>
           </div>
         </div>
       )}
 
       {notes === null ? (
-        <ul className="grid sm:grid-cols-2 gap-3 mt-2">
+        <ul className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mt-2">
           {Array.from({ length: 4 }).map((_, i) => (
             <li key={i}>
               <NoteCardSkeleton />
@@ -224,8 +210,8 @@ export function Home() {
         hasFilters ? (
           <EmptyState
             icon={<SearchX size={40} />}
-            title="Nenhum resultado"
-            subtitle="Tente outro termo de busca ou limpe os filtros."
+            title={t('home.noResultTitle')}
+            subtitle={t('home.noResultSub')}
             action={
               <button
                 className="btn-outline"
@@ -234,24 +220,24 @@ export function Home() {
                   setFolderFilter('all')
                 }}
               >
-                Limpar filtros
+                {t('home.clearFilters')}
               </button>
             }
           />
         ) : (
           <EmptyState
             icon={<NotebookPen size={40} />}
-            title="Nenhuma nota ainda"
-            subtitle="Grave uma reunião, envie um áudio ou um arquivo para começar."
+            title={t('home.emptyTitle')}
+            subtitle={t('home.emptySub')}
             action={
               <button className="btn-primary" onClick={() => setNewOpen(true)}>
-                Nova nota
+                {t('home.newNote')}
               </button>
             }
           />
         )
       ) : (
-        <ul className="grid sm:grid-cols-2 gap-3 mt-2">
+        <ul className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mt-2">
           {filtered.map((n) => (
             <li key={n.id}>
               <button
@@ -269,7 +255,7 @@ export function Home() {
                   <h3 className="font-semibold truncate">{n.title}</h3>
                   {n.status === 'processing' && (
                     <span className="text-[10px] uppercase tracking-wide text-brand-400 bg-brand-500/10 px-1.5 py-0.5 rounded shrink-0">
-                      processando
+                      {t('home.processing')}
                     </span>
                   )}
                 </div>
@@ -285,13 +271,42 @@ export function Home() {
         </ul>
       )}
 
+      {/* ANA flutuante (mobile): so o icone piscando; ao tocar, expande com a frase e abre o assistente */}
+      <div className="md:hidden fixed left-5 bottom-24 z-30">
+        {anaExpanded ? (
+          <button
+            onClick={() => {
+              setHelpOpen(true)
+              setAnaExpanded(false)
+            }}
+            className="flex items-center gap-2.5 rounded-full bg-brand-500 text-white shadow-float pl-2 pr-4 py-2 max-w-[80vw] animate-slide-up"
+          >
+            <span className="grid place-items-center h-10 w-10 rounded-full bg-white/15 shrink-0">
+              <AnaIcon size={22} />
+            </span>
+            <span className="text-sm font-medium text-left leading-tight">
+              {t('ana.float')}
+            </span>
+          </button>
+        ) : (
+          <button
+            onClick={() => setAnaExpanded(true)}
+            aria-label="Falar com a ANA"
+            className="relative grid place-items-center h-14 w-14 rounded-full bg-brand-500 text-white shadow-float"
+          >
+            <span className="absolute inset-0 rounded-full bg-brand-500 animate-ping opacity-40" />
+            <AnaIcon size={28} className="relative" />
+          </button>
+        )}
+      </div>
+
       {/* Floating "Nova nota" for discoverability (center star also opens capture) */}
       <button
         onClick={() => setNewOpen(true)}
         className="fixed right-5 bottom-24 md:bottom-8 z-30 btn-primary shadow-float rounded-full pl-4 pr-5 py-3"
       >
         <NotebookPen size={18} />
-        Nova nota
+        {t('home.newNote')}
       </button>
 
       {askOpen && <AskNotesSheet open={askOpen} onClose={() => setAskOpen(false)} notes={notes ?? []} />}
@@ -307,13 +322,13 @@ export function Home() {
         />
       )}
 
-      <Sheet open={newOpen} onClose={() => setNewOpen(false)} title="Nova nota">
+      <Sheet open={newOpen} onClose={() => setNewOpen(false)} title={t('new.title')}>
         <div className="space-y-3">
-          <NewOption icon={<Headphones size={20} />} label="Gravar reunião" hint="Áudio da reunião + seu microfone" onClick={() => startCapture('meeting')} />
-          <NewOption icon={<Upload size={20} />} label="Enviar áudio" hint="Importe um arquivo de áudio" onClick={() => startCapture('upload')} />
-          <NewOption icon={<Video size={20} />} label="Enviar vídeo" hint="A IA extrai o áudio e transcreve" onClick={() => startCapture('video')} />
-          <NewOption icon={<FileText size={20} />} label="PDF, arquivo ou texto" hint="Resuma um documento" onClick={() => startCapture('file')} />
-          <NewOption icon={<Link2 size={20} />} label="Link da web" hint="Resuma o conteúdo de um link" onClick={() => startCapture('link')} />
+          <NewOption icon={<Headphones size={20} />} label={t('new.recordMeeting')} hint={t('new.recordMeetingHint')} onClick={() => startCapture('meeting')} />
+          <NewOption icon={<Upload size={20} />} label={t('new.uploadAudio')} hint={t('new.uploadAudioHint')} onClick={() => startCapture('upload')} />
+          <NewOption icon={<Video size={20} />} label={t('new.uploadVideo')} hint={t('new.uploadVideoHint')} onClick={() => startCapture('video')} />
+          <NewOption icon={<FileText size={20} />} label={t('new.file')} hint={t('new.fileHint')} onClick={() => startCapture('file')} />
+          <NewOption icon={<Link2 size={20} />} label={t('new.link')} hint={t('new.linkHint')} onClick={() => startCapture('link')} />
         </div>
       </Sheet>
     </div>

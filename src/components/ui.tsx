@@ -98,6 +98,15 @@ export function Sheet({
   )
 }
 
+/** Selo para funcoes ainda nao disponiveis no web-mobile. */
+export function SoonBadge({ children = 'EM BREVE NO APP' }: { children?: string }) {
+  return (
+    <span className="text-[10px] font-semibold uppercase tracking-wide text-brand-500 bg-brand-500/10 border border-brand-500/20 rounded-full px-2 py-0.5 whitespace-nowrap">
+      {children}
+    </span>
+  )
+}
+
 /** Placeholder animado para carregamento. */
 export function Skeleton({ className = '' }: { className?: string }) {
   return <div className={`animate-pulse rounded-lg bg-surface-elevated ${className}`} />

@@ -7,6 +7,7 @@ import { ThemeProvider } from './theme/ThemeProvider'
 import { AuthProvider } from './auth/AuthProvider'
 import { SettingsProvider } from './app/SettingsProvider'
 import { ToastProvider } from './components/Toast'
+import { I18nProvider } from './lib/i18n'
 import { initButtonShine } from './lib/buttonShine'
 import { initLang } from './lib/lang'
 
@@ -48,9 +49,11 @@ createRoot(document.getElementById('root')!).render(
       <BrowserRouter>
         <AuthProvider>
           <SettingsProvider>
-            <ToastProvider>
-              <App />
-            </ToastProvider>
+            <I18nProvider>
+              <ToastProvider>
+                <App />
+              </ToastProvider>
+            </I18nProvider>
           </SettingsProvider>
         </AuthProvider>
       </BrowserRouter>

@@ -20,14 +20,14 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
 import { useTheme } from '../theme/ThemeProvider'
-import { Avatar, Sheet, Spinner } from '../components/ui'
+import { Avatar, Sheet, Spinner, SoonBadge } from '../components/ui'
 import { useToast } from '../components/Toast'
 import { Logo } from '../components/Logo'
 import { uploadAvatar } from '../lib/avatar'
 import { db } from '../lib/api'
 import { exportNotesMarkdown } from '../lib/share'
-import { getLang, setLang, langLabel, LANGS, type AppLang } from '../lib/lang'
-import { CalendarSettings } from './CalendarSettings'
+import { langLabel, LANGS } from '../lib/lang'
+import { useI18n } from '../lib/i18n'
 
 function Row({
   icon,
@@ -68,7 +68,7 @@ export function Settings() {
   const [uploading, setUploading] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [langOpen, setLangOpen] = useState(false)
-  const [lang, setLangState] = useState<AppLang>(getLang())
+  const { lang, setLang } = useI18n()
   const fileRef = useRef<HTMLInputElement | null>(null)
 
   if (!profile) return null
@@ -191,7 +191,12 @@ export function Settings() {
             </span>
           }
         />
-        <Row icon={<Bell size={20} />} label="Notificações" onClick={() => navigate('/notificacoes')} />
+        <Row
+          icon={<Bell size={20} />}
+          label="Notificações"
+          onClick={() => toast('Notificações: em breve no app.', 'info')}
+          right={<SoonBadge />}
+        />
         <Row
           icon={<Languages size={20} />}
           label="Idioma do app"
@@ -212,7 +217,6 @@ export function Settings() {
               key={l.code}
               onClick={() => {
                 setLang(l.code)
-                setLangState(l.code)
                 setLangOpen(false)
                 toast('Idioma alterado')
               }}
@@ -231,8 +235,6 @@ export function Settings() {
           A traducao completa das telas esta sendo implementada gradualmente.
         </p>
       </Sheet>
-
-      <CalendarSettings />
 
       <p className="text-xs uppercase tracking-wide text-content-muted mb-2 px-1">Meus dados</p>
       <div className="card divide-y divide-surface-border mb-6">
