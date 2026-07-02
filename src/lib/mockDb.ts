@@ -2,6 +2,7 @@
 // any backend or API keys. NOT for production auth (passwords are local only).
 
 import { config, isAdminEmail, isAllowedDomain } from './config'
+import { deleteAudio } from './audioStore'
 import type { Db, SignUpInput } from './db'
 import { uid } from './db'
 import type {
@@ -60,6 +61,27 @@ function seed(): void {
 
 function getProfiles(): Profile[] {
   return read<Profile[]>(K.profiles, [])
+}
+
+/** Limpeza preguicosa (modo demo): remove o audio de notas expiradas (>N dias, sem keep_audio). */
+function cleanupExpiredAudio(): void {
+  const notes = read<Note[]>(K.notes, [])
+  const cutoff = Date.now() - config.audioRetentionDays * 86400000
+  let changed = false
+  for (const n of notes) {
+    if (
+      !n.keep_audio &&
+      !n.audio_deleted_at &&
+      n.audio_url &&
+      Date.parse(n.created_at) < cutoff
+    ) {
+      deleteAudio(n.audio_url) // apaga o blob no IndexedDB (fire-and-forget)
+      n.audio_url = null
+      n.audio_deleted_at = new Date().toISOString()
+      changed = true
+    }
+  }
+  if (changed) write(K.notes, notes)
 }
 
 export const mockDb: Db = {
@@ -142,6 +164,7 @@ export const mockDb: Db = {
 
   async listNotes(userId) {
     seed()
+    cleanupExpiredAudio()
     const notes = read<Note[]>(K.notes, [])
     return notes
       .filter((n) => !n.deleted_at && (n.user_id === userId || n.shared_with.includes(userId)))
@@ -170,6 +193,7 @@ export const mockDb: Db = {
   },
 
   async getNote(id) {
+    cleanupExpiredAudio()
     const notes = read<Note[]>(K.notes, [])
     return notes.find((n) => n.id === id) ?? null
   },
@@ -198,6 +222,8 @@ export const mockDb: Db = {
       chat: input.chat ?? [],
       shared_with: input.shared_with ?? [],
       status: input.status ?? 'processing',
+      keep_audio: input.keep_audio ?? false,
+      audio_deleted_at: null,
       deleted_at: null,
       created_at: now,
       updated_at: now,

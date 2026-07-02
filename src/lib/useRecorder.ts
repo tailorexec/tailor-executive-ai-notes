@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
+import { config } from './config'
 
 export type RecorderState = 'idle' | 'recording' | 'paused' | 'stopped'
 
@@ -122,7 +123,10 @@ export function useRecorder() {
             ? 'audio/mp4'
             : ''
         mimeRef.current = mime || 'audio/webm'
-        const recorder = new MediaRecorder(recordStream, mime ? { mimeType: mime } : undefined)
+        const recorder = new MediaRecorder(recordStream, {
+          ...(mime ? { mimeType: mime } : {}),
+          audioBitsPerSecond: config.recordingBitrate,
+        })
         chunksRef.current = []
         recorder.ondataavailable = (e) => {
           if (e.data.size > 0) chunksRef.current.push(e.data)

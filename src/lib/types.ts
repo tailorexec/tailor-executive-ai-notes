@@ -72,6 +72,8 @@ export interface Note {
   chat: ChatMessage[]
   shared_with: string[] // profile ids
   status: 'processing' | 'ready' | 'error'
+  keep_audio: boolean
+  audio_deleted_at: string | null
   deleted_at: string | null
   created_at: string
   updated_at: string

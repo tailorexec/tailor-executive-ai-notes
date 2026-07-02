@@ -17,6 +17,12 @@ export const config = {
   /** Limite inicial de duracao de gravacao (2 horas). */
   recordingMaxSeconds: 2 * 60 * 60,
 
+  /** Bitrate do audio gravado (voz). Menor = menos storage. ~48 kbps e otimo p/ transcricao. */
+  recordingBitrate: 48000,
+
+  /** Retencao do audio: excluido apos N dias (a transcricao e mantida). */
+  audioRetentionDays: 14,
+
   app: {
     name: 'Tailor Executive AI Notes',
     shortName: 'Tailor Notes',

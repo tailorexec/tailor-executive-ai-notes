@@ -17,7 +17,7 @@ import {
   Network,
 } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
-import { db } from '../lib/api'
+import { db, config } from '../lib/api'
 import { chatWithNote, generateAnalysis, generateDetailed, generateMindMap } from '../lib/ai'
 import { speak, stopSpeaking, ttsSupported } from '../lib/tts'
 import { fmtDateTime, fmtDuration } from '../lib/format'
@@ -136,6 +136,12 @@ export function NoteDetail() {
     speak(narratableText, { onEnd: () => setNarrating(false) })
   }
 
+  async function toggleKeepAudio() {
+    if (!note) return
+    const updated = await db.updateNote(note.id, { keep_audio: !note.keep_audio })
+    setNote(updated)
+  }
+
   async function toggleActionItem(itemId: string) {
     if (!note) return
     const items = note.action_items.map((a) => (a.id === itemId ? { ...a, done: !a.done } : a))
@@ -213,8 +219,38 @@ export function NoteDetail() {
 
       <div className="px-5 flex-1">
         {note.audio_url && (
-          <div className="mb-5">
+          <div className="mb-5 space-y-2">
             <AudioPlayer audioRef={note.audio_url} />
+            <button
+              onClick={toggleKeepAudio}
+              className="w-full flex items-center gap-3 card px-4 py-2.5 text-left"
+            >
+              <span
+                className={`h-6 w-11 rounded-full relative shrink-0 transition-colors ${note.keep_audio ? 'bg-brand-500' : 'bg-surface-border'}`}
+              >
+                <span
+                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${note.keep_audio ? 'translate-x-5' : 'translate-x-0.5'}`}
+                />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-medium">Manter áudio para sempre</span>
+                <span className="block text-xs text-content-muted leading-snug">
+                  {note.keep_audio
+                    ? 'O áudio desta nota não será excluído automaticamente.'
+                    : `Ao deixar desmarcado, o áudio é excluído em ${Math.max(
+                        0,
+                        config.audioRetentionDays -
+                          Math.floor((Date.now() - Date.parse(note.created_at)) / 86400000),
+                      )} dia(s) — a transcrição e as informações são mantidas na sua conta.`}
+                </span>
+              </span>
+            </button>
+          </div>
+        )}
+        {!note.audio_url && note.audio_deleted_at && (
+          <div className="mb-5 card px-4 py-3 text-sm text-content-muted">
+            Áudio removido automaticamente após {config.audioRetentionDays} dias (política de retenção). A
+            transcrição e as informações foram mantidas.
           </div>
         )}
 
