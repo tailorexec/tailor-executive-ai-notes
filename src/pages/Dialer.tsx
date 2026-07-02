@@ -85,7 +85,7 @@ export function Dialer() {
       const actionItems = await generateActionItems(transcript)
       const note = await db.createNote({
         user_id: profile.id,
-        title: `${via === 'whatsapp' ? 'WhatsApp' : 'Ligacao'} ${number}`,
+        title: `${via === 'whatsapp' ? 'WhatsApp' : 'Ligação'} ${number}`,
         type: 'call',
         device: currentDevice(),
         duration_seconds: res.durationSeconds,
@@ -106,7 +106,7 @@ export function Dialer() {
       <div className="min-h-screen grid place-items-center px-8 text-center">
         <div>
           <Spinner size={30} className="text-brand-500 mx-auto mb-4" />
-          <p className="font-display font-semibold">Processando a ligacao...</p>
+          <p className="font-display font-semibold">Processando a ligação...</p>
           <p className="text-content-secondary text-sm mt-1">Transcrevendo e resumindo.</p>
         </div>
       </div>
@@ -149,7 +149,7 @@ export function Dialer() {
           <div className="text-center py-6">
             <input
               className="w-full bg-transparent text-center font-display text-3xl font-bold outline-none tracking-wide"
-              placeholder="Digite o numero"
+              placeholder="Digite o número"
               value={number}
               onChange={(e) => setNumber(e.target.value)}
               inputMode="tel"
@@ -212,11 +212,11 @@ export function Dialer() {
         </div>
       )}
 
-      <Sheet open={consentOpen} onClose={() => setConsentOpen(false)} title="Aviso de gravacao">
+      <Sheet open={consentOpen} onClose={() => setConsentOpen(false)} title="Aviso de gravação">
         <div className="flex items-start gap-3 mb-4">
           <ShieldAlert size={22} className="text-brand-500 shrink-0 mt-0.5" />
           <p className="text-content-secondary text-sm">
-            A gravacao sera feita pelo microfone do aparelho — <span className="text-content-primary font-medium">ative o viva-voz</span>.
+            A gravação será feita pelo microfone do aparelho — <span className="text-content-primary font-medium">ative o viva-voz</span>.
             Por questoes legais (LGPD), informe e obtenha o consentimento da outra parte antes de gravar.
           </p>
         </div>
@@ -224,7 +224,7 @@ export function Dialer() {
           No celular, durante uma ligacao real, o navegador pode nao captar o audio (o sistema reserva o
           microfone para a chamada). Se ficar mudo, avisamos e nao geramos transcricao.
         </div>
-        <p className="text-sm font-medium mb-3">Como deseja ligar? (a gravacao inicia junto)</p>
+        <p className="text-sm font-medium mb-3">Como deseja ligar? (a gravação inicia junto)</p>
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => startCall('whatsapp')}
@@ -246,10 +246,10 @@ export function Dialer() {
         </button>
       </Sheet>
 
-      <Sheet open={noAudioOpen} onClose={() => setNoAudioOpen(false)} title="Sem audio na ligacao">
+      <Sheet open={noAudioOpen} onClose={() => setNoAudioOpen(false)} title="Sem áudio na ligação">
         <p className="text-sm text-content-secondary leading-relaxed mb-5">
-          Nao captamos audio desta ligacao. Em ligacoes reais no celular, o navegador nao consegue
-          acessar o microfone (o sistema reserva para a chamada). Use o viva-voz, grave uma reuniao no
+          Não captamos áudio desta ligação. Em ligações reais no celular, o navegador não consegue
+          acessar o microfone (o sistema reserva para a chamada). Use o viva-voz, grave uma reunião no
           desktop, ou use o app.
         </p>
         <button className="btn-primary w-full" onClick={() => setNoAudioOpen(false)}>

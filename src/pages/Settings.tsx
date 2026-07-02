@@ -15,6 +15,8 @@ import {
   Camera,
   Pencil,
   Download,
+  Languages,
+  Check,
 } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
 import { useTheme } from '../theme/ThemeProvider'
@@ -24,6 +26,7 @@ import { Logo } from '../components/Logo'
 import { uploadAvatar } from '../lib/avatar'
 import { db } from '../lib/api'
 import { exportNotesMarkdown } from '../lib/share'
+import { getLang, setLang, langLabel, LANGS, type AppLang } from '../lib/lang'
 import { CalendarSettings } from './CalendarSettings'
 
 function Row({
@@ -64,6 +67,8 @@ export function Settings() {
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [exporting, setExporting] = useState(false)
+  const [langOpen, setLangOpen] = useState(false)
+  const [lang, setLangState] = useState<AppLang>(getLang())
   const fileRef = useRef<HTMLInputElement | null>(null)
 
   if (!profile) return null
@@ -114,7 +119,7 @@ export function Settings() {
   return (
     <div className="px-5 pt-6 safe-top">
       <header className="flex items-center justify-between mb-6">
-        <h1 className="font-display text-3xl font-bold">Configuracoes</h1>
+        <h1 className="font-display text-3xl font-bold">Configurações</h1>
       </header>
 
       <div className="card p-5 flex items-center gap-4 mb-6">
@@ -186,8 +191,46 @@ export function Settings() {
             </span>
           }
         />
-        <Row icon={<Bell size={20} />} label="Notificacoes" onClick={() => navigate('/notificacoes')} />
+        <Row icon={<Bell size={20} />} label="Notificações" onClick={() => navigate('/notificacoes')} />
+        <Row
+          icon={<Languages size={20} />}
+          label="Idioma do app"
+          onClick={() => setLangOpen(true)}
+          right={
+            <span className="flex items-center gap-1 text-sm text-content-muted">
+              {langLabel(lang)}
+              <ChevronRight size={18} />
+            </span>
+          }
+        />
       </div>
+
+      <Sheet open={langOpen} onClose={() => setLangOpen(false)} title="Idioma do app">
+        <div className="space-y-2">
+          {LANGS.map((l) => (
+            <button
+              key={l.code}
+              onClick={() => {
+                setLang(l.code)
+                setLangState(l.code)
+                setLangOpen(false)
+                toast('Idioma alterado')
+              }}
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-colors ${
+                lang === l.code
+                  ? 'border-brand-500 bg-brand-500/10'
+                  : 'border-surface-border bg-surface-elevated hover:border-brand-500/40'
+              }`}
+            >
+              <span className="font-medium">{l.label}</span>
+              {lang === l.code && <Check size={18} className="text-brand-500" />}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-content-muted mt-4">
+          A traducao completa das telas esta sendo implementada gradualmente.
+        </p>
+      </Sheet>
 
       <CalendarSettings />
 
@@ -206,8 +249,8 @@ export function Settings() {
       <div className="card divide-y divide-surface-border mb-6">
         <Row icon={<LifeBuoy size={20} />} label="Falar com o suporte" onClick={() => navigate('/suporte')} />
         <Row icon={<HelpCircle size={20} />} label="Central de ajuda" onClick={() => navigate('/ajuda')} />
-        <Row icon={<ScrollText size={20} />} label="Termos de servico" onClick={() => navigate('/termos')} />
-        <Row icon={<FileLock2 size={20} />} label="Politica de privacidade" onClick={() => navigate('/privacidade')} />
+        <Row icon={<ScrollText size={20} />} label="Termos de serviço" onClick={() => navigate('/termos')} />
+        <Row icon={<FileLock2 size={20} />} label="Política de privacidade" onClick={() => navigate('/privacidade')} />
       </div>
 
       <div className="card mb-8">

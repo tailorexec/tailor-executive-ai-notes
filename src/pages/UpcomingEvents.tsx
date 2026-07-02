@@ -46,7 +46,7 @@ export function UpcomingEvents() {
     <div className="card p-4 mb-4">
       <div className="flex items-center justify-between mb-2">
         <h3 className="flex items-center gap-2 font-display font-semibold">
-          <CalendarDays size={18} className="text-brand-500" /> Proximos eventos
+          <CalendarDays size={18} className="text-brand-500" /> Próximos eventos
         </h3>
         {!needsAuth && (
           <button onClick={refresh} className="text-content-muted hover:text-content-primary" aria-label="Atualizar">
@@ -74,7 +74,7 @@ export function UpcomingEvents() {
         </ul>
       ) : events.length === 0 ? (
         <div className="flex items-center justify-between">
-          <p className="text-sm text-content-muted">Nenhum evento proximo.</p>
+          <p className="text-sm text-content-muted">Nenhum evento próximo.</p>
           <button className="text-xs text-brand-500" onClick={() => { disconnectCalendar(); setNeedsAuth(true) }}>
             Desconectar
           </button>

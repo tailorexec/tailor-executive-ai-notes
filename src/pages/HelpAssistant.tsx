@@ -4,10 +4,10 @@ import { Sheet, Spinner } from '../components/ui'
 import { askHelp } from '../lib/ai'
 
 const SUGGESTIONS = [
-  'Como gravar uma reuniao?',
+  'Como gravar uma reunião?',
   'Como compartilho uma nota?',
   'Como funcionam as pastas?',
-  'Por quanto tempo o audio fica guardado?',
+  'Por quanto tempo o áudio fica guardado?',
 ]
 
 export function HelpAssistant({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -38,7 +38,7 @@ export function HelpAssistant({ open, onClose }: { open: boolean; onClose: () =>
     <Sheet open={open} onClose={onClose} title="ANA — Ajuda">
       <div className="flex items-center gap-2 text-xs text-content-muted mb-3">
         <Sparkles size={14} className="text-brand-500" />
-        Pergunte como usar o aplicativo. So respondo sobre as funcoes da plataforma.
+        Pergunte como usar o aplicativo. Só respondo sobre as funções da plataforma.
       </div>
 
       <div className="max-h-72 overflow-y-auto space-y-2 mb-3 pr-1">

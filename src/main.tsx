@@ -8,6 +8,7 @@ import { AuthProvider } from './auth/AuthProvider'
 import { SettingsProvider } from './app/SettingsProvider'
 import { ToastProvider } from './components/Toast'
 import { initButtonShine } from './lib/buttonShine'
+import { initLang } from './lib/lang'
 
 // Remove sessoes corrompidas no localStorage (residuo de tentativas antigas) que
 // causavam "String contains non ISO-8859-1 code point" ao montar headers do fetch.
@@ -39,6 +40,7 @@ function sanitizeAuthStorage() {
 
 sanitizeAuthStorage()
 initButtonShine()
+initLang()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

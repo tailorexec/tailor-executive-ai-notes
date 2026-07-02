@@ -16,9 +16,9 @@ import {
   Monitor,
   Video,
   StickyNote,
-  Bot,
   Folder as FolderIcon,
 } from 'lucide-react'
+import { AnaIcon } from '../components/AnaIcon'
 import { useAuth } from '../auth/AuthProvider'
 import { db } from '../lib/api'
 import type { Note, Folder } from '../lib/types'
@@ -111,8 +111,8 @@ export function Home() {
   return (
     <div className="px-5 pt-5 md:pt-6 safe-top">
       <header className="mb-4">
-        {/* Logo ANA no topo, alinhada a esquerda (apenas mobile; no desktop fica na sidebar) */}
-        <Logo part="ana" heightClass="h-6" className="md:hidden mb-2.5" />
+        {/* Logo ANA no topo, centralizada (apenas mobile; no desktop fica na sidebar) */}
+        <Logo part="ana" heightClass="h-[26px]" className="md:hidden w-full justify-center mb-3" />
         <div className="flex items-center justify-between">
           <h1 className="font-display text-3xl font-bold">Minhas notas</h1>
           <div className="flex items-center gap-2">
@@ -141,7 +141,7 @@ export function Home() {
         <span className="relative flex items-center gap-3 rounded-2xl bg-surface-card px-4 py-3">
           <span className="relative grid place-items-center h-9 w-9 rounded-xl bg-brand-500 text-white shrink-0">
             <span className="absolute inset-0 rounded-xl bg-brand-500 animate-ping opacity-30" />
-            <Bot size={18} className="relative" />
+            <AnaIcon size={18} className="relative" />
           </span>
           <span className="text-sm leading-tight">
             <span className="font-semibold">ANA:</span>
@@ -155,7 +155,7 @@ export function Home() {
         <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-content-muted" />
         <input
           className="input pl-11"
-          placeholder="Pesquisar anotacoes e transcricoes"
+          placeholder="Pesquisar anotações e transcrições"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
@@ -169,8 +169,8 @@ export function Home() {
           <MessageSquare size={18} />
         </span>
         <span className="flex-1 min-w-0">
-          <span className="block font-medium text-sm">Conversar com todas as reunioes</span>
-          <span className="block text-xs text-content-muted">Pergunte a IA sobre qualquer nota</span>
+          <span className="block font-medium text-sm">Conversar com todas as reuniões</span>
+          <span className="block text-xs text-content-muted">Pergunte à IA sobre qualquer nota</span>
         </span>
         <ChevronRight size={18} className="text-content-muted shrink-0" />
       </button>
@@ -242,7 +242,7 @@ export function Home() {
           <EmptyState
             icon={<NotebookPen size={40} />}
             title="Nenhuma nota ainda"
-            subtitle="Grave uma reuniao, envie um audio ou um arquivo para comecar."
+            subtitle="Grave uma reunião, envie um áudio ou um arquivo para começar."
             action={
               <button className="btn-primary" onClick={() => setNewOpen(true)}>
                 Nova nota
@@ -279,12 +279,6 @@ export function Home() {
                   {n.duration_seconds ? ` • ${fmtDuration(n.duration_seconds)}` : ''}
                   {folderName(n.folder_id) ? ` • ${folderName(n.folder_id)}` : ''}
                 </p>
-                {/* Previa do resumo para escanear a nota */}
-                {n.summary?.trim() && n.status !== 'processing' && (
-                  <p className="text-sm text-content-secondary mt-2 line-clamp-2 leading-snug">
-                    {n.summary.replace(/[#*_>`]/g, '').replace(/^\s*-\s*/gm, '').trim()}
-                  </p>
-                )}
               </button>
             </li>
           ))}
@@ -315,11 +309,11 @@ export function Home() {
 
       <Sheet open={newOpen} onClose={() => setNewOpen(false)} title="Nova nota">
         <div className="space-y-3">
-          <NewOption icon={<Headphones size={20} />} label="Gravar reuniao" hint="Audio da reuniao + seu microfone" onClick={() => startCapture('meeting')} />
-          <NewOption icon={<Upload size={20} />} label="Enviar audio" hint="Importe um arquivo de audio" onClick={() => startCapture('upload')} />
-          <NewOption icon={<Video size={20} />} label="Enviar video" hint="A IA extrai o audio e transcreve" onClick={() => startCapture('video')} />
+          <NewOption icon={<Headphones size={20} />} label="Gravar reunião" hint="Áudio da reunião + seu microfone" onClick={() => startCapture('meeting')} />
+          <NewOption icon={<Upload size={20} />} label="Enviar áudio" hint="Importe um arquivo de áudio" onClick={() => startCapture('upload')} />
+          <NewOption icon={<Video size={20} />} label="Enviar vídeo" hint="A IA extrai o áudio e transcreve" onClick={() => startCapture('video')} />
           <NewOption icon={<FileText size={20} />} label="PDF, arquivo ou texto" hint="Resuma um documento" onClick={() => startCapture('file')} />
-          <NewOption icon={<Link2 size={20} />} label="Link da web" hint="Resuma o conteudo de um link" onClick={() => startCapture('link')} />
+          <NewOption icon={<Link2 size={20} />} label="Link da web" hint="Resuma o conteúdo de um link" onClick={() => startCapture('link')} />
         </div>
       </Sheet>
     </div>

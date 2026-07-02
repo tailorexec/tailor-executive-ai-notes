@@ -101,7 +101,7 @@ export async function askHelp(question: string): Promise<string> {
   if (local) return local.a // resposta gratuita da base
   if (config.mockMode) {
     await delay(500)
-    return 'So consigo ajudar com duvidas sobre o uso do aplicativo. Tente perguntar sobre gravar, transcrever, compartilhar, pastas, discador ou configuracoes.'
+    return 'Só consigo ajudar com dúvidas sobre o uso do aplicativo. Tente perguntar sobre gravar, transcrever, compartilhar, pastas, discador ou configurações.'
   }
   const r = await invoke<{ answer: string }>('ai', { task: 'help', question, kb: HELP_KB_TEXT })
   return r.answer

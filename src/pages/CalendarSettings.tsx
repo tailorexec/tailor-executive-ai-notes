@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { CalendarDays, RefreshCw, Clock, Link2Off } from 'lucide-react'
 import {
   connectCalendar,
@@ -11,44 +11,56 @@ import { fmtDate, fmtTime } from '../lib/format'
 import { Spinner, Skeleton } from '../components/ui'
 import { useToast } from '../components/Toast'
 
-/** Painel de agenda para a tela de Config: lista os proximos eventos em cards. */
+/** Painel de agenda para a tela de Config: conectar -> Ver eventos -> lista em cards. */
 export function CalendarSettings() {
   const [events, setEvents] = useState<CalEvent[]>([])
   const [needsAuth, setNeedsAuth] = useState(!isCalendarConnected())
+  const [loaded, setLoaded] = useState(false)
   const [loading, setLoading] = useState(false)
   const toast = useToast()
-
-  async function refresh() {
-    setLoading(true)
-    try {
-      const r = await listUpcomingEvents(10)
-      setNeedsAuth(r.needsAuth)
-      setEvents(r.events)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    if (isCalendarConnected()) refresh()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   async function connect() {
     setLoading(true)
     try {
       const ok = await connectCalendar()
       if (ok) {
-        await refresh()
+        setNeedsAuth(false)
+        setLoaded(false)
+        setEvents([])
         toast('Google Calendar conectado')
       } else {
-        setLoading(false)
-        toast('Conexao cancelada', 'info')
+        toast('Conexão cancelada', 'info')
       }
     } catch {
+      toast('Não foi possível conectar', 'error')
+    } finally {
       setLoading(false)
-      toast('Nao foi possivel conectar', 'error')
     }
+  }
+
+  async function viewEvents() {
+    setLoading(true)
+    try {
+      const r = await listUpcomingEvents(10)
+      if (r.needsAuth) {
+        setNeedsAuth(true)
+        setLoaded(false)
+        toast('Sessão expirada. Conecte novamente.', 'info')
+        return
+      }
+      setEvents(r.events)
+      setLoaded(true)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function disconnect() {
+    disconnectCalendar()
+    setNeedsAuth(true)
+    setLoaded(false)
+    setEvents([])
+    toast('Google Calendar desconectado', 'info')
   }
 
   return (
@@ -57,12 +69,7 @@ export function CalendarSettings() {
         <p className="text-xs uppercase tracking-wide text-content-muted">Agenda</p>
         {!needsAuth && (
           <button
-            onClick={() => {
-              disconnectCalendar()
-              setNeedsAuth(true)
-              setEvents([])
-              toast('Google Calendar desconectado', 'info')
-            }}
+            onClick={disconnect}
             className="flex items-center gap-1 text-xs text-content-muted hover:text-brand-500"
           >
             <Link2Off size={12} /> Desconectar
@@ -77,18 +84,30 @@ export function CalendarSettings() {
           </div>
           <p className="font-medium mb-1">Conecte seu Google Calendar</p>
           <p className="text-sm text-content-muted mb-4">
-            Veja suas proximas reunioes aqui, em lista e cards.
+            Veja suas próximas reuniões aqui, em lista e cards.
           </p>
           <button className="btn-primary w-full" onClick={connect} disabled={loading}>
             {loading ? <Spinner /> : <CalendarDays size={18} />}
             Conectar Google Calendar
           </button>
         </div>
+      ) : !loaded ? (
+        <div className="card p-5 mb-6 text-center">
+          <div className="grid place-items-center h-12 w-12 rounded-2xl bg-emerald-500/10 text-emerald-500 mx-auto mb-3">
+            <CalendarDays size={22} />
+          </div>
+          <p className="font-medium mb-1">Google Calendar conectado</p>
+          <p className="text-sm text-content-muted mb-4">Veja suas próximas reuniões.</p>
+          <button className="btn-primary w-full" onClick={viewEvents} disabled={loading}>
+            {loading ? <Spinner /> : <CalendarDays size={18} />}
+            Ver eventos
+          </button>
+        </div>
       ) : (
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2 px-1">
-            <span className="text-sm font-medium text-content-secondary">Proximos eventos</span>
-            <button onClick={refresh} className="text-content-muted hover:text-content-primary" aria-label="Atualizar">
+            <span className="text-sm font-medium text-content-secondary">Próximos eventos</span>
+            <button onClick={viewEvents} className="text-content-muted hover:text-content-primary" aria-label="Atualizar">
               {loading ? <Spinner size={14} /> : <RefreshCw size={14} />}
             </button>
           </div>
@@ -106,7 +125,7 @@ export function CalendarSettings() {
               ))}
             </ul>
           ) : events.length === 0 ? (
-            <div className="card p-5 text-sm text-content-muted text-center">Nenhum evento proximo.</div>
+            <div className="card p-5 text-sm text-content-muted text-center">Nenhum evento próximo.</div>
           ) : (
             <ul className="grid sm:grid-cols-2 gap-3">
               {events.map((e) => (

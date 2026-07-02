@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Home, Phone, Settings as SettingsIcon, Sparkles, ShieldCheck, Mic, Bot } from 'lucide-react'
+import { Home, Phone, Settings as SettingsIcon, Sparkles, ShieldCheck, Mic } from 'lucide-react'
+import { AnaIcon } from '../components/AnaIcon'
 import { useAuth } from '../auth/AuthProvider'
 import { Logo } from '../components/Logo'
 import { Avatar } from '../components/ui'
@@ -77,7 +78,7 @@ function Sidebar() {
             <span className="flex items-center gap-2 mb-1">
               <span className="relative grid place-items-center h-7 w-7 rounded-lg bg-brand-500 text-white shrink-0">
                 <span className="absolute inset-0 rounded-lg bg-brand-500 animate-ping opacity-30" />
-                <Bot size={15} className="relative" />
+                <AnaIcon size={15} className="relative" />
               </span>
               <span className="text-sm font-semibold">Falar com a ANA</span>
             </span>
@@ -141,7 +142,7 @@ function BottomNav() {
           <div className="flex-1 flex justify-center">
             <button
               onClick={() => navigate('/capturar')}
-              aria-label="Gravar audio"
+              aria-label="Gravar áudio"
               className="grid place-items-center h-14 w-14 -mt-8 rounded-full bg-brand-500 hover:bg-brand-600 text-white shadow-float ring-4 ring-surface-card transition-colors"
             >
               <Mic size={24} />

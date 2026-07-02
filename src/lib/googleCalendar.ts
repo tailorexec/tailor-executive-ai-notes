@@ -51,10 +51,19 @@ export function disconnectCalendar(): void {
 export async function connectCalendar(): Promise<boolean> {
   await loadGis()
   return new Promise((resolve) => {
+    let settled = false
+    const done = (v: boolean) => {
+      if (!settled) {
+        settled = true
+        resolve(v)
+      }
+    }
     // @ts-expect-error GIS global
     const client = window.google.accounts.oauth2.initTokenClient({
       client_id: config.googleClientId,
       scope: SCOPE,
+      // Abre a tela de consentimento numa nova janela (popup).
+      ux_mode: 'popup',
       callback: (resp: { access_token?: string; expires_in?: number }) => {
         if (resp.access_token) {
           localStorage.setItem(
@@ -64,13 +73,15 @@ export async function connectCalendar(): Promise<boolean> {
               exp: Date.now() + (resp.expires_in ? resp.expires_in * 1000 : 3300000),
             }),
           )
-          resolve(true)
+          done(true)
         } else {
-          resolve(false)
+          done(false)
         }
       },
+      // Sem isso, fechar/cancelar o popup deixava a Promise pendente (carregando pra sempre).
+      error_callback: () => done(false),
     })
-    client.requestAccessToken({ prompt: '' })
+    client.requestAccessToken({ prompt: 'consent' })
   })
 }
 

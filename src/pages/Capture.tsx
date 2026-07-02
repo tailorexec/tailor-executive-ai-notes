@@ -266,7 +266,7 @@ export function Capture() {
 
       {mode !== 'link' && (
         <div className="mb-4">
-          <label className="label">Titulo (opcional)</label>
+          <label className="label">Título (opcional)</label>
           <input
             className="input"
             placeholder="Ex: Conversa com Cliente X"
@@ -278,7 +278,7 @@ export function Capture() {
 
       {(mode === 'record' || mode === 'meeting' || mode === 'upload') && (
         <div className="mb-4">
-          <label className="label">{mode === 'upload' ? 'Tema do audio (opcional)' : 'Tema (opcional)'}</label>
+          <label className="label">{mode === 'upload' ? 'Tema do áudio (opcional)' : 'Tema (opcional)'}</label>
           <div className="flex flex-wrap gap-2 mb-2">
             {TEMPLATES.map((t) => (
               <button
@@ -305,7 +305,7 @@ export function Capture() {
         <label className="label">Contexto (opcional)</label>
         <input
           className="input"
-          placeholder="Ex: cliente X, renovacao de contrato"
+          placeholder="Ex: cliente X, renovação de contrato"
           value={context}
           onChange={(e) => setContext(e.target.value)}
         />
@@ -348,12 +348,12 @@ export function Capture() {
             !canCaptureSystemAudio() ? (
               <div className="card p-6 text-center max-w-sm">
                 <MonitorSmartphone size={36} className="text-brand-500 mx-auto mb-3" />
-                <h3 className="font-display font-semibold text-lg">Gravacao completa so no app ou desktop</h3>
+                <h3 className="font-display font-semibold text-lg">Gravação completa só no app ou desktop</h3>
                 <p className="text-content-secondary mt-2 text-sm">
-                  A captura do <span className="text-content-primary font-medium">audio interno da reuniao</span>
-                  {' '}(a outra ponta, mesmo de fone) so funciona no <span className="text-content-primary font-medium">computador</span>
+                  A captura do <span className="text-content-primary font-medium">áudio interno da reunião</span>
+                  {' '}(a outra ponta, mesmo de fone) só funciona no <span className="text-content-primary font-medium">computador</span>
                   {' '}(Chrome/Edge) ou no <span className="text-content-primary font-medium">app Android</span>.
-                  No navegador do celular, so da para gravar pelo microfone (viva-voz).
+                  No navegador do celular, só dá para gravar pelo microfone (viva-voz).
                 </p>
                 <button className="btn-outline mt-5 mx-auto" onClick={() => navigate('/capturar?mode=record')}>
                   <Mic size={18} /> Gravar pelo microfone
@@ -362,17 +362,17 @@ export function Capture() {
             ) : (
               <div className="card p-6 max-w-md">
                 <Headphones size={32} className="text-brand-500 mb-3" />
-                <h3 className="font-display font-semibold text-lg">Gravar a reuniao (mesmo de fone)</h3>
+                <h3 className="font-display font-semibold text-lg">Gravar a reunião (mesmo de fone)</h3>
                 <ol className="text-content-secondary text-sm mt-3 space-y-2 list-decimal list-inside">
-                  <li>Abra sua reuniao (Zoom, Meet ou Teams) em uma aba/janela.</li>
-                  <li>Clique em "Iniciar" abaixo e escolha a aba da reuniao (ou a tela toda).</li>
+                  <li>Abra sua reunião (Zoom, Meet ou Teams) em uma aba/janela.</li>
+                  <li>Clique em "Iniciar" abaixo e escolha a aba da reunião (ou a tela toda).</li>
                   <li>
-                    <span className="text-content-primary font-medium">Marque "Compartilhar audio"</span> no
-                    dialogo do navegador.
+                    <span className="text-content-primary font-medium">Marque "Compartilhar áudio"</span> no
+                    diálogo do navegador.
                   </li>
                 </ol>
                 <p className="text-xs text-content-muted mt-3">
-                  Gravamos o audio da reuniao + seu microfone juntos. Nada de video e enviado.
+                  Gravamos o áudio da reunião + seu microfone juntos. Nada de vídeo é enviado.
                 </p>
                 <button className="btn-primary w-full mt-5" onClick={startMeeting}>
                   <Headphones size={18} /> Iniciar gravacao da reuniao
@@ -463,7 +463,7 @@ export function Capture() {
             className="card w-full max-w-sm py-12 flex flex-col items-center gap-3 border-dashed hover:border-brand-500/50"
           >
             <Upload size={36} className="text-brand-500" />
-            <p className="font-medium">Selecionar arquivo de audio</p>
+            <p className="font-medium">Selecionar arquivo de áudio</p>
             <p className="text-sm text-content-muted">MP3, M4A, WAV, WEBM</p>
           </button>
           <input ref={fileRef} type="file" accept="audio/*" className="hidden" onChange={onUploadAudio} />
@@ -477,7 +477,7 @@ export function Capture() {
             className="card w-full max-w-sm py-12 flex flex-col items-center gap-3 border-dashed hover:border-brand-500/50"
           >
             <Video size={36} className="text-brand-500" />
-            <p className="font-medium">Selecionar video</p>
+            <p className="font-medium">Selecionar vídeo</p>
             <p className="text-sm text-content-muted">MP4, MOV, WEBM • ate {MAX_VIDEO_MB} MB</p>
           </button>
           <input ref={fileRef} type="file" accept="video/*" className="hidden" onChange={onUploadVideo} />

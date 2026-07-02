@@ -40,7 +40,7 @@ import { FolderSheet } from './FolderSheet'
 import { Sheet } from '../components/ui'
 import type { Folder } from '../lib/types'
 
-type Tab = 'summary' | 'detailed' | 'analysis' | 'mindmap' | 'transcript'
+type Tab = 'summary' | 'detailed' | 'analysis' | 'transcript'
 
 export function NoteDetail() {
   const { id } = useParams()
@@ -55,6 +55,7 @@ export function NoteDetail() {
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const [translateOpen, setTranslateOpen] = useState(false)
   const [folderOpen, setFolderOpen] = useState(false)
+  const [mindmapOpen, setMindmapOpen] = useState(false)
   const [folders, setFolders] = useState<Folder[]>([])
   const [menuOpen, setMenuOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -100,7 +101,7 @@ export function NoteDetail() {
     return (
       <div className="min-h-screen grid place-items-center px-6 text-center">
         <div>
-          <p className="text-content-secondary mb-4">Nota nao encontrada.</p>
+          <p className="text-content-secondary mb-4">Nota não encontrada.</p>
           <button className="btn-primary" onClick={() => navigate('/')}>Voltar</button>
         </div>
       </div>
@@ -172,10 +173,17 @@ export function NoteDetail() {
       const updated = await db.updateNote(note.id, { mindmap })
       if (profile) await db.logUsage(profile.id, 'ai_analysis', note.id)
       setNote(updated)
-      setTab('mindmap')
+      setMindmapOpen(true)
     } finally {
       setBusy(null)
     }
+  }
+
+  /** Abre o mapa mental num card grande (gera se ainda nao existir). */
+  function openMindMap() {
+    if (!note) return
+    if (note.mindmap) setMindmapOpen(true)
+    else runMindMap()
   }
 
   function toggleNarration() {
@@ -235,9 +243,8 @@ export function NoteDetail() {
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
     { key: 'summary', label: 'Resumo', icon: <FileText size={16} /> },
     { key: 'detailed', label: 'Detalhado', icon: <Sparkles size={16} /> },
-    { key: 'analysis', label: 'Analise', icon: <BarChart3 size={16} /> },
-    { key: 'mindmap', label: 'Mapa mental', icon: <Network size={16} /> },
-    { key: 'transcript', label: 'Transcricao', icon: <ScrollText size={16} /> },
+    { key: 'analysis', label: 'Análise', icon: <BarChart3 size={16} /> },
+    { key: 'transcript', label: 'Transcrição', icon: <ScrollText size={16} /> },
   ]
 
   return (
@@ -260,7 +267,7 @@ export function NoteDetail() {
               <button
                 onClick={() => setMenuOpen((v) => !v)}
                 className="grid place-items-center h-10 w-10 rounded-full bg-surface-elevated border border-surface-border"
-                aria-label="Mais opcoes"
+                aria-label="Mais opções"
               >
                 <MoreVertical size={18} />
               </button>
@@ -270,7 +277,7 @@ export function NoteDetail() {
                   <div className="absolute right-0 mt-2 w-52 z-20 bg-surface-card border border-surface-border rounded-2xl shadow-float overflow-hidden py-1">
                     {canEdit && (
                       <button onClick={() => openEdit('title')} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left hover:bg-surface-elevated">
-                        <Pencil size={16} className="text-content-secondary" /> Editar titulo
+                        <Pencil size={16} className="text-content-secondary" /> Editar título
                       </button>
                     )}
                     {canEdit && (
@@ -382,11 +389,18 @@ export function NoteDetail() {
             hint="Outro idioma"
             onClick={() => setTranslateOpen(true)}
           />
+          <ActionButton
+            icon={busy === 'mindmap' ? <Spinner size={18} /> : <Network size={18} />}
+            label="Mapa mental"
+            hint={busy === 'mindmap' ? 'Gerando...' : 'Tema central e ramos'}
+            onClick={openMindMap}
+            disabled={busy === 'mindmap'}
+          />
           {ttsSupported() && (
             <ActionButton
               icon={narrating ? <Square size={18} /> : <Volume2 size={18} />}
               label={narrating ? 'Parar narracao' : 'Narrar'}
-              hint="Ouvir esta secao"
+              hint="Ouvir esta seção"
               onClick={toggleNarration}
             />
           )}
@@ -414,7 +428,7 @@ export function NoteDetail() {
         <div className="pb-40">
           {tab === 'summary' && (
             <>
-              <ProseBlock text={note.summary} empty="Resumo indisponivel." />
+              <ProseBlock text={note.summary} empty="Resumo indisponível." />
               {note.action_items.length > 0 && (
                 <div className="mt-6">
                   <h3 className="flex items-center gap-2 font-display font-semibold mb-3">
@@ -464,26 +478,14 @@ export function NoteDetail() {
               <AnalysisView analysis={note.analysis} />
             ) : (
               <GenerateCta
-                title="Analise de reuniao"
-                subtitle="Tom, perguntas feitas, sugestoes, ritmo e pontos de melhoria."
+                title="Análise de reunião"
+                subtitle="Tom, perguntas feitas, sugestões, ritmo e pontos de melhoria."
                 loading={busy === 'analysis'}
                 onClick={runAnalysis}
               />
             ))}
 
-          {tab === 'mindmap' &&
-            (note.mindmap ? (
-              <MindMapView map={note.mindmap} />
-            ) : (
-              <GenerateCta
-                title="Mapa mental"
-                subtitle="Organiza a reuniao em um mapa: tema central, ramos e sub-topicos."
-                loading={busy === 'mindmap'}
-                onClick={runMindMap}
-              />
-            ))}
-
-          {tab === 'transcript' && <ProseBlock text={note.transcript} empty="Transcricao indisponivel." mono />}
+          {tab === 'transcript' && <ProseBlock text={note.transcript} empty="Transcrição indisponível." mono />}
         </div>
       </div>
 
@@ -538,7 +540,7 @@ export function NoteDetail() {
       <ConfirmDialog
         open={confirmDelete}
         title="Excluir esta nota?"
-        message="Esta acao nao pode ser desfeita. A transcricao, o resumo e o audio serao removidos."
+        message="Esta ação não pode ser desfeita. A transcrição, o resumo e o áudio serão removidos."
         confirmLabel="Excluir"
         danger
         onConfirm={doDelete}
@@ -547,6 +549,11 @@ export function NoteDetail() {
 
       {shareOpen && (
         <ShareSheet note={note} open={shareOpen} onClose={() => setShareOpen(false)} onUpdated={setNote} />
+      )}
+      {mindmapOpen && note.mindmap && (
+        <Sheet open={mindmapOpen} onClose={() => setMindmapOpen(false)} title="Mapa mental">
+          <MindMapView map={note.mindmap} />
+        </Sheet>
       )}
       {feedbackOpen && <FeedbackSheet note={note} open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />}
       {translateOpen && <TranslateSheet note={note} open={translateOpen} onClose={() => setTranslateOpen(false)} />}
@@ -663,7 +670,7 @@ function AnalysisView({ analysis }: { analysis: NonNullable<Note['analysis']> })
             {analysis.overallScore}
           </div>
           <div>
-            <p className="font-semibold">Qualidade da reuniao</p>
+            <p className="font-semibold">Qualidade da reunião</p>
             <p className="text-sm text-content-muted">{analysis.pacing}</p>
           </div>
         </div>
