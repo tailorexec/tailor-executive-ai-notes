@@ -13,7 +13,6 @@ import {
   Plus,
 } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
-import { useTheme } from '../theme/ThemeProvider'
 import { Logo } from '../components/Logo'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { Spinner } from '../components/ui'
@@ -44,17 +43,21 @@ function useIsDesktop() {
 function VideoBackground() {
   // Enfeite bem sutil, so no desktop (nao baixa no mobile), sem travar a pagina.
   return (
-    <video
-      className="pointer-events-none fixed inset-0 -z-20 h-full w-full object-cover brightness-110 dark:brightness-[1.75] dark:contrast-125 dark:saturate-150"
-      autoPlay
-      muted
-      loop
-      playsInline
-      preload="metadata"
-      aria-hidden
-    >
-      <source src="/tailor_loop.mp4" type="video/mp4" />
-    </video>
+    <>
+      <video
+        className="pointer-events-none fixed inset-0 -z-20 h-full w-full object-cover brightness-110 dark:brightness-[1.75] dark:contrast-125 dark:saturate-150"
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="metadata"
+        aria-hidden
+      >
+        <source src="/tailor_loop.mp4" type="video/mp4" />
+      </video>
+      {/* Vel para manter texto legivel (mais forte no claro). */}
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-surface-bg/70 dark:bg-black/25" aria-hidden />
+    </>
   )
 }
 
@@ -112,15 +115,14 @@ export function Login() {
   }
 
   const isDesktop = useIsDesktop()
-  const { theme } = useTheme()
 
   return (
     <div className="min-h-screen lg:h-screen flex flex-col safe-top lg:overflow-hidden">
-      {/* Video (escuro) so no desktop + tema escuro; no claro/mobile usa o fundo tecnologico */}
-      {isDesktop && theme === 'dark' ? <VideoBackground /> : <TechBackground />}
+      {/* Video de fundo no desktop (claro e escuro); no mobile usa o fundo tecnologico */}
+      {isDesktop ? <VideoBackground /> : <TechBackground />}
 
-      <header className="flex items-center justify-between px-6 pt-6 md:pt-4 md:shrink-0">
-        <Logo size="md" />
+      <header className="flex items-start justify-between px-6 pt-6 md:pt-4 md:shrink-0">
+        <Logo size="md" heightClass="h-11 md:h-12" className="mt-1" />
         <ThemeToggle />
       </header>
 
@@ -247,13 +249,14 @@ export function Login() {
       </main>
 
       <footer className="text-center py-6 md:py-3 text-sm text-content-muted md:shrink-0">
+        A N A Technology by{' '}
         <a
           href="https://tailorexec.com.br"
           target="_blank"
           rel="noreferrer"
           className="hover:text-brand-500 transition-colors"
         >
-          tailorexec.com.br
+          Tailorexec.com.br
         </a>
       </footer>
     </div>

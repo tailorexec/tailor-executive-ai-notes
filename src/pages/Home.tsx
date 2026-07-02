@@ -22,6 +22,7 @@ import type { Note, Folder } from '../lib/types'
 import { fmtDate, fmtDuration, fmtTime } from '../lib/format'
 import { Avatar, EmptyState, Sheet, Spinner, Chip } from '../components/ui'
 import { ThemeToggle } from '../components/ThemeToggle'
+import { Logo } from '../components/Logo'
 import { AskNotesSheet } from './AskNotesSheet'
 import { FolderSheet } from './FolderSheet'
 import { getNotifPrefs, notify } from '../lib/notifications'
@@ -97,20 +98,24 @@ export function Home() {
 
   return (
     <div className="px-5 pt-6 safe-top">
-      <header className="flex items-center justify-between mb-5">
-        <h1 className="font-display text-3xl font-bold">Minhas notas</h1>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setFolderOpen(true)}
-            aria-label="Pastas"
-            className="grid place-items-center h-10 w-10 rounded-full bg-surface-elevated border border-surface-border text-content-secondary hover:text-content-primary"
-          >
-            <FolderIcon size={18} />
-          </button>
-          <ThemeToggle />
-          <button onClick={() => navigate('/config')} aria-label="Perfil">
-            {profile && <Avatar first={profile.first_name} last={profile.last_name} url={profile.avatar_url} />}
-          </button>
+      <header className="flex items-start justify-between mb-5">
+        <h1 className="font-display text-3xl font-bold mt-1">Minhas notas</h1>
+        <div className="flex flex-col items-end gap-2">
+          {/* Logo ANA no topo direito (apenas mobile; no desktop fica na sidebar) */}
+          <Logo part="ana" heightClass="h-6" className="md:hidden" />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setFolderOpen(true)}
+              aria-label="Pastas"
+              className="grid place-items-center h-10 w-10 rounded-full bg-surface-elevated border border-surface-border text-content-secondary hover:text-content-primary"
+            >
+              <FolderIcon size={18} />
+            </button>
+            <ThemeToggle />
+            <button onClick={() => navigate('/config')} aria-label="Perfil">
+              {profile && <Avatar first={profile.first_name} last={profile.last_name} url={profile.avatar_url} />}
+            </button>
+          </div>
         </div>
       </header>
 

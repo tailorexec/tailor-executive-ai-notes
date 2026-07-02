@@ -34,7 +34,7 @@ function Sidebar() {
   return (
     <aside className="hidden md:flex fixed inset-y-0 left-0 w-64 flex-col border-r border-surface-border bg-surface-card z-40">
       <div className="px-4 pt-7 pb-6 flex justify-center">
-        <Logo size="sm" />
+        <Logo part="ana" heightClass="h-12" />
       </div>
 
       <button
@@ -86,6 +86,10 @@ function Sidebar() {
             </span>
           </span>
         </button>
+      </div>
+
+      <div className="px-3 pb-2 flex justify-center">
+        <Logo part="tailor" heightClass="h-5" className="opacity-80" />
       </div>
 
       <div className="p-3 border-t border-surface-border">
