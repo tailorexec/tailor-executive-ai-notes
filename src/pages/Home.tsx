@@ -8,7 +8,8 @@ import {
   Mic,
   Headphones,
   NotebookPen,
-  Sparkles,
+  MessageSquare,
+  ChevronRight,
   Smartphone,
   Monitor,
   Video,
@@ -132,10 +133,10 @@ export function Home() {
             <Bot size={18} className="relative" />
           </span>
           <span className="text-sm leading-tight">
-            <span className="font-semibold">Deixe a ANA ser sua assistente inteligente com PhD</span>
-            <span className="text-content-muted"> — ou me pergunte algo</span>
+            <span className="font-semibold">ANA:</span>
+            <span className="text-content-secondary"> Me deixe ser sua assistente, tenho PhD</span>
+            <span className="text-content-muted"> - ou me pergunte algo.</span>
           </span>
-          <Sparkles size={16} className="text-brand-500 ml-auto shrink-0" />
         </span>
       </button>
 
@@ -151,10 +152,16 @@ export function Home() {
 
       <button
         onClick={() => setAskOpen(true)}
-        className="w-full flex items-center gap-2.5 bg-brand-500/10 border border-brand-500/20 text-brand-500 rounded-xl px-4 py-2.5 mb-4 text-sm font-medium hover:bg-brand-500/15 transition-colors"
+        className="w-full flex items-center gap-3 bg-surface-elevated border border-surface-border rounded-2xl px-4 py-3 mb-4 text-left hover:border-brand-500/40 transition-colors"
       >
-        <Sparkles size={16} />
-        Conversar com todas as reunioes
+        <span className="grid place-items-center h-9 w-9 rounded-xl bg-brand-500 text-white shrink-0">
+          <MessageSquare size={18} />
+        </span>
+        <span className="flex-1 min-w-0">
+          <span className="block font-medium text-sm">Conversar com todas as reunioes</span>
+          <span className="block text-xs text-content-muted">Pergunte a IA sobre qualquer nota</span>
+        </span>
+        <ChevronRight size={18} className="text-content-muted shrink-0" />
       </button>
 
       {folderList.length > 0 && (

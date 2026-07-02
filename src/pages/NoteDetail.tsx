@@ -9,6 +9,7 @@ import {
   Send,
   FileText,
   ListChecks,
+  BarChart3,
   ScrollText,
   Trash2,
   MessageSquare,
@@ -22,7 +23,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
 import { db, config } from '../lib/api'
-import { chatWithNote, generateMindMap } from '../lib/ai'
+import { chatWithNote, generateAnalysis, generateDetailed, generateMindMap } from '../lib/ai'
 import { speak, stopSpeaking, ttsSupported } from '../lib/tts'
 import { fmtDateTime, fmtDuration } from '../lib/format'
 import { Spinner } from '../components/ui'
@@ -38,7 +39,7 @@ import { FolderSheet } from './FolderSheet'
 import { Sheet } from '../components/ui'
 import type { Folder } from '../lib/types'
 
-type Tab = 'summary' | 'mindmap' | 'transcript'
+type Tab = 'summary' | 'detailed' | 'analysis' | 'mindmap' | 'transcript'
 
 export function NoteDetail() {
   const { id } = useParams()
@@ -46,7 +47,7 @@ export function NoteDetail() {
   const { profile } = useAuth()
   const [note, setNote] = useState<Note | null | undefined>(undefined)
   const [tab, setTab] = useState<Tab>('summary')
-  const [busy, setBusy] = useState<null | 'mindmap'>(null)
+  const [busy, setBusy] = useState<null | 'detailed' | 'analysis' | 'mindmap'>(null)
   const [narrating, setNarrating] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
   const [feedbackOpen, setFeedbackOpen] = useState(false)
@@ -130,6 +131,34 @@ export function NoteDetail() {
     await navigator.clipboard.writeText(lines.join('\n'))
   }
 
+  async function runDetailed() {
+    if (!note) return
+    setBusy('detailed')
+    try {
+      const detailed = await generateDetailed(note.transcript, { template: note.template, context: note.context })
+      const updated = await db.updateNote(note.id, { detailed_summary: detailed })
+      if (profile) await db.logUsage(profile.id, 'ai_detailed', note.id)
+      setNote(updated)
+      setTab('detailed')
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  async function runAnalysis() {
+    if (!note) return
+    setBusy('analysis')
+    try {
+      const analysis = await generateAnalysis(note.transcript, { template: note.template, context: note.context })
+      const updated = await db.updateNote(note.id, { analysis })
+      if (profile) await db.logUsage(profile.id, 'ai_analysis', note.id)
+      setNote(updated)
+      setTab('analysis')
+    } finally {
+      setBusy(null)
+    }
+  }
+
   async function runMindMap() {
     if (!note) return
     setBusy('mindmap')
@@ -201,6 +230,8 @@ export function NoteDetail() {
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
     { key: 'summary', label: 'Resumo', icon: <FileText size={16} /> },
+    { key: 'detailed', label: 'Detalhado', icon: <Sparkles size={16} /> },
+    { key: 'analysis', label: 'Analise', icon: <BarChart3 size={16} /> },
     { key: 'mindmap', label: 'Mapa mental', icon: <Network size={16} /> },
     { key: 'transcript', label: 'Transcricao', icon: <ScrollText size={16} /> },
   ]
@@ -404,6 +435,30 @@ export function NoteDetail() {
             </>
           )}
 
+          {tab === 'detailed' &&
+            (note.detailed_summary ? (
+              <ProseBlock text={note.detailed_summary} />
+            ) : (
+              <GenerateCta
+                title="Resumo detalhado mais inteligente"
+                subtitle="Gera um resumo aprofundado com o modelo Sonnet."
+                loading={busy === 'detailed'}
+                onClick={runDetailed}
+              />
+            ))}
+
+          {tab === 'analysis' &&
+            (note.analysis ? (
+              <AnalysisView analysis={note.analysis} />
+            ) : (
+              <GenerateCta
+                title="Analise de reuniao"
+                subtitle="Tom, perguntas feitas, sugestoes, ritmo e pontos de melhoria."
+                loading={busy === 'analysis'}
+                onClick={runAnalysis}
+              />
+            ))}
+
           {tab === 'mindmap' &&
             (note.mindmap ? (
               <MindMapView map={note.mindmap} />
@@ -573,6 +628,47 @@ function ProseBlock({ text, empty, mono }: { text: string; empty?: string; mono?
           )
         return <p key={i}>{t}</p>
       })}
+    </div>
+  )
+}
+
+function AnalysisView({ analysis }: { analysis: NonNullable<Note['analysis']> }) {
+  return (
+    <div className="space-y-5">
+      {typeof analysis.overallScore === 'number' && (
+        <div className="card p-5 flex items-center gap-4">
+          <div className="grid place-items-center h-16 w-16 rounded-full bg-brand-500/10 text-brand-500 font-display font-bold text-xl">
+            {analysis.overallScore}
+          </div>
+          <div>
+            <p className="font-semibold">Qualidade da reuniao</p>
+            <p className="text-sm text-content-muted">{analysis.pacing}</p>
+          </div>
+        </div>
+      )}
+      <AnalysisSection title="Tom" items={[analysis.tone]} />
+      <AnalysisSection title="Pontos fortes" items={analysis.strengths} accent />
+      <AnalysisSection title="Melhorias sugeridas" items={analysis.improvements} />
+      <AnalysisSection title="Perguntas feitas" items={analysis.questionsAsked} />
+      <AnalysisSection title="Perguntas sugeridas" items={analysis.suggestedQuestions} accent />
+      <AnalysisSection title="Pontos-chave" items={analysis.keyPoints} />
+      <AnalysisSection title="Riscos" items={analysis.risks} />
+    </div>
+  )
+}
+
+function AnalysisSection({ title, items, accent }: { title: string; items: string[]; accent?: boolean }) {
+  if (!items?.length) return null
+  return (
+    <div>
+      <h3 className="font-display font-semibold mb-2">{title}</h3>
+      <ul className="space-y-2">
+        {items.map((it, i) => (
+          <li key={i} className={`card px-4 py-3 ${accent ? 'border-brand-500/30' : ''}`}>
+            {it}
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }
