@@ -24,6 +24,7 @@ import { ThemeToggle } from '../components/ThemeToggle'
 import { AskNotesSheet } from './AskNotesSheet'
 import { FolderSheet } from './FolderSheet'
 import { getNotifPrefs, notify } from '../lib/notifications'
+import { UpcomingEvents } from './UpcomingEvents'
 
 /** Icone de origem: diferencia como a nota foi criada. */
 function sourceIcon(n: Note): React.ReactNode {
@@ -107,6 +108,8 @@ export function Home() {
           </button>
         </div>
       </header>
+
+      <UpcomingEvents />
 
       <div className="flex items-center gap-2.5 rounded-2xl px-4 py-2.5 mb-4 bg-gradient-to-r from-brand-500/15 to-brand-500/5 border border-brand-500/20">
         <GraduationCap size={18} className="text-brand-500 shrink-0" />
