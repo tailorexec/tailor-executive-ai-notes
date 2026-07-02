@@ -6,6 +6,7 @@ import App from './App'
 import { ThemeProvider } from './theme/ThemeProvider'
 import { AuthProvider } from './auth/AuthProvider'
 import { SettingsProvider } from './app/SettingsProvider'
+import { ToastProvider } from './components/Toast'
 import { initButtonShine } from './lib/buttonShine'
 
 // Remove sessoes corrompidas no localStorage (residuo de tentativas antigas) que
@@ -45,7 +46,9 @@ createRoot(document.getElementById('root')!).render(
       <BrowserRouter>
         <AuthProvider>
           <SettingsProvider>
-            <App />
+            <ToastProvider>
+              <App />
+            </ToastProvider>
           </SettingsProvider>
         </AuthProvider>
       </BrowserRouter>

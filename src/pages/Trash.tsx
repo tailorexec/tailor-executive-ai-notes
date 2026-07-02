@@ -6,13 +6,16 @@ import { db } from '../lib/api'
 import { deleteAudio } from '../lib/audioStore'
 import type { Note } from '../lib/types'
 import { fmtRelative } from '../lib/format'
-import { EmptyState, Spinner } from '../components/ui'
+import { EmptyState, Spinner, ConfirmDialog } from '../components/ui'
+import { useToast } from '../components/Toast'
 
 export function TrashPage() {
   const { profile } = useAuth()
   const navigate = useNavigate()
   const [notes, setNotes] = useState<Note[] | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
+  const [purgeTarget, setPurgeTarget] = useState<Note | null>(null)
+  const toast = useToast()
 
   function load() {
     if (profile) db.listTrash(profile.id).then(setNotes)
@@ -24,15 +27,16 @@ export function TrashPage() {
     await db.restoreNote(id)
     load()
     setBusy(null)
+    toast('Nota restaurada')
   }
 
   async function purge(note: Note) {
-    if (!confirm('Excluir definitivamente? Esta acao nao pode ser desfeita.')) return
     setBusy(note.id)
     await deleteAudio(note.audio_url)
     await db.deleteNotePermanent(note.id)
     load()
     setBusy(null)
+    toast('Nota excluida definitivamente', 'info')
   }
 
   return (
@@ -56,7 +60,16 @@ export function TrashPage() {
           <Spinner size={24} className="text-brand-500" />
         </div>
       ) : notes.length === 0 ? (
-        <EmptyState icon={<Trash size={40} />} title="Lixeira vazia" subtitle="Nada por aqui." />
+        <EmptyState
+          icon={<Trash size={40} />}
+          title="Lixeira vazia"
+          subtitle="Notas que voce excluir aparecem aqui e podem ser restauradas antes da remocao definitiva."
+          action={
+            <button className="btn-outline" onClick={() => navigate('/')}>
+              Voltar para as notas
+            </button>
+          }
+        />
       ) : (
         <ul className="space-y-3">
           {notes.map((n) => (
@@ -73,7 +86,7 @@ export function TrashPage() {
                 <RotateCcw size={16} /> Restaurar
               </button>
               <button
-                onClick={() => purge(n)}
+                onClick={() => setPurgeTarget(n)}
                 disabled={busy === n.id}
                 className="grid place-items-center h-9 w-9 rounded-xl text-brand-500 hover:bg-brand-500/10"
                 aria-label="Excluir definitivamente"
@@ -84,6 +97,18 @@ export function TrashPage() {
           ))}
         </ul>
       )}
+
+      <ConfirmDialog
+        open={purgeTarget !== null}
+        title="Excluir definitivamente?"
+        message="Esta acao nao pode ser desfeita. A nota sera removida permanentemente."
+        confirmLabel="Excluir"
+        danger
+        onConfirm={() => {
+          if (purgeTarget) purge(purgeTarget)
+        }}
+        onClose={() => setPurgeTarget(null)}
+      />
     </div>
   )
 }

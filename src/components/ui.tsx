@@ -98,6 +98,78 @@ export function Sheet({
   )
 }
 
+/** Placeholder animado para carregamento. */
+export function Skeleton({ className = '' }: { className?: string }) {
+  return <div className={`animate-pulse rounded-lg bg-surface-elevated ${className}`} />
+}
+
+/** Card-esqueleto de nota (para a Home). */
+export function NoteCardSkeleton() {
+  return (
+    <div className="card px-4 py-3.5">
+      <div className="flex items-center justify-between mb-2">
+        <Skeleton className="h-3 w-20" />
+        <Skeleton className="h-7 w-7 rounded-full" />
+      </div>
+      <Skeleton className="h-4 w-3/4 mb-2" />
+      <Skeleton className="h-3 w-1/2" />
+    </div>
+  )
+}
+
+/** Dialogo de confirmacao (destrutivo ou neutro), no lugar do confirm() nativo. */
+export function ConfirmDialog({
+  open,
+  title,
+  message,
+  confirmLabel = 'Confirmar',
+  cancelLabel = 'Cancelar',
+  danger,
+  onConfirm,
+  onClose,
+}: {
+  open: boolean
+  title: string
+  message?: string
+  confirmLabel?: string
+  cancelLabel?: string
+  danger?: boolean
+  onConfirm: () => void
+  onClose: () => void
+}) {
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open, onClose])
+
+  if (!open) return null
+  return (
+    <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center">
+      <div className="absolute inset-0 bg-black/50 animate-fade-in" onClick={onClose} />
+      <div className="relative w-full sm:max-w-sm bg-surface-card border border-surface-border rounded-t-3xl sm:rounded-3xl shadow-float animate-slide-up safe-bottom p-6">
+        <h2 className="font-display font-semibold text-lg">{title}</h2>
+        {message && <p className="text-content-secondary mt-1.5 text-sm leading-relaxed">{message}</p>}
+        <div className="flex gap-3 mt-6">
+          <button className="btn-outline flex-1" onClick={onClose}>
+            {cancelLabel}
+          </button>
+          <button
+            className={`flex-1 ${danger ? 'btn-danger' : 'btn-primary'}`}
+            onClick={() => {
+              onConfirm()
+              onClose()
+            }}
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function Chip({
   children,
   active = false,

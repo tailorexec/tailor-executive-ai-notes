@@ -8,7 +8,7 @@ import {
   type CalEvent,
 } from '../lib/googleCalendar'
 import { fmtDate, fmtTime } from '../lib/format'
-import { Spinner } from '../components/ui'
+import { Spinner, Skeleton } from '../components/ui'
 
 export function UpcomingEvents() {
   const [events, setEvents] = useState<CalEvent[]>([])
@@ -61,7 +61,17 @@ export function UpcomingEvents() {
           Conectar Google Calendar
         </button>
       ) : loading && events.length === 0 ? (
-        <div className="grid place-items-center py-3"><Spinner className="text-brand-500" /></div>
+        <ul className="space-y-2.5">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <li key={i} className="flex items-center gap-3">
+              <Skeleton className="h-9 w-1 rounded-full" />
+              <div className="flex-1">
+                <Skeleton className="h-3.5 w-2/3 mb-1.5" />
+                <Skeleton className="h-3 w-1/3" />
+              </div>
+            </li>
+          ))}
+        </ul>
       ) : events.length === 0 ? (
         <div className="flex items-center justify-between">
           <p className="text-sm text-content-muted">Nenhum evento proximo.</p>

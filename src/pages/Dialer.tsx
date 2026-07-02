@@ -21,6 +21,7 @@ export function Dialer() {
   const [consentOpen, setConsentOpen] = useState(false)
   const [processing, setProcessing] = useState(false)
   const [via, setVia] = useState<'phone' | 'whatsapp'>('phone')
+  const [noAudioOpen, setNoAudioOpen] = useState(false)
   const [history, setHistory] = useState<{ number: string; via: string; at: string }[]>(() => {
     try {
       return JSON.parse(localStorage.getItem('tailor.calls') || '[]')
@@ -70,9 +71,7 @@ export function Dialer() {
     // Se a gravacao ficou muda (comum em ligacoes reais no celular, onde o sistema reserva
     // o microfone), nao transcrevemos: evita a IA "inventar" conteudo.
     if (await isSilentAudio(res.blob)) {
-      alert(
-        'Nao captamos audio desta ligacao. Em ligacoes reais no celular, o navegador nao consegue acessar o microfone (o sistema reserva para a chamada). Use o viva-voz, grave uma reuniao no desktop, ou use o app.',
-      )
+      setNoAudioOpen(true)
       return
     }
 
@@ -244,6 +243,17 @@ export function Dialer() {
         </div>
         <button className="btn-outline w-full mt-3" onClick={() => setConsentOpen(false)}>
           Cancelar
+        </button>
+      </Sheet>
+
+      <Sheet open={noAudioOpen} onClose={() => setNoAudioOpen(false)} title="Sem audio na ligacao">
+        <p className="text-sm text-content-secondary leading-relaxed mb-5">
+          Nao captamos audio desta ligacao. Em ligacoes reais no celular, o navegador nao consegue
+          acessar o microfone (o sistema reserva para a chamada). Use o viva-voz, grave uma reuniao no
+          desktop, ou use o app.
+        </p>
+        <button className="btn-primary w-full" onClick={() => setNoAudioOpen(false)}>
+          Entendi
         </button>
       </Sheet>
     </div>

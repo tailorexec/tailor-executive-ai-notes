@@ -80,6 +80,9 @@
   .btn-outline {
     @apply btn border border-surface-border hover:bg-surface-elevated text-content-primary px-4 py-2.5;
   }
+  .btn-danger {
+    @apply btn bg-brand-600 hover:bg-brand-700 text-white px-4 py-2.5;
+  }
 
   .input {
     @apply w-full bg-surface-elevated border border-surface-border rounded-xl px-4 py-3

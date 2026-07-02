@@ -8,13 +8,15 @@ import {
   type CalEvent,
 } from '../lib/googleCalendar'
 import { fmtDate, fmtTime } from '../lib/format'
-import { Spinner } from '../components/ui'
+import { Spinner, Skeleton } from '../components/ui'
+import { useToast } from '../components/Toast'
 
 /** Painel de agenda para a tela de Config: lista os proximos eventos em cards. */
 export function CalendarSettings() {
   const [events, setEvents] = useState<CalEvent[]>([])
   const [needsAuth, setNeedsAuth] = useState(!isCalendarConnected())
   const [loading, setLoading] = useState(false)
+  const toast = useToast()
 
   async function refresh() {
     setLoading(true)
@@ -36,10 +38,16 @@ export function CalendarSettings() {
     setLoading(true)
     try {
       const ok = await connectCalendar()
-      if (ok) await refresh()
-      else setLoading(false)
+      if (ok) {
+        await refresh()
+        toast('Google Calendar conectado')
+      } else {
+        setLoading(false)
+        toast('Conexao cancelada', 'info')
+      }
     } catch {
       setLoading(false)
+      toast('Nao foi possivel conectar', 'error')
     }
   }
 
@@ -53,6 +61,7 @@ export function CalendarSettings() {
               disconnectCalendar()
               setNeedsAuth(true)
               setEvents([])
+              toast('Google Calendar desconectado', 'info')
             }}
             className="flex items-center gap-1 text-xs text-content-muted hover:text-brand-500"
           >
@@ -85,9 +94,17 @@ export function CalendarSettings() {
           </div>
 
           {loading && events.length === 0 ? (
-            <div className="card grid place-items-center py-8">
-              <Spinner className="text-brand-500" />
-            </div>
+            <ul className="grid sm:grid-cols-2 gap-3">
+              {Array.from({ length: 2 }).map((_, i) => (
+                <li key={i} className="card p-4 flex gap-3">
+                  <Skeleton className="h-10 w-10 rounded-xl shrink-0" />
+                  <div className="flex-1">
+                    <Skeleton className="h-4 w-2/3 mb-2" />
+                    <Skeleton className="h-3 w-1/2" />
+                  </div>
+                </li>
+              ))}
+            </ul>
           ) : events.length === 0 ? (
             <div className="card p-5 text-sm text-content-muted text-center">Nenhum evento proximo.</div>
           ) : (

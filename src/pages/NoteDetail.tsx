@@ -26,7 +26,8 @@ import { db, config } from '../lib/api'
 import { chatWithNote, generateAnalysis, generateDetailed, generateMindMap } from '../lib/ai'
 import { speak, stopSpeaking, ttsSupported } from '../lib/tts'
 import { fmtDateTime, fmtDuration } from '../lib/format'
-import { Spinner } from '../components/ui'
+import { Spinner, ConfirmDialog } from '../components/ui'
+import { useToast } from '../components/Toast'
 import { AudioPlayer } from '../components/AudioPlayer'
 import { deleteAudio } from '../lib/audioStore'
 import type { ChatMessage, Note } from '../lib/types'
@@ -45,6 +46,7 @@ export function NoteDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { profile } = useAuth()
+  const toast = useToast()
   const [note, setNote] = useState<Note | null | undefined>(undefined)
   const [tab, setTab] = useState<Tab>('summary')
   const [busy, setBusy] = useState<null | 'detailed' | 'analysis' | 'mindmap'>(null)
@@ -55,6 +57,7 @@ export function NoteDetail() {
   const [folderOpen, setFolderOpen] = useState(false)
   const [folders, setFolders] = useState<Folder[]>([])
   const [menuOpen, setMenuOpen] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const [editField, setEditField] = useState<null | 'title' | 'summary'>(null)
   const [editValue, setEditValue] = useState('')
   const [chatInput, setChatInput] = useState('')
@@ -118,6 +121,7 @@ export function NoteDetail() {
     const updated = await db.updateNote(note.id, patch)
     setNote(updated)
     setEditField(null)
+    toast('Alteracoes salvas')
   }
 
   async function copyNote() {
@@ -129,6 +133,7 @@ export function NoteDetail() {
       note.action_items.forEach((a) => lines.push(`- ${a.text}${a.owner ? ` (${a.owner})` : ''}`))
     }
     await navigator.clipboard.writeText(lines.join('\n'))
+    toast('Nota copiada')
   }
 
   async function runDetailed() {
@@ -220,9 +225,8 @@ export function NoteDetail() {
     }
   }
 
-  async function onDelete() {
+  async function doDelete() {
     if (!note) return
-    if (!confirm('Excluir esta nota? Esta acao nao pode ser desfeita.')) return
     await deleteAudio(note.audio_url)
     await db.deleteNote(note.id)
     navigate('/', { replace: true })
@@ -277,6 +281,17 @@ export function NoteDetail() {
                     <button onClick={copyNote} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left hover:bg-surface-elevated">
                       <Copy size={16} className="text-content-secondary" /> Copiar nota
                     </button>
+                    {canEdit && (
+                      <button
+                        onClick={() => {
+                          setMenuOpen(false)
+                          setConfirmDelete(true)
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left text-brand-500 hover:bg-surface-elevated border-t border-surface-border"
+                      >
+                        <Trash2 size={16} /> Excluir nota
+                      </button>
+                    )}
                   </div>
                 </>
               )}
@@ -374,9 +389,6 @@ export function NoteDetail() {
               hint="Ouvir esta secao"
               onClick={toggleNarration}
             />
-          )}
-          {canEdit && (
-            <ActionButton icon={<Trash2 size={18} />} label="Excluir" hint="Remover nota" onClick={onDelete} />
           )}
         </div>
 
@@ -522,6 +534,16 @@ export function NoteDetail() {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        title="Excluir esta nota?"
+        message="Esta acao nao pode ser desfeita. A transcricao, o resumo e o audio serao removidos."
+        confirmLabel="Excluir"
+        danger
+        onConfirm={doDelete}
+        onClose={() => setConfirmDelete(false)}
+      />
 
       {shareOpen && (
         <ShareSheet note={note} open={shareOpen} onClose={() => setShareOpen(false)} onUpdated={setNote} />

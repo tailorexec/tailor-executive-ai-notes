@@ -19,6 +19,7 @@ import {
 import { useAuth } from '../auth/AuthProvider'
 import { useTheme } from '../theme/ThemeProvider'
 import { Avatar, Sheet, Spinner } from '../components/ui'
+import { useToast } from '../components/Toast'
 import { Logo } from '../components/Logo'
 import { uploadAvatar } from '../lib/avatar'
 import { db } from '../lib/api'
@@ -56,6 +57,7 @@ export function Settings() {
   const { profile, isAdmin, signOut, updateProfile } = useAuth()
   const { theme, toggle } = useTheme()
   const navigate = useNavigate()
+  const toast = useToast()
   const [editOpen, setEditOpen] = useState(false)
   const [first, setFirst] = useState('')
   const [last, setLast] = useState('')
@@ -72,6 +74,9 @@ export function Settings() {
     try {
       const notes = await db.listNotes(profile.id)
       exportNotesMarkdown(notes, `${profile.first_name} ${profile.last_name}`)
+      toast('Dados exportados em Markdown')
+    } catch {
+      toast('Nao foi possivel exportar os dados', 'error')
     } finally {
       setExporting(false)
     }
@@ -100,6 +105,7 @@ export function Settings() {
     try {
       await updateProfile({ first_name: first.trim(), last_name: last.trim() })
       setEditOpen(false)
+      toast('Perfil atualizado')
     } finally {
       setSaving(false)
     }

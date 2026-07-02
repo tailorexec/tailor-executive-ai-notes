@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Search,
+  SearchX,
   Upload,
   FileText,
   Link2,
@@ -10,6 +11,7 @@ import {
   NotebookPen,
   MessageSquare,
   ChevronRight,
+  ArrowDownUp,
   Smartphone,
   Monitor,
   Video,
@@ -21,7 +23,7 @@ import { useAuth } from '../auth/AuthProvider'
 import { db } from '../lib/api'
 import type { Note, Folder } from '../lib/types'
 import { fmtDate, fmtDuration, fmtTime } from '../lib/format'
-import { Avatar, EmptyState, Sheet, Spinner, Chip } from '../components/ui'
+import { Avatar, EmptyState, Sheet, Chip, NoteCardSkeleton } from '../components/ui'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { Logo } from '../components/Logo'
 import { AskNotesSheet } from './AskNotesSheet'
@@ -46,6 +48,7 @@ export function Home() {
   const navigate = useNavigate()
   const [notes, setNotes] = useState<Note[] | null>(null)
   const [query, setQuery] = useState('')
+  const [sort, setSort] = useState<'recent' | 'oldest' | 'longest'>('recent')
   const [folderFilter, setFolderFilter] = useState<string>('all')
   const [folderList, setFolderList] = useState<Folder[]>([])
   const [folderOpen, setFolderOpen] = useState(false)
@@ -81,7 +84,7 @@ export function Home() {
   const filtered = useMemo(() => {
     if (!notes) return []
     const q = query.trim().toLowerCase()
-    return notes.filter((n) => {
+    const arr = notes.filter((n) => {
       if (folderFilter !== 'all' && n.folder_id !== folderFilter) return false
       if (!q) return true
       return (
@@ -90,7 +93,15 @@ export function Home() {
         (n.summary ?? '').toLowerCase().includes(q)
       )
     })
-  }, [notes, query, folderFilter])
+    arr.sort((a, b) => {
+      if (sort === 'oldest') return Date.parse(a.created_at) - Date.parse(b.created_at)
+      if (sort === 'longest') return (b.duration_seconds ?? 0) - (a.duration_seconds ?? 0)
+      return Date.parse(b.created_at) - Date.parse(a.created_at)
+    })
+    return arr
+  }, [notes, query, folderFilter, sort])
+
+  const hasFilters = query.trim() !== '' || folderFilter !== 'all'
 
   function startCapture(mode: string) {
     setNewOpen(false)
@@ -98,10 +109,10 @@ export function Home() {
   }
 
   return (
-    <div className="px-5 pt-6 safe-top">
-      <header className="mb-5">
+    <div className="px-5 pt-5 md:pt-6 safe-top">
+      <header className="mb-4">
         {/* Logo ANA no topo, alinhada a esquerda (apenas mobile; no desktop fica na sidebar) */}
-        <Logo part="ana" heightClass="h-6" className="md:hidden mb-3" />
+        <Logo part="ana" heightClass="h-6" className="md:hidden mb-2.5" />
         <div className="flex items-center justify-between">
           <h1 className="font-display text-3xl font-bold">Minhas notas</h1>
           <div className="flex items-center gap-2">
@@ -124,7 +135,7 @@ export function Home() {
 
       <button
         onClick={() => setHelpOpen(true)}
-        className="md:hidden relative w-full overflow-hidden rounded-2xl mb-4 p-[1.5px] group text-left"
+        className="md:hidden relative w-full overflow-hidden rounded-2xl mb-3 p-[1.5px] group text-left"
       >
         <span className="absolute inset-0 bg-[linear-gradient(110deg,#941010,#F10C27,#640816,#F10C27,#941010)] bg-[length:200%_100%] animate-shine opacity-80 group-hover:opacity-100" />
         <span className="relative flex items-center gap-3 rounded-2xl bg-surface-card px-4 py-3">
@@ -152,7 +163,7 @@ export function Home() {
 
       <button
         onClick={() => setAskOpen(true)}
-        className="w-full flex items-center gap-3 bg-surface-elevated border border-surface-border rounded-2xl px-4 py-3 mb-4 text-left hover:border-brand-500/40 transition-colors"
+        className="w-full flex items-center gap-3 bg-surface-elevated border border-surface-border rounded-2xl px-4 py-2.5 mb-3 text-left hover:border-brand-500/40 transition-colors"
       >
         <span className="grid place-items-center h-9 w-9 rounded-xl bg-brand-500 text-white shrink-0">
           <MessageSquare size={18} />
@@ -180,21 +191,65 @@ export function Home() {
         </div>
       )}
 
-      {notes === null ? (
-        <div className="grid place-items-center py-20">
-          <Spinner size={24} className="text-brand-500" />
+      {notes && filtered.length > 0 && (
+        <div className="flex items-center justify-between mb-2 px-1">
+          <span className="text-xs text-content-muted">
+            {filtered.length} {filtered.length === 1 ? 'nota' : 'notas'}
+          </span>
+          <div className="flex items-center gap-1.5 text-xs text-content-secondary">
+            <ArrowDownUp size={14} />
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as 'recent' | 'oldest' | 'longest')}
+              className="bg-transparent focus:outline-none cursor-pointer"
+              aria-label="Ordenar notas"
+            >
+              <option value="recent">Mais recentes</option>
+              <option value="oldest">Mais antigas</option>
+              <option value="longest">Mais longas</option>
+            </select>
+          </div>
         </div>
+      )}
+
+      {notes === null ? (
+        <ul className="grid sm:grid-cols-2 gap-3 mt-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <li key={i}>
+              <NoteCardSkeleton />
+            </li>
+          ))}
+        </ul>
       ) : filtered.length === 0 ? (
-        <EmptyState
-          icon={<NotebookPen size={40} />}
-          title="Nenhuma nota ainda"
-          subtitle="Grave uma reuniao, envie um audio ou um arquivo para comecar."
-          action={
-            <button className="btn-primary" onClick={() => setNewOpen(true)}>
-              Nova nota
-            </button>
-          }
-        />
+        hasFilters ? (
+          <EmptyState
+            icon={<SearchX size={40} />}
+            title="Nenhum resultado"
+            subtitle="Tente outro termo de busca ou limpe os filtros."
+            action={
+              <button
+                className="btn-outline"
+                onClick={() => {
+                  setQuery('')
+                  setFolderFilter('all')
+                }}
+              >
+                Limpar filtros
+              </button>
+            }
+          />
+        ) : (
+          <EmptyState
+            icon={<NotebookPen size={40} />}
+            title="Nenhuma nota ainda"
+            subtitle="Grave uma reuniao, envie um audio ou um arquivo para comecar."
+            action={
+              <button className="btn-primary" onClick={() => setNewOpen(true)}>
+                Nova nota
+              </button>
+            }
+          />
+        )
       ) : (
         <ul className="grid sm:grid-cols-2 gap-3 mt-2">
           {filtered.map((n) => (
@@ -224,6 +279,12 @@ export function Home() {
                   {n.duration_seconds ? ` • ${fmtDuration(n.duration_seconds)}` : ''}
                   {folderName(n.folder_id) ? ` • ${folderName(n.folder_id)}` : ''}
                 </p>
+                {/* Previa do resumo para escanear a nota */}
+                {n.summary?.trim() && n.status !== 'processing' && (
+                  <p className="text-sm text-content-secondary mt-2 line-clamp-2 leading-snug">
+                    {n.summary.replace(/[#*_>`]/g, '').replace(/^\s*-\s*/gm, '').trim()}
+                  </p>
+                )}
               </button>
             </li>
           ))}
