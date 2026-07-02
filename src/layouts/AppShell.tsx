@@ -1,12 +1,13 @@
+import { useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Home, Phone, Settings as SettingsIcon, Sparkles, ShieldCheck, Mic } from 'lucide-react'
+import { Home, Phone, Settings as SettingsIcon, Sparkles, ShieldCheck, Mic, Bot } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
 import { Logo } from '../components/Logo'
-import { ThemeToggle } from '../components/ThemeToggle'
 import { Avatar } from '../components/ui'
 import { AnnouncementBanner } from '../components/AnnouncementBanner'
 import { useAppSettings } from '../app/SettingsProvider'
 import { Maintenance } from '../pages/Maintenance'
+import { HelpAssistant } from '../pages/HelpAssistant'
 
 const HIDE_MOBILE_NAV_ON = ['/nota/', '/capturar', '/discador']
 
@@ -28,6 +29,7 @@ const ITEMS: Item[] = [
 function Sidebar() {
   const { isAdmin, profile } = useAuth()
   const navigate = useNavigate()
+  const [helpOpen, setHelpOpen] = useState(false)
 
   return (
     <aside className="hidden md:flex fixed inset-y-0 left-0 w-64 flex-col border-r border-surface-border bg-surface-card z-40">
@@ -37,12 +39,13 @@ function Sidebar() {
 
       <button
         onClick={() => navigate('/capturar')}
-        className="btn-primary mx-4 mb-5 py-3 rounded-2xl"
+        className="btn-primary mx-4 mb-6 py-3 rounded-2xl shadow-float"
       >
         <Sparkles size={18} />
         Gravação Inteligente
       </button>
 
+      <p className="px-6 mb-2 text-[11px] font-semibold uppercase tracking-wider text-content-muted">Menu</p>
       <nav className="flex-1 px-3 space-y-1">
         {ITEMS.filter((i) => !i.adminOnly || isAdmin).map((i) => (
           <NavLink
@@ -63,8 +66,30 @@ function Sidebar() {
         ))}
       </nav>
 
-      <div className="p-3 border-t border-surface-border flex items-center gap-3">
-        <button onClick={() => navigate('/config')} className="flex items-center gap-3 flex-1 min-w-0 text-left">
+      {/* Card ANA: assistente de ajuda inteligente */}
+      <div className="px-3 mb-3">
+        <button
+          onClick={() => setHelpOpen(true)}
+          className="relative w-full overflow-hidden rounded-2xl p-[1.5px] group text-left"
+        >
+          <span className="absolute inset-0 bg-[linear-gradient(110deg,#941010,#F10C27,#640816,#F10C27,#941010)] bg-[length:200%_100%] animate-shine opacity-80 group-hover:opacity-100" />
+          <span className="relative block rounded-2xl bg-surface-card px-3.5 py-3">
+            <span className="flex items-center gap-2 mb-1">
+              <span className="relative grid place-items-center h-7 w-7 rounded-lg bg-brand-500 text-white shrink-0">
+                <span className="absolute inset-0 rounded-lg bg-brand-500 animate-ping opacity-30" />
+                <Bot size={15} className="relative" />
+              </span>
+              <span className="text-sm font-semibold">Falar com a ANA</span>
+            </span>
+            <span className="block text-xs text-content-muted leading-snug">
+              Sua assistente com PhD. Tire dúvidas sobre o app.
+            </span>
+          </span>
+        </button>
+      </div>
+
+      <div className="p-3 border-t border-surface-border">
+        <button onClick={() => navigate('/config')} className="flex items-center gap-3 w-full min-w-0 text-left">
           {profile && <Avatar first={profile.first_name} last={profile.last_name} size={36} url={profile.avatar_url} />}
           <div className="min-w-0">
             <p className="text-sm font-medium truncate">
@@ -73,8 +98,9 @@ function Sidebar() {
             <p className="text-xs text-content-muted truncate">{profile?.email}</p>
           </div>
         </button>
-        <ThemeToggle />
       </div>
+
+      {helpOpen && <HelpAssistant open={helpOpen} onClose={() => setHelpOpen(false)} />}
     </aside>
   )
 }

@@ -134,6 +134,16 @@ Foque em: tom, perguntas feitas e sugeridas, ritmo/andamento, pontos fortes, mel
           suggestedQuestions: [], pacing: '', keyPoints: [], risks: [],
         }),
       }
+    } else if (task === 'help') {
+      const question = String(body.question ?? '').slice(0, 500)
+      const kb = String(body.kb ?? '').slice(0, 9000)
+      const text = await claude(
+        HAIKU,
+        'Voce e a ANA, assistente de ajuda do aplicativo TENA (notas, transcricoes e analise de reunioes). Responda SOMENTE sobre como usar o aplicativo e suas funcoes, com base na BASE DE AJUDA fornecida. Se a pergunta NAO for sobre o uso do aplicativo, responda apenas: "So consigo ajudar com duvidas sobre o uso do aplicativo." Nao invente funcoes inexistentes. Portugues do Brasil, respostas curtas e diretas.' + GUARD,
+        `BASE DE AJUDA:\n<<<INICIO_DADOS>>>\n${kb}\n<<<FIM_DADOS>>>\n\nPERGUNTA DO USUARIO: ${question}`,
+        600,
+      )
+      out = { answer: text.trim() }
     } else if (task === 'translate') {
       const target = String(body.target ?? 'ingles')
       const input = String(body.text ?? '').slice(0, MAX_INPUT)

@@ -94,6 +94,19 @@ export async function generateAnalysis(transcript: string, meta: AiMeta = {}): P
   return r.analysis
 }
 
+/** Assistente de ajuda: responde SO sobre o uso do app. Tenta a base local antes da IA. */
+export async function askHelp(question: string): Promise<string> {
+  const { searchHelp, HELP_KB_TEXT } = await import('./helpKb')
+  const local = searchHelp(question)
+  if (local) return local.a // resposta gratuita da base
+  if (config.mockMode) {
+    await delay(500)
+    return 'So consigo ajudar com duvidas sobre o uso do aplicativo. Tente perguntar sobre gravar, transcrever, compartilhar, pastas, discador ou configuracoes.'
+  }
+  const r = await invoke<{ answer: string }>('ai', { task: 'help', question, kb: HELP_KB_TEXT })
+  return r.answer
+}
+
 export async function translateText(text: string, target: string): Promise<string> {
   if (config.mockMode) {
     await delay(700)

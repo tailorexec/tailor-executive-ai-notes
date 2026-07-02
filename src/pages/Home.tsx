@@ -5,6 +5,7 @@ import {
   Upload,
   FileText,
   Link2,
+  Mic,
   Headphones,
   NotebookPen,
   Sparkles,
@@ -12,7 +13,7 @@ import {
   Monitor,
   Video,
   StickyNote,
-  GraduationCap,
+  Bot,
   Folder as FolderIcon,
 } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
@@ -25,14 +26,17 @@ import { AskNotesSheet } from './AskNotesSheet'
 import { FolderSheet } from './FolderSheet'
 import { getNotifPrefs, notify } from '../lib/notifications'
 import { UpcomingEvents } from './UpcomingEvents'
+import { HelpAssistant } from './HelpAssistant'
 
 /** Icone de origem: diferencia como a nota foi criada. */
 function sourceIcon(n: Note): React.ReactNode {
   if (n.type === 'video') return <Video size={18} />
   if (n.type === 'file') return <StickyNote size={18} />
   if (n.type === 'link') return <Link2 size={18} />
-  // audio (recording/upload/call): mostra o dispositivo de origem
-  return n.device === 'mobile' ? <Smartphone size={18} /> : <Monitor size={18} />
+  // audio (recording/upload/call): mostra o dispositivo de origem quando conhecido
+  if (n.device === 'mobile') return <Smartphone size={18} />
+  if (n.device === 'desktop') return <Monitor size={18} />
+  return <Mic size={18} /> // origem desconhecida (notas antigas)
 }
 
 export function Home() {
@@ -45,6 +49,7 @@ export function Home() {
   const [folderOpen, setFolderOpen] = useState(false)
   const [newOpen, setNewOpen] = useState(false)
   const [askOpen, setAskOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
 
   useEffect(() => {
     if (!profile) return
@@ -111,13 +116,23 @@ export function Home() {
 
       <UpcomingEvents />
 
-      <div className="flex items-center gap-2.5 rounded-2xl px-4 py-2.5 mb-4 bg-gradient-to-r from-brand-500/15 to-brand-500/5 border border-brand-500/20">
-        <GraduationCap size={18} className="text-brand-500 shrink-0" />
-        <p className="text-sm text-content-secondary">
-          Deixe a <span className="font-semibold text-content-primary">ANA</span> ser sua assistente
-          inteligente com PhD.
-        </p>
-      </div>
+      <button
+        onClick={() => setHelpOpen(true)}
+        className="relative w-full overflow-hidden rounded-2xl mb-4 p-[1.5px] group text-left"
+      >
+        <span className="absolute inset-0 bg-[linear-gradient(110deg,#941010,#F10C27,#640816,#F10C27,#941010)] bg-[length:200%_100%] animate-shine opacity-80 group-hover:opacity-100" />
+        <span className="relative flex items-center gap-3 rounded-2xl bg-surface-card px-4 py-3">
+          <span className="relative grid place-items-center h-9 w-9 rounded-xl bg-brand-500 text-white shrink-0">
+            <span className="absolute inset-0 rounded-xl bg-brand-500 animate-ping opacity-30" />
+            <Bot size={18} className="relative" />
+          </span>
+          <span className="text-sm leading-tight">
+            <span className="font-semibold">Deixe a ANA ser sua assistente inteligente com PhD</span>
+            <span className="text-content-muted"> — ou me pergunte algo</span>
+          </span>
+          <Sparkles size={16} className="text-brand-500 ml-auto shrink-0" />
+        </span>
+      </button>
 
       <div className="relative mb-3">
         <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-content-muted" />
@@ -213,6 +228,7 @@ export function Home() {
       </button>
 
       {askOpen && <AskNotesSheet open={askOpen} onClose={() => setAskOpen(false)} notes={notes ?? []} />}
+      {helpOpen && <HelpAssistant open={helpOpen} onClose={() => setHelpOpen(false)} />}
 
       {folderOpen && profile && (
         <FolderSheet

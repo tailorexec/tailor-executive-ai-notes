@@ -61,11 +61,16 @@ export default {
           '0%': { transform: 'scale(0.9)', opacity: '0.7' },
           '100%': { transform: 'scale(1.6)', opacity: '0' },
         },
+        shine: {
+          '0%': { backgroundPosition: '200% 0' },
+          '100%': { backgroundPosition: '0% 0' },
+        },
       },
       animation: {
         'fade-in': 'fade-in 0.2s ease-out',
         'slide-up': 'slide-up 0.25s ease-out',
         'pulse-ring': 'pulse-ring 1.4s ease-out infinite',
+        shine: 'shine 3s linear infinite',
       },
     },
   },

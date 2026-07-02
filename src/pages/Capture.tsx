@@ -18,6 +18,7 @@ import { useRecorder, canCaptureSystemAudio } from '../lib/useRecorder'
 import { db, config } from '../lib/api'
 import { generateActionItems, generateSummary, transcribeAudio } from '../lib/ai'
 import { saveAudio } from '../lib/audioStore'
+import { isSilentAudio } from '../lib/audioLevel'
 import { currentDevice } from '../lib/device'
 import { fmtClock, fmtDuration } from '../lib/format'
 import { Spinner } from '../components/ui'
@@ -96,6 +97,14 @@ export function Capture() {
 
       if (opts.audioBlob) {
         setStep(0)
+        // Evita transcricao "alucinada" quando a gravacao ficou muda.
+        if (mode !== 'video' && (await isSilentAudio(opts.audioBlob))) {
+          setError(
+            'Nao captamos audio suficiente (gravacao silenciosa). Verifique o microfone e o viva-voz, e tente novamente.',
+          )
+          setProcessing(false)
+          return
+        }
         await db.logUsage(profile.id, 'recording')
         const res = await transcribeAudio(opts.audioBlob, { diarize })
         transcript = res.transcript
@@ -339,10 +348,12 @@ export function Capture() {
             !canCaptureSystemAudio() ? (
               <div className="card p-6 text-center max-w-sm">
                 <MonitorSmartphone size={36} className="text-brand-500 mx-auto mb-3" />
-                <h3 className="font-display font-semibold text-lg">Disponivel no desktop</h3>
+                <h3 className="font-display font-semibold text-lg">Gravacao completa so no app ou desktop</h3>
                 <p className="text-content-secondary mt-2 text-sm">
-                  A captura do audio interno da reuniao (com fone) funciona no computador (Chrome/Edge).
-                  No celular, isso chega na versao app. Aqui voce pode usar "Gravar audio" pelo microfone.
+                  A captura do <span className="text-content-primary font-medium">audio interno da reuniao</span>
+                  {' '}(a outra ponta, mesmo de fone) so funciona no <span className="text-content-primary font-medium">computador</span>
+                  {' '}(Chrome/Edge) ou no <span className="text-content-primary font-medium">app Android</span>.
+                  No navegador do celular, so da para gravar pelo microfone (viva-voz).
                 </p>
                 <button className="btn-outline mt-5 mx-auto" onClick={() => navigate('/capturar?mode=record')}>
                   <Mic size={18} /> Gravar pelo microfone

@@ -6,6 +6,7 @@ import { useRecorder } from '../lib/useRecorder'
 import { db } from '../lib/api'
 import { generateActionItems, generateSummary, transcribeAudio } from '../lib/ai'
 import { currentDevice } from '../lib/device'
+import { isSilentAudio } from '../lib/audioLevel'
 import { fmtClock, fmtTime } from '../lib/format'
 import { Sheet, Spinner } from '../components/ui'
 
@@ -48,23 +49,33 @@ export function Dialer() {
   async function startCall(method: 'phone' | 'whatsapp') {
     setConsentOpen(false)
     setVia(method)
-    // 1) Pede o microfone primeiro (evita conflito entre o botao e a permissao).
-    await recorder.start()
-    setInCall(true)
-    // 2) Registra no historico.
-    saveHistory([{ number, via: method, at: new Date().toISOString() }, ...history].slice(0, 50))
-    // 3) Abre a chamada.
+    // 1) Abre a chamada JA (dentro do gesto do clique) para o navegador nao bloquear o popup do WhatsApp.
     if (method === 'whatsapp') {
       window.open(`https://wa.me/${number.replace(/[^\d]/g, '')}`, '_blank')
     } else {
       window.location.href = `tel:${number.replace(/[^\d+*#]/g, '')}`
     }
+    // 2) Registra no historico.
+    saveHistory([{ number, via: method, at: new Date().toISOString() }, ...history].slice(0, 50))
+    // 3) Inicia a gravacao (viva-voz).
+    await recorder.start()
+    setInCall(true)
   }
 
   async function endCall() {
     const res = await recorder.stop()
     setInCall(false)
     if (!profile) return
+
+    // Se a gravacao ficou muda (comum em ligacoes reais no celular, onde o sistema reserva
+    // o microfone), nao transcrevemos: evita a IA "inventar" conteudo.
+    if (await isSilentAudio(res.blob)) {
+      alert(
+        'Nao captamos audio desta ligacao. Em ligacoes reais no celular, o navegador nao consegue acessar o microfone (o sistema reserva para a chamada). Use o viva-voz, grave uma reuniao no desktop, ou use o app.',
+      )
+      return
+    }
+
     setProcessing(true)
     try {
       await db.logUsage(profile.id, 'recording')
@@ -206,10 +217,13 @@ export function Dialer() {
         <div className="flex items-start gap-3 mb-4">
           <ShieldAlert size={22} className="text-brand-500 shrink-0 mt-0.5" />
           <p className="text-content-secondary text-sm">
-            A gravacao sera feita pelo microfone do aparelho (use o viva-voz). Por questoes legais
-            (LGPD), informe e obtenha o consentimento da outra parte antes de gravar. Voce e
-            responsavel pelo uso desta gravacao.
+            A gravacao sera feita pelo microfone do aparelho — <span className="text-content-primary font-medium">ative o viva-voz</span>.
+            Por questoes legais (LGPD), informe e obtenha o consentimento da outra parte antes de gravar.
           </p>
+        </div>
+        <div className="text-xs text-content-muted bg-surface-elevated border border-surface-border rounded-xl px-3 py-2 mb-4">
+          No celular, durante uma ligacao real, o navegador pode nao captar o audio (o sistema reserva o
+          microfone para a chamada). Se ficar mudo, avisamos e nao geramos transcricao.
         </div>
         <p className="text-sm font-medium mb-3">Como deseja ligar? (a gravacao inicia junto)</p>
         <div className="grid grid-cols-2 gap-3">
