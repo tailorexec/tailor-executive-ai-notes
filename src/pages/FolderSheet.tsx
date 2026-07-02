@@ -1,0 +1,174 @@
+import { useEffect, useState } from 'react'
+import { Plus, Pencil, Trash2, Check, Folder as FolderIcon } from 'lucide-react'
+import { Sheet, Spinner } from '../components/ui'
+import { db } from '../lib/api'
+import type { Folder } from '../lib/types'
+
+const COLORS = ['#941010', '#2563eb', '#059669', '#d97706', '#7c3aed', '#0891b2', '#db2777', '#4b5563']
+
+function ColorPicker({ value, onChange }: { value: string; onChange: (c: string) => void }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {COLORS.map((c) => (
+        <button
+          key={c}
+          type="button"
+          onClick={() => onChange(c)}
+          className={`h-7 w-7 rounded-full transition-transform ${value === c ? 'ring-2 ring-offset-2 ring-offset-surface-card scale-110' : ''}`}
+          style={{ background: c }}
+          aria-label={c}
+        />
+      ))}
+    </div>
+  )
+}
+
+export function FolderSheet({
+  open,
+  onClose,
+  userId,
+  mode,
+  selectedId,
+  onSelect,
+  onChanged,
+}: {
+  open: boolean
+  onClose: () => void
+  userId: string
+  mode: 'manage' | 'assign'
+  selectedId?: string | null
+  onSelect?: (id: string | null) => void
+  onChanged?: () => void
+}) {
+  const [folders, setFolders] = useState<Folder[] | null>(null)
+  const [name, setName] = useState('')
+  const [color, setColor] = useState(COLORS[0])
+  const [editing, setEditing] = useState<Folder | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  function load() {
+    db.listFolders(userId).then(setFolders)
+    onChanged?.()
+  }
+  useEffect(() => {
+    if (open) load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
+
+  async function create() {
+    if (!name.trim()) return
+    setBusy(true)
+    try {
+      const f = await db.createFolder(userId, name.trim(), color)
+      setName('')
+      setColor(COLORS[0])
+      if (mode === 'assign') {
+        onSelect?.(f.id)
+        onClose()
+      }
+      load()
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function saveEdit() {
+    if (!editing) return
+    await db.updateFolder(editing.id, { name: editing.name, color: editing.color })
+    setEditing(null)
+    load()
+  }
+
+  async function remove(id: string) {
+    if (!confirm('Excluir esta pasta? As notas voltam a ficar sem pasta.')) return
+    await db.deleteFolder(id)
+    load()
+  }
+
+  return (
+    <Sheet open={open} onClose={onClose} title={mode === 'assign' ? 'Adicionar a uma pasta' : 'Pastas'}>
+      {/* Criar nova */}
+      <div className="card p-3 mb-4">
+        <div className="flex gap-2 mb-2">
+          <input
+            className="input py-2"
+            placeholder="Nome da pasta"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && create()}
+          />
+          <button className="btn-primary h-11 px-4" onClick={create} disabled={busy || !name.trim()}>
+            <Plus size={18} /> Criar
+          </button>
+        </div>
+        <ColorPicker value={color} onChange={setColor} />
+      </div>
+
+      {mode === 'assign' && (
+        <button
+          onClick={() => {
+            onSelect?.(null)
+            onClose()
+          }}
+          className={`w-full flex items-center gap-3 rounded-xl px-3 py-2.5 mb-2 border text-left ${
+            !selectedId ? 'border-brand-500 bg-brand-500/5' : 'border-surface-border bg-surface-elevated'
+          }`}
+        >
+          <FolderIcon size={18} className="text-content-muted" /> Sem pasta
+        </button>
+      )}
+
+      {folders === null ? (
+        <div className="grid place-items-center py-6"><Spinner className="text-brand-500" /></div>
+      ) : folders.length === 0 ? (
+        <p className="text-sm text-content-muted text-center py-4">Nenhuma pasta ainda.</p>
+      ) : (
+        <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+          {folders.map((f) =>
+            editing?.id === f.id ? (
+              <div key={f.id} className="card p-3 space-y-2">
+                <input className="input py-2" value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} />
+                <ColorPicker value={editing.color} onChange={(c) => setEditing({ ...editing, color: c })} />
+                <div className="flex gap-2">
+                  <button className="btn-outline flex-1 h-9" onClick={() => setEditing(null)}>Cancelar</button>
+                  <button className="btn-primary flex-1 h-9" onClick={saveEdit}>Salvar</button>
+                </div>
+              </div>
+            ) : (
+              <div
+                key={f.id}
+                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 border ${
+                  mode === 'assign' && selectedId === f.id ? 'border-brand-500 bg-brand-500/5' : 'border-surface-border bg-surface-elevated'
+                }`}
+              >
+                <button
+                  onClick={() => {
+                    if (mode === 'assign') {
+                      onSelect?.(f.id)
+                      onClose()
+                    }
+                  }}
+                  className="flex items-center gap-3 flex-1 min-w-0 text-left"
+                >
+                  <span className="h-4 w-4 rounded-full shrink-0" style={{ background: f.color }} />
+                  <span className="font-medium truncate">{f.name}</span>
+                  {mode === 'assign' && selectedId === f.id && <Check size={16} className="text-brand-500 ml-auto" />}
+                </button>
+                {mode === 'manage' && (
+                  <>
+                    <button onClick={() => setEditing(f)} className="text-content-muted hover:text-content-primary" aria-label="Editar">
+                      <Pencil size={16} />
+                    </button>
+                    <button onClick={() => remove(f.id)} className="text-content-muted hover:text-brand-500" aria-label="Excluir">
+                      <Trash2 size={16} />
+                    </button>
+                  </>
+                )}
+              </div>
+            ),
+          )}
+        </div>
+      )}
+    </Sheet>
+  )
+}

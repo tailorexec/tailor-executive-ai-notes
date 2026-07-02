@@ -42,7 +42,9 @@ export async function transcribeAudio(
     return { transcript: opts.diarize ? mockDiarizedTranscript() : mockTranscript(), language: 'pt-BR' }
   }
   const form = new FormData()
-  form.append('file', audio, 'audio.webm')
+  // Usa o nome/extensao real do arquivo (ex.: video.mp4) para o provedor detectar o formato.
+  const filename = (audio as File).name || 'audio.webm'
+  form.append('file', audio, filename)
   if (opts.diarize) form.append('diarize', 'true')
   // Edge function reads multipart and forwards to the transcription provider.
   if (!supabase) throw new Error('Supabase nao configurado')

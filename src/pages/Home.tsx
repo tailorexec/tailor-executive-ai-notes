@@ -13,14 +13,17 @@ import {
   Video,
   StickyNote,
   GraduationCap,
+  Folder as FolderIcon,
 } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
 import { db } from '../lib/api'
-import type { Note } from '../lib/types'
+import type { Note, Folder } from '../lib/types'
 import { fmtDate, fmtDuration, fmtTime } from '../lib/format'
 import { Avatar, EmptyState, Sheet, Spinner, Chip } from '../components/ui'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { AskNotesSheet } from './AskNotesSheet'
+import { FolderSheet } from './FolderSheet'
+import { getNotifPrefs, notify } from '../lib/notifications'
 
 /** Icone de origem: diferencia como a nota foi criada. */
 function sourceIcon(n: Note): React.ReactNode {
@@ -36,26 +39,42 @@ export function Home() {
   const navigate = useNavigate()
   const [notes, setNotes] = useState<Note[] | null>(null)
   const [query, setQuery] = useState('')
-  const [folder, setFolder] = useState<string>('all')
+  const [folderFilter, setFolderFilter] = useState<string>('all')
+  const [folderList, setFolderList] = useState<Folder[]>([])
+  const [folderOpen, setFolderOpen] = useState(false)
   const [newOpen, setNewOpen] = useState(false)
   const [askOpen, setAskOpen] = useState(false)
 
   useEffect(() => {
     if (!profile) return
-    db.listNotes(profile.id).then(setNotes)
+    db.listNotes(profile.id).then((ns) => {
+      setNotes(ns)
+      // Notifica novas notas compartilhadas comigo (se habilitado).
+      try {
+        if (getNotifPrefs().shared) {
+          const sharedIds = ns.filter((n) => n.user_id !== profile.id).map((n) => n.id)
+          const raw = localStorage.getItem('tailor.seenShared')
+          const seen = new Set<string>(raw ? JSON.parse(raw) : [])
+          const fresh = sharedIds.filter((id) => !seen.has(id))
+          if (raw !== null && fresh.length) {
+            notify('Nova transcricao compartilhada', `Voce recebeu ${fresh.length} nota(s).`)
+          }
+          localStorage.setItem('tailor.seenShared', JSON.stringify(sharedIds))
+        }
+      } catch {
+        /* ignore */
+      }
+    })
+    db.listFolders(profile.id).then(setFolderList)
   }, [profile])
 
-  const folders = useMemo(() => {
-    const set = new Set<string>()
-    notes?.forEach((n) => n.folder && set.add(n.folder))
-    return Array.from(set)
-  }, [notes])
+  const folderName = (id: string | null) => folderList.find((f) => f.id === id)?.name
 
   const filtered = useMemo(() => {
     if (!notes) return []
     const q = query.trim().toLowerCase()
     return notes.filter((n) => {
-      if (folder !== 'all' && n.folder !== folder) return false
+      if (folderFilter !== 'all' && n.folder_id !== folderFilter) return false
       if (!q) return true
       return (
         n.title.toLowerCase().includes(q) ||
@@ -63,7 +82,7 @@ export function Home() {
         (n.summary ?? '').toLowerCase().includes(q)
       )
     })
-  }, [notes, query, folder])
+  }, [notes, query, folderFilter])
 
   function startCapture(mode: string) {
     setNewOpen(false)
@@ -75,9 +94,16 @@ export function Home() {
       <header className="flex items-center justify-between mb-5">
         <h1 className="font-display text-3xl font-bold">Minhas notas</h1>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setFolderOpen(true)}
+            aria-label="Pastas"
+            className="grid place-items-center h-10 w-10 rounded-full bg-surface-elevated border border-surface-border text-content-secondary hover:text-content-primary"
+          >
+            <FolderIcon size={18} />
+          </button>
           <ThemeToggle />
           <button onClick={() => navigate('/config')} aria-label="Perfil">
-            {profile && <Avatar first={profile.first_name} last={profile.last_name} />}
+            {profile && <Avatar first={profile.first_name} last={profile.last_name} url={profile.avatar_url} />}
           </button>
         </div>
       </header>
@@ -108,14 +134,17 @@ export function Home() {
         Conversar com todas as reunioes
       </button>
 
-      {folders.length > 0 && (
+      {folderList.length > 0 && (
         <div className="flex gap-2 overflow-x-auto pb-2 mb-2 -mx-1 px-1">
-          <Chip active={folder === 'all'} onClick={() => setFolder('all')}>
-            Todas as notas
+          <Chip active={folderFilter === 'all'} onClick={() => setFolderFilter('all')}>
+            Todas
           </Chip>
-          {folders.map((f) => (
-            <Chip key={f} active={folder === f} onClick={() => setFolder(f)}>
-              {f}
+          {folderList.map((f) => (
+            <Chip key={f.id} active={folderFilter === f.id} onClick={() => setFolderFilter(f.id)}>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="h-2.5 w-2.5 rounded-full" style={{ background: f.color }} />
+                {f.name}
+              </span>
             </Chip>
           ))}
         </div>
@@ -163,7 +192,7 @@ export function Home() {
                 <p className="text-sm text-content-muted mt-1">
                   {fmtTime(n.created_at)}
                   {n.duration_seconds ? ` • ${fmtDuration(n.duration_seconds)}` : ''}
-                  {n.folder ? ` • ${n.folder}` : ''}
+                  {folderName(n.folder_id) ? ` • ${folderName(n.folder_id)}` : ''}
                 </p>
               </button>
             </li>
@@ -182,10 +211,21 @@ export function Home() {
 
       {askOpen && <AskNotesSheet open={askOpen} onClose={() => setAskOpen(false)} notes={notes ?? []} />}
 
+      {folderOpen && profile && (
+        <FolderSheet
+          open={folderOpen}
+          onClose={() => setFolderOpen(false)}
+          userId={profile.id}
+          mode="manage"
+          onChanged={() => db.listFolders(profile.id).then(setFolderList)}
+        />
+      )}
+
       <Sheet open={newOpen} onClose={() => setNewOpen(false)} title="Nova nota">
         <div className="space-y-3">
           <NewOption icon={<Headphones size={20} />} label="Gravar reuniao" hint="Audio da reuniao + seu microfone" onClick={() => startCapture('meeting')} />
           <NewOption icon={<Upload size={20} />} label="Enviar audio" hint="Importe um arquivo de audio" onClick={() => startCapture('upload')} />
+          <NewOption icon={<Video size={20} />} label="Enviar video" hint="A IA extrai o audio e transcreve" onClick={() => startCapture('video')} />
           <NewOption icon={<FileText size={20} />} label="PDF, arquivo ou texto" hint="Resuma um documento" onClick={() => startCapture('file')} />
           <NewOption icon={<Link2 size={20} />} label="Link da web" hint="Resuma o conteudo de um link" onClick={() => startCapture('link')} />
         </div>

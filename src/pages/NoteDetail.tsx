@@ -18,6 +18,7 @@ import {
   Languages,
   Pencil,
   Copy,
+  FolderPlus,
 } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
 import { db, config } from '../lib/api'
@@ -33,7 +34,9 @@ import { templateLabel } from '../lib/templates'
 import { ShareSheet } from './ShareSheet'
 import { FeedbackSheet } from './FeedbackSheet'
 import { TranslateSheet } from './TranslateSheet'
+import { FolderSheet } from './FolderSheet'
 import { Sheet } from '../components/ui'
+import type { Folder } from '../lib/types'
 
 type Tab = 'summary' | 'mindmap' | 'transcript'
 
@@ -48,6 +51,8 @@ export function NoteDetail() {
   const [shareOpen, setShareOpen] = useState(false)
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const [translateOpen, setTranslateOpen] = useState(false)
+  const [folderOpen, setFolderOpen] = useState(false)
+  const [folders, setFolders] = useState<Folder[]>([])
   const [menuOpen, setMenuOpen] = useState(false)
   const [editField, setEditField] = useState<null | 'title' | 'summary'>(null)
   const [editValue, setEditValue] = useState('')
@@ -64,6 +69,16 @@ export function NoteDetail() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [note?.chat.length])
+
+  useEffect(() => {
+    if (profile) db.listFolders(profile.id).then(setFolders)
+  }, [profile])
+
+  async function assignFolder(folderId: string | null) {
+    if (!note) return
+    const updated = await db.updateNote(note.id, { folder_id: folderId })
+    setNote(updated)
+  }
 
   const narratableText = useMemo(() => {
     if (!note) return ''
@@ -243,11 +258,31 @@ export function NoteDetail() {
           {note.duration_seconds ? ` • ${fmtDuration(note.duration_seconds)}` : ''}
           {note.folder ? ` • ${note.folder}` : ''}
         </p>
-        {note.template && note.template !== 'geral' && (
-          <span className="inline-block mt-2 text-[11px] font-medium uppercase tracking-wide text-brand-500 bg-brand-500/10 border border-brand-500/20 rounded-full px-2.5 py-1">
-            {templateLabel(note.template)}
-          </span>
-        )}
+        <div className="flex flex-wrap items-center gap-2 mt-2">
+          {note.template && note.template !== 'geral' && (
+            <span className="text-[11px] font-medium uppercase tracking-wide text-brand-500 bg-brand-500/10 border border-brand-500/20 rounded-full px-2.5 py-1">
+              {templateLabel(note.template)}
+            </span>
+          )}
+          <button
+            onClick={() => setFolderOpen(true)}
+            className="inline-flex items-center gap-1.5 text-xs font-medium bg-surface-elevated border border-surface-border rounded-full px-2.5 py-1 hover:border-brand-500/40"
+          >
+            {(() => {
+              const cf = folders.find((f) => f.id === note.folder_id)
+              return cf ? (
+                <>
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: cf.color }} />
+                  {cf.name}
+                </>
+              ) : (
+                <>
+                  <FolderPlus size={14} /> Adicionar a uma pasta
+                </>
+              )
+            })()}
+          </button>
+        </div>
       </header>
 
       <div className="px-5 flex-1">
@@ -438,6 +473,17 @@ export function NoteDetail() {
       )}
       {feedbackOpen && <FeedbackSheet note={note} open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />}
       {translateOpen && <TranslateSheet note={note} open={translateOpen} onClose={() => setTranslateOpen(false)} />}
+      {folderOpen && profile && (
+        <FolderSheet
+          open={folderOpen}
+          onClose={() => setFolderOpen(false)}
+          userId={profile.id}
+          mode="assign"
+          selectedId={note.folder_id}
+          onSelect={assignFolder}
+          onChanged={() => db.listFolders(profile.id).then(setFolders)}
+        />
+      )}
 
       <Sheet open={editField !== null} onClose={() => setEditField(null)} title={editField === 'title' ? 'Editar titulo' : 'Editar resumo'}>
         {editField === 'title' ? (

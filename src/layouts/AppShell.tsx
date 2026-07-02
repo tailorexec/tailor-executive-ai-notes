@@ -65,7 +65,7 @@ function Sidebar() {
 
       <div className="p-3 border-t border-surface-border flex items-center gap-3">
         <button onClick={() => navigate('/config')} className="flex items-center gap-3 flex-1 min-w-0 text-left">
-          {profile && <Avatar first={profile.first_name} last={profile.last_name} size={36} />}
+          {profile && <Avatar first={profile.first_name} last={profile.last_name} size={36} url={profile.avatar_url} />}
           <div className="min-w-0">
             <p className="text-sm font-medium truncate">
               {profile?.first_name} {profile?.last_name}

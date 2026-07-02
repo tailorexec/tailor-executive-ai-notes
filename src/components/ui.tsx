@@ -10,14 +10,26 @@ export function Avatar({
   first,
   last,
   size = 40,
+  url,
 }: {
   first: string
   last: string
   size?: number
+  url?: string | null
 }) {
+  if (url) {
+    return (
+      <img
+        src={url}
+        alt={`${first} ${last}`}
+        className="rounded-full object-cover shrink-0"
+        style={{ width: size, height: size }}
+      />
+    )
+  }
   return (
     <div
-      className="grid place-items-center rounded-full bg-brand-500/15 text-brand-500 font-semibold"
+      className="grid place-items-center rounded-full bg-brand-500/15 text-brand-500 font-semibold shrink-0"
       style={{ width: size, height: size, fontSize: size * 0.38 }}
     >
       {initials(first, last)}

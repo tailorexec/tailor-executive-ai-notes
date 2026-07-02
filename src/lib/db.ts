@@ -1,7 +1,16 @@
 // Common data-layer contract implemented by both the mock (localStorage)
 // backend and the Supabase backend.
 
-import type { AdminUserRow, Note, Profile, UsageEvent, UsageEventType } from './types'
+import type {
+  AdminUserRow,
+  Folder,
+  Note,
+  Profile,
+  SupportTicket,
+  TicketTopic,
+  UsageEvent,
+  UsageEventType,
+} from './types'
 
 export interface SignUpInput {
   first_name: string
@@ -20,10 +29,24 @@ export interface Db {
 
   // --- profiles ---
   listProfiles(): Promise<Profile[]>
+  updateMyProfile(
+    id: string,
+    patch: { first_name?: string; last_name?: string; avatar_url?: string | null },
+  ): Promise<Profile>
   /** Admin: edita nome/e-mail de um usuario. */
   adminUpdateUser(id: string, patch: { first_name: string; last_name: string; email: string }): Promise<void>
   /** Admin: exclui um usuario e seus dados. */
   adminDeleteUser(id: string): Promise<void>
+
+  // --- pastas ---
+  listFolders(userId: string): Promise<Folder[]>
+  createFolder(userId: string, name: string, color: string): Promise<Folder>
+  updateFolder(id: string, patch: { name?: string; color?: string }): Promise<void>
+  deleteFolder(id: string): Promise<void>
+
+  // --- suporte ---
+  createTicket(input: { user_id: string; topic: TicketTopic; subject: string; message: string }): Promise<void>
+  listTickets(): Promise<(SupportTicket & { profile?: Profile })[]>
 
   // --- notes ---
   listNotes(userId: string): Promise<Note[]>

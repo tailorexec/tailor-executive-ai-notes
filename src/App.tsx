@@ -14,6 +14,8 @@ import { TrashPage } from './pages/Trash'
 import { Help } from './pages/Help'
 import { Terms } from './pages/Terms'
 import { Privacy } from './pages/Privacy'
+import { Support } from './pages/Support'
+import { NotificationsPage } from './pages/Notifications'
 import type { ReactNode } from 'react'
 
 function FullscreenLoader() {
@@ -69,6 +71,8 @@ export default function App() {
         <Route path="/ajuda" element={<Help />} />
         <Route path="/termos" element={<Terms />} />
         <Route path="/privacidade" element={<Privacy />} />
+        <Route path="/suporte" element={<Support />} />
+        <Route path="/notificacoes" element={<NotificationsPage />} />
         <Route
           path="/admin"
           element={

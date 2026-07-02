@@ -11,6 +11,7 @@ interface AuthCtx {
   signIn: (email: string, password: string) => Promise<void>
   signUp: (input: SignUpInput) => Promise<void>
   signOut: () => Promise<void>
+  updateProfile: (patch: { first_name?: string; last_name?: string; avatar_url?: string | null }) => Promise<void>
 }
 
 const Ctx = createContext<AuthCtx | null>(null)
@@ -40,10 +41,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null)
   }, [])
 
+  const updateProfile = useCallback(
+    async (patch: { first_name?: string; last_name?: string; avatar_url?: string | null }) => {
+      const current = await db.getCurrentProfile()
+      if (!current) return
+      const updated = await db.updateMyProfile(current.id, patch)
+      setProfile(updated)
+    },
+    [],
+  )
+
   const isAdmin = profile?.role === 'admin' || isAdminEmail(profile?.email)
 
   return (
-    <Ctx.Provider value={{ profile, loading, isAdmin, signIn, signUp, signOut }}>
+    <Ctx.Provider value={{ profile, loading, isAdmin, signIn, signUp, signOut, updateProfile }}>
       {children}
     </Ctx.Provider>
   )

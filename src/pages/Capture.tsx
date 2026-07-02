@@ -9,6 +9,7 @@ import {
   Upload,
   FileText,
   Link2,
+  Video,
   MonitorSmartphone,
   Headphones,
 } from 'lucide-react'
@@ -23,7 +24,9 @@ import { Spinner } from '../components/ui'
 import { TEMPLATES } from '../lib/templates'
 import type { NoteSourceType } from '../lib/types'
 
-type Mode = 'record' | 'meeting' | 'upload' | 'file' | 'link'
+type Mode = 'record' | 'meeting' | 'upload' | 'video' | 'file' | 'link'
+
+const MAX_VIDEO_MB = 25
 
 const STEPS = ['Transcrevendo audio', 'Gerando resumo', 'Extraindo action items', 'Finalizando'] as const
 
@@ -82,6 +85,7 @@ export function Capture() {
     duration?: number
     audioBlob?: Blob
     fallbackTitle: string
+    skipAudioStore?: boolean
   }) {
     if (!profile) return
     setProcessing(true)
@@ -124,8 +128,8 @@ export function Capture() {
         status: 'ready',
       })
 
-      // Persiste o audio (Supabase Storage no modo real, IndexedDB no modo demo).
-      if (opts.audioBlob) {
+      // Persiste o audio (exceto video: o video e descartado apos extrair o audio).
+      if (opts.audioBlob && !opts.skipAudioStore) {
         const ref = await saveAudio(note.id, profile.id, opts.audioBlob)
         if (ref) note = await db.updateNote(note.id, { audio_url: ref })
       }
@@ -161,6 +165,23 @@ export function Capture() {
       audioBlob: file,
       duration: 0,
       fallbackTitle: file.name.replace(/\.[^.]+$/, ''),
+    })
+  }
+
+  async function onUploadVideo(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > MAX_VIDEO_MB * 1024 * 1024) {
+      setError(`Video muito grande. Limite de ${MAX_VIDEO_MB} MB (a IA extrai apenas o audio).`)
+      return
+    }
+    // Envia o video: o provedor extrai o audio para transcrever. O video NAO e armazenado.
+    await finalize({
+      type: 'video',
+      audioBlob: file,
+      duration: 0,
+      fallbackTitle: file.name.replace(/\.[^.]+$/, ''),
+      skipAudioStore: true,
     })
   }
 
@@ -228,6 +249,7 @@ export function Capture() {
           {mode === 'record' && 'Gravar audio'}
           {mode === 'meeting' && 'Gravar reuniao'}
           {mode === 'upload' && 'Enviar audio'}
+          {mode === 'video' && 'Enviar video'}
           {mode === 'file' && 'PDF, arquivo ou texto'}
           {mode === 'link' && 'Link da web'}
         </h1>
@@ -434,6 +456,23 @@ export function Capture() {
             <p className="text-sm text-content-muted">MP3, M4A, WAV, WEBM</p>
           </button>
           <input ref={fileRef} type="file" accept="audio/*" className="hidden" onChange={onUploadAudio} />
+        </div>
+      )}
+
+      {mode === 'video' && (
+        <div className="flex-1 flex flex-col items-center justify-center pb-24">
+          <button
+            onClick={() => fileRef.current?.click()}
+            className="card w-full max-w-sm py-12 flex flex-col items-center gap-3 border-dashed hover:border-brand-500/50"
+          >
+            <Video size={36} className="text-brand-500" />
+            <p className="font-medium">Selecionar video</p>
+            <p className="text-sm text-content-muted">MP4, MOV, WEBM • ate {MAX_VIDEO_MB} MB</p>
+          </button>
+          <input ref={fileRef} type="file" accept="video/*" className="hidden" onChange={onUploadVideo} />
+          <p className="text-xs text-content-muted mt-4 max-w-xs text-center">
+            A IA extrai apenas o audio para transcrever. O video nao e armazenado.
+          </p>
         </div>
       )}
 

@@ -4,7 +4,15 @@
 import { supabase } from './supabase'
 import { config, isAdminEmail, isAllowedDomain } from './config'
 import type { Db, SignUpInput } from './db'
-import type { AdminUserRow, Note, Profile, UsageEvent, UsageEventType } from './types'
+import type {
+  AdminUserRow,
+  Folder,
+  Note,
+  Profile,
+  SupportTicket,
+  UsageEvent,
+  UsageEventType,
+} from './types'
 
 function client() {
   if (!supabase) throw new Error('Supabase nao configurado')
@@ -34,6 +42,7 @@ function rowToProfile(r: Record<string, unknown>): Profile {
     email: (r.email as string) ?? '',
     phone: (r.phone as string) ?? '',
     role: (r.role as Profile['role']) ?? 'member',
+    avatar_url: (r.avatar_url as string | null) ?? null,
     created_at: (r.created_at as string) ?? new Date().toISOString(),
   }
 }
@@ -167,6 +176,12 @@ export const supabaseDb: Db = {
     return (data ?? []).map(rowToProfile)
   },
 
+  async updateMyProfile(id, patch) {
+    const { data, error } = await client().from('profiles').update(patch).eq('id', id).select().single()
+    if (error) throw error
+    return rowToProfile(data)
+  },
+
   async adminUpdateUser(id, patch) {
     const { data, error } = await client().functions.invoke('admin-users', {
       body: { action: 'update', id, ...patch },
@@ -181,6 +196,48 @@ export const supabaseDb: Db = {
     })
     if (error) throw error
     if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error)
+  },
+
+  async listFolders(userId) {
+    const { data, error } = await client().from('folders').select('*').eq('user_id', userId).order('name')
+    if (error) throw error
+    return (data ?? []) as Folder[]
+  },
+
+  async createFolder(userId, name, color) {
+    const { data, error } = await client()
+      .from('folders')
+      .insert({ user_id: userId, name, color })
+      .select()
+      .single()
+    if (error) throw error
+    return data as Folder
+  },
+
+  async updateFolder(id, patch) {
+    const { error } = await client().from('folders').update(patch).eq('id', id)
+    if (error) throw error
+  },
+
+  async deleteFolder(id) {
+    const { error } = await client().from('folders').delete().eq('id', id)
+    if (error) throw error
+  },
+
+  async createTicket(input) {
+    const { error } = await client().from('support_tickets').insert(input)
+    if (error) throw error
+  },
+
+  async listTickets() {
+    const { data, error } = await client()
+      .from('support_tickets')
+      .select('*')
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    const tickets = (data ?? []) as SupportTicket[]
+    const profiles = await this.listProfiles()
+    return tickets.map((t) => ({ ...t, profile: profiles.find((p) => p.id === t.user_id) }))
   },
 
   async listNotes(userId) {

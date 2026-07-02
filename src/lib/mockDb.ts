@@ -7,8 +7,10 @@ import type { Db, SignUpInput } from './db'
 import { uid } from './db'
 import type {
   AdminUserRow,
+  Folder,
   Note,
   Profile,
+  SupportTicket,
   UsageEvent,
   UsageEventType,
 } from './types'
@@ -19,6 +21,8 @@ const K = {
   passwords: 'tailor.passwords',
   notes: 'tailor.notes',
   usage: 'tailor.usage',
+  folders: 'tailor.folders',
+  tickets: 'tailor.tickets',
   seeded: 'tailor.seeded.v2',
 }
 
@@ -47,6 +51,7 @@ function seed(): void {
     email: config.adminEmail,
     phone: '+55 11 90000-0000',
     role: 'admin',
+    avatar_url: null,
     created_at: new Date().toISOString(),
   }
 
@@ -121,6 +126,7 @@ export const mockDb: Db = {
       email,
       phone: input.phone.trim(),
       role: isAdminEmail(email) ? 'admin' : 'member',
+      avatar_url: null,
       created_at: new Date().toISOString(),
     }
     profiles.push(profile)
@@ -139,6 +145,15 @@ export const mockDb: Db = {
   async listProfiles() {
     seed()
     return getProfiles()
+  },
+
+  async updateMyProfile(id, patch) {
+    const profiles = getProfiles()
+    const idx = profiles.findIndex((p) => p.id === id)
+    if (idx === -1) throw new Error('Perfil nao encontrado.')
+    profiles[idx] = { ...profiles[idx], ...patch }
+    write(K.profiles, profiles)
+    return profiles[idx]
   },
 
   async adminUpdateUser(id, patch) {
@@ -160,6 +175,64 @@ export const mockDb: Db = {
     write(K.notes, notes.filter((n) => n.user_id !== id))
     const usage = read<UsageEvent[]>(K.usage, [])
     write(K.usage, usage.filter((e) => e.user_id !== id))
+  },
+
+  async listFolders(userId) {
+    return read<Folder[]>(K.folders, [])
+      .filter((f) => f.user_id === userId)
+      .sort((a, b) => a.name.localeCompare(b.name))
+  },
+
+  async createFolder(userId, name, color) {
+    const folders = read<Folder[]>(K.folders, [])
+    const folder: Folder = { id: uid('f_'), user_id: userId, name, color, created_at: new Date().toISOString() }
+    folders.push(folder)
+    write(K.folders, folders)
+    return folder
+  },
+
+  async updateFolder(id, patch) {
+    const folders = read<Folder[]>(K.folders, [])
+    const idx = folders.findIndex((f) => f.id === id)
+    if (idx !== -1) {
+      folders[idx] = { ...folders[idx], ...patch }
+      write(K.folders, folders)
+    }
+  },
+
+  async deleteFolder(id) {
+    write(K.folders, read<Folder[]>(K.folders, []).filter((f) => f.id !== id))
+    const notes = read<Note[]>(K.notes, [])
+    let changed = false
+    notes.forEach((n) => {
+      if (n.folder_id === id) {
+        n.folder_id = null
+        changed = true
+      }
+    })
+    if (changed) write(K.notes, notes)
+  },
+
+  async createTicket(input) {
+    const tickets = read<SupportTicket[]>(K.tickets, [])
+    tickets.push({
+      id: uid('t_'),
+      user_id: input.user_id,
+      topic: input.topic,
+      subject: input.subject,
+      message: input.message,
+      status: 'aberto',
+      created_at: new Date().toISOString(),
+    })
+    write(K.tickets, tickets)
+  },
+
+  async listTickets() {
+    const tickets = read<SupportTicket[]>(K.tickets, [])
+    const profiles = getProfiles()
+    return tickets
+      .map((t) => ({ ...t, profile: profiles.find((p) => p.id === t.user_id) }))
+      .sort((a, b) => b.created_at.localeCompare(a.created_at))
   },
 
   async listNotes(userId) {
@@ -211,6 +284,7 @@ export const mockDb: Db = {
       template: input.template ?? 'geral',
       context: input.context ?? '',
       folder: input.folder ?? null,
+      folder_id: input.folder_id ?? null,
       duration_seconds: input.duration_seconds ?? 0,
       audio_url: input.audio_url ?? null,
       language: input.language ?? 'pt-BR',

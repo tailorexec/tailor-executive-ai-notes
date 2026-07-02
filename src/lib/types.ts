@@ -2,6 +2,14 @@
 
 export type UserRole = 'admin' | 'member'
 
+export interface Folder {
+  id: string
+  user_id: string
+  name: string
+  color: string
+  created_at: string
+}
+
 export interface Profile {
   id: string
   first_name: string
@@ -9,6 +17,18 @@ export interface Profile {
   email: string
   phone: string
   role: UserRole
+  avatar_url: string | null
+  created_at: string
+}
+
+export type TicketTopic = 'financeiro' | 'tecnico' | 'feedback' | 'outros'
+export interface SupportTicket {
+  id: string
+  user_id: string
+  topic: TicketTopic
+  subject: string
+  message: string
+  status: 'aberto' | 'resolvido'
   created_at: string
 }
 
@@ -62,6 +82,7 @@ export interface Note {
   template: string
   context: string
   folder: string | null
+  folder_id: string | null
   duration_seconds: number
   audio_url: string | null
   language: string
