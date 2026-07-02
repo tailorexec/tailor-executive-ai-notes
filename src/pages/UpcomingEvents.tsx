@@ -56,15 +56,10 @@ export function UpcomingEvents() {
       </div>
 
       {needsAuth ? (
-        <div>
-          <p className="text-sm text-content-muted mb-3">
-            Conecte seu Google Calendar para ver suas proximas reunioes aqui.
-          </p>
-          <button className="btn-primary w-full" onClick={connect} disabled={loading}>
-            {loading ? <Spinner /> : <CalendarDays size={18} />}
-            Conectar Google Calendar
-          </button>
-        </div>
+        <button className="btn-primary w-full" onClick={connect} disabled={loading}>
+          {loading ? <Spinner /> : <CalendarDays size={18} />}
+          Conectar Google Calendar
+        </button>
       ) : loading && events.length === 0 ? (
         <div className="grid place-items-center py-3"><Spinner className="text-brand-500" /></div>
       ) : events.length === 0 ? (

@@ -74,13 +74,15 @@ export async function connectCalendar(): Promise<boolean> {
   })
 }
 
-export async function listUpcomingEvents(): Promise<{ needsAuth: boolean; events: CalEvent[] }> {
+export async function listUpcomingEvents(
+  max = 5,
+): Promise<{ needsAuth: boolean; events: CalEvent[] }> {
   const token = storedToken()
   if (!token) return { needsAuth: true, events: [] }
   const now = new Date().toISOString()
   const url =
     `https://www.googleapis.com/calendar/v3/calendars/primary/events` +
-    `?timeMin=${encodeURIComponent(now)}&maxResults=5&singleEvents=true&orderBy=startTime`
+    `?timeMin=${encodeURIComponent(now)}&maxResults=${max}&singleEvents=true&orderBy=startTime`
   try {
     const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
     if (res.status === 401) {

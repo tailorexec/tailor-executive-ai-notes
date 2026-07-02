@@ -23,6 +23,7 @@ import { Logo } from '../components/Logo'
 import { uploadAvatar } from '../lib/avatar'
 import { db } from '../lib/api'
 import { exportNotesMarkdown } from '../lib/share'
+import { CalendarSettings } from './CalendarSettings'
 
 function Row({
   icon,
@@ -181,6 +182,8 @@ export function Settings() {
         />
         <Row icon={<Bell size={20} />} label="Notificacoes" onClick={() => navigate('/notificacoes')} />
       </div>
+
+      <CalendarSettings />
 
       <p className="text-xs uppercase tracking-wide text-content-muted mb-2 px-1">Meus dados</p>
       <div className="card divide-y divide-surface-border mb-6">
