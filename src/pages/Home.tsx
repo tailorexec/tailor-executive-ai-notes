@@ -123,7 +123,7 @@ export function Home() {
 
       <button
         onClick={() => setHelpOpen(true)}
-        className="relative w-full overflow-hidden rounded-2xl mb-4 p-[1.5px] group text-left"
+        className="md:hidden relative w-full overflow-hidden rounded-2xl mb-4 p-[1.5px] group text-left"
       >
         <span className="absolute inset-0 bg-[linear-gradient(110deg,#941010,#F10C27,#640816,#F10C27,#941010)] bg-[length:200%_100%] animate-shine opacity-80 group-hover:opacity-100" />
         <span className="relative flex items-center gap-3 rounded-2xl bg-surface-card px-4 py-3">
