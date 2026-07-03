@@ -24,9 +24,10 @@ export const config = {
   audioRetentionDays: 14,
 
   /** Client ID (publico) do Google para ler o calendario no navegador. */
-  googleClientId:
+  googleClientId: (
     (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ??
-    '243945952349-f7jboe6oan0oauijb5bbpbqnur9jnrra.apps.googleusercontent.com',
+    '243945952349-f7jboe6oan0oauijb5bbpbqnur9jnrra.apps.googleusercontent.com'
+  ).trim(),
 
   app: {
     name: 'Tailor Executive AI Notes',
