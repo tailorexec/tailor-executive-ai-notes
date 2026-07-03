@@ -17,6 +17,7 @@ export function UpcomingEvents() {
   const [needsAuth, setNeedsAuth] = useState(!isCalendarConnected())
   const [loading, setLoading] = useState(false)
   const [eventsOpen, setEventsOpen] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const toast = useToast()
   const t = useT()
 
@@ -26,6 +27,7 @@ export function UpcomingEvents() {
       const r = await listUpcomingEvents(10)
       setNeedsAuth(r.needsAuth)
       setEvents(r.events)
+      setError(r.error ?? null)
     } finally {
       setLoading(false)
     }
@@ -49,18 +51,21 @@ export function UpcomingEvents() {
 
   async function connect() {
     setLoading(true)
+    setError(null)
     try {
-      const ok = await connectCalendar()
+      const res = await connectCalendar()
       // Fonte de verdade: o token salvo. Evita ficar preso em "Conectar".
-      if (ok || isCalendarConnected()) {
+      if (res.ok || isCalendarConnected()) {
         setNeedsAuth(false)
         setEventsOpen(true) // abre a lista de eventos assim que conecta
         await refresh()
         toast('Google Calendar conectado')
       } else {
-        toast('Conexão cancelada', 'info')
+        setError(res.error ?? 'Não foi possível conectar.')
+        toast('Não foi possível conectar', 'error')
       }
-    } catch {
+    } catch (e) {
+      setError(String(e))
       toast('Não foi possível conectar', 'error')
     } finally {
       setLoading(false)
@@ -89,10 +94,17 @@ export function UpcomingEvents() {
       </div>
 
       {needsAuth ? (
-        <button className="btn-primary w-full" onClick={connect} disabled={loading}>
-          {loading ? <Spinner /> : <CalendarDays size={18} />}
-          {t('events.connect')}
-        </button>
+        <>
+          <button className="btn-primary w-full" onClick={connect} disabled={loading}>
+            {loading ? <Spinner /> : <CalendarDays size={18} />}
+            {t('events.connect')}
+          </button>
+          {error && (
+            <p className="mt-2 text-xs text-brand-500 bg-brand-500/10 border border-brand-500/20 rounded-lg px-3 py-2 leading-snug">
+              {error}
+            </p>
+          )}
+        </>
       ) : (
         <>
           {loading && events.length === 0 ? (
@@ -126,6 +138,11 @@ export function UpcomingEvents() {
             </ul>
           )}
 
+          {error && (
+            <p className="mb-3 text-xs text-brand-500 bg-brand-500/10 border border-brand-500/20 rounded-lg px-3 py-2 leading-snug">
+              {error}
+            </p>
+          )}
           <button className="btn-primary w-full" onClick={() => setEventsOpen(true)}>
             <CalendarDays size={18} /> {t('events.see')}
           </button>

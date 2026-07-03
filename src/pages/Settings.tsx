@@ -68,7 +68,7 @@ export function Settings() {
   const [uploading, setUploading] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [langOpen, setLangOpen] = useState(false)
-  const { lang, setLang } = useI18n()
+  const { lang, setLang, t } = useI18n()
   const fileRef = useRef<HTMLInputElement | null>(null)
 
   if (!profile) return null
@@ -79,9 +79,9 @@ export function Settings() {
     try {
       const notes = await db.listNotes(profile.id)
       exportNotesMarkdown(notes, `${profile.first_name} ${profile.last_name}`)
-      toast('Dados exportados em Markdown')
+      toast(t('settings.exported'))
     } catch {
-      toast('Nao foi possivel exportar os dados', 'error')
+      toast('Não foi possível exportar os dados', 'error')
     } finally {
       setExporting(false)
     }
@@ -110,7 +110,7 @@ export function Settings() {
     try {
       await updateProfile({ first_name: first.trim(), last_name: last.trim() })
       setEditOpen(false)
-      toast('Perfil atualizado')
+      toast(t('settings.profileUpdated'))
     } finally {
       setSaving(false)
     }
@@ -119,7 +119,7 @@ export function Settings() {
   return (
     <div className="px-5 pt-6 safe-top">
       <header className="flex items-center justify-between mb-6">
-        <h1 className="font-display text-3xl font-bold">Configurações</h1>
+        <h1 className="font-display text-3xl font-bold">{t('settings.title')}</h1>
       </header>
 
       <div className="card p-5 flex items-center gap-4 mb-6">
@@ -137,27 +137,27 @@ export function Settings() {
           <p className="text-content-muted text-sm truncate">{profile.email}</p>
           <p className="text-content-muted text-sm">{profile.phone}</p>
         </div>
-        <button onClick={openEdit} className="grid place-items-center h-9 w-9 rounded-full bg-surface-elevated border border-surface-border text-content-secondary" aria-label="Editar perfil">
+        <button onClick={openEdit} className="grid place-items-center h-9 w-9 rounded-full bg-surface-elevated border border-surface-border text-content-secondary" aria-label={t('settings.editProfile')}>
           <Pencil size={16} />
         </button>
       </div>
 
-      <Sheet open={editOpen} onClose={() => setEditOpen(false)} title="Editar perfil">
+      <Sheet open={editOpen} onClose={() => setEditOpen(false)} title={t('settings.editProfile')}>
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div>
-            <label className="label">Nome</label>
+            <label className="label">{t('settings.firstName')}</label>
             <input className="input" value={first} onChange={(e) => setFirst(e.target.value)} />
           </div>
           <div>
-            <label className="label">Sobrenome</label>
+            <label className="label">{t('settings.lastName')}</label>
             <input className="input" value={last} onChange={(e) => setLast(e.target.value)} />
           </div>
         </div>
         <button className="btn-outline w-full mb-3" onClick={() => fileRef.current?.click()}>
-          <Camera size={18} /> Trocar foto
+          <Camera size={18} /> {t('settings.changePhoto')}
         </button>
         <button className="btn-primary w-full" onClick={saveProfile} disabled={saving}>
-          {saving ? <Spinner /> : 'Salvar'}
+          {saving ? <Spinner /> : t('common.save')}
         </button>
       </Sheet>
 
@@ -165,17 +165,17 @@ export function Settings() {
         <div className="card divide-y divide-surface-border mb-6">
           <Row
             icon={<ShieldCheck size={20} className="text-brand-500" />}
-            label="Painel de administrador"
+            label={t('settings.adminPanel')}
             onClick={() => navigate('/admin')}
           />
         </div>
       )}
 
-      <p className="text-xs uppercase tracking-wide text-content-muted mb-2 px-1">Preferencias</p>
+      <p className="text-xs uppercase tracking-wide text-content-muted mb-2 px-1">{t('settings.prefs')}</p>
       <div className="card divide-y divide-surface-border mb-6">
         <Row
           icon={theme === 'dark' ? <Moon size={20} /> : <Sun size={20} />}
-          label="Tema escuro"
+          label={t('settings.darkTheme')}
           onClick={toggle}
           right={
             <span
@@ -193,13 +193,13 @@ export function Settings() {
         />
         <Row
           icon={<Bell size={20} />}
-          label="Notificações"
-          onClick={() => toast('Notificações: em breve no app.', 'info')}
+          label={t('settings.notifications')}
+          onClick={() => toast(t('settings.notifSoon'), 'info')}
           right={<SoonBadge />}
         />
         <Row
           icon={<Languages size={20} />}
-          label="Idioma do app"
+          label={t('settings.appLang')}
           onClick={() => setLangOpen(true)}
           right={
             <span className="flex items-center gap-1 text-sm text-content-muted">
@@ -210,7 +210,7 @@ export function Settings() {
         />
       </div>
 
-      <Sheet open={langOpen} onClose={() => setLangOpen(false)} title="Idioma do app">
+      <Sheet open={langOpen} onClose={() => setLangOpen(false)} title={t('settings.appLang')}>
         <div className="space-y-2">
           {LANGS.map((l) => (
             <button
@@ -218,7 +218,7 @@ export function Settings() {
               onClick={() => {
                 setLang(l.code)
                 setLangOpen(false)
-                toast('Idioma alterado')
+                toast(t('settings.langChanged'))
               }}
               className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-colors ${
                 lang === l.code
@@ -231,32 +231,30 @@ export function Settings() {
             </button>
           ))}
         </div>
-        <p className="text-xs text-content-muted mt-4">
-          A traducao completa das telas esta sendo implementada gradualmente.
-        </p>
+        <p className="text-xs text-content-muted mt-4">{t('settings.langNote')}</p>
       </Sheet>
 
-      <p className="text-xs uppercase tracking-wide text-content-muted mb-2 px-1">Meus dados</p>
+      <p className="text-xs uppercase tracking-wide text-content-muted mb-2 px-1">{t('settings.myData')}</p>
       <div className="card divide-y divide-surface-border mb-6">
         <Row
           icon={<Download size={20} />}
-          label="Exportar meus dados (Markdown)"
+          label={t('settings.exportData')}
           onClick={exportData}
           right={exporting ? <Spinner size={16} /> : undefined}
         />
-        <Row icon={<Trash2 size={20} />} label="Lixeira" onClick={() => navigate('/lixeira')} />
+        <Row icon={<Trash2 size={20} />} label={t('settings.trash')} onClick={() => navigate('/lixeira')} />
       </div>
 
-      <p className="text-xs uppercase tracking-wide text-content-muted mb-2 px-1">Suporte</p>
+      <p className="text-xs uppercase tracking-wide text-content-muted mb-2 px-1">{t('settings.support')}</p>
       <div className="card divide-y divide-surface-border mb-6">
-        <Row icon={<LifeBuoy size={20} />} label="Falar com o suporte" onClick={() => navigate('/suporte')} />
-        <Row icon={<HelpCircle size={20} />} label="Central de ajuda" onClick={() => navigate('/ajuda')} />
-        <Row icon={<ScrollText size={20} />} label="Termos de serviço" onClick={() => navigate('/termos')} />
-        <Row icon={<FileLock2 size={20} />} label="Política de privacidade" onClick={() => navigate('/privacidade')} />
+        <Row icon={<LifeBuoy size={20} />} label={t('settings.contactSupport')} onClick={() => navigate('/suporte')} />
+        <Row icon={<HelpCircle size={20} />} label={t('settings.helpCenter')} onClick={() => navigate('/ajuda')} />
+        <Row icon={<ScrollText size={20} />} label={t('settings.terms')} onClick={() => navigate('/termos')} />
+        <Row icon={<FileLock2 size={20} />} label={t('settings.privacy')} onClick={() => navigate('/privacidade')} />
       </div>
 
       <div className="card mb-8">
-        <Row icon={<LogOut size={20} />} label="Sair" danger onClick={signOut} right={<span />} />
+        <Row icon={<LogOut size={20} />} label={t('settings.logout')} danger onClick={signOut} right={<span />} />
       </div>
 
       <div className="flex flex-col items-center gap-2 pb-4 text-content-muted">

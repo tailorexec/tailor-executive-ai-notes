@@ -13,19 +13,20 @@ import {
   Plus,
 } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
+import { useT } from '../lib/i18n'
 import { Logo } from '../components/Logo'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { Spinner } from '../components/ui'
 import { config } from '../lib/config'
 
 const FEATURES = [
-  { icon: <Mic size={18} />, title: 'Transcrição automática', desc: 'Reuniões, áudios e ligações viram texto com precisão.' },
-  { icon: <FileText size={18} />, title: 'Resumo inteligente', desc: 'Resumo rápido e um detalhado sob demanda, com IA.' },
-  { icon: <BarChart3 size={18} />, title: 'Análise de reunião', desc: 'Tom, perguntas, ritmo e sugestões para evoluir.' },
-  { icon: <Headphones size={18} />, title: 'Gravar reunião', desc: 'Capta o áudio da reunião + seu microfone (desktop).' },
-  { icon: <Share2 size={18} />, title: 'Compartilhamento', desc: 'WhatsApp, PDF, Word, e-mail e com parceiros.' },
-  { icon: <MessageSquare size={18} />, title: 'Converse com a nota', desc: 'Pergunte à IA e gere narração por voz.' },
-  { icon: <Phone size={18} />, title: 'Transcrições de ligações telefônicas', desc: 'Suas ligações viram texto e resumo automaticamente.' },
+  { icon: <Mic size={18} />, k: 'f1' },
+  { icon: <FileText size={18} />, k: 'f2' },
+  { icon: <BarChart3 size={18} />, k: 'f3' },
+  { icon: <Headphones size={18} />, k: 'f4' },
+  { icon: <Share2 size={18} />, k: 'f5' },
+  { icon: <MessageSquare size={18} />, k: 'f6' },
+  { icon: <Phone size={18} />, k: 'f7' },
 ]
 
 function useIsDesktop() {
@@ -115,6 +116,7 @@ export function Login() {
   }
 
   const isDesktop = useIsDesktop()
+  const t = useT()
 
   return (
     <div className="min-h-screen lg:h-screen flex flex-col safe-top lg:overflow-hidden">
@@ -130,11 +132,10 @@ export function Login() {
         {/* Hero */}
         <div className="text-center max-w-2xl">
           <h1 className="font-display text-4xl sm:text-5xl md:text-3xl lg:text-4xl font-bold leading-tight dark:[text-shadow:0_2px_14px_rgba(0,0,0,0.55)]">
-            Ferramenta Inteligente para Executivos
+            {t('login.heroTitle')}
           </h1>
           <p className="text-content-secondary mt-4 md:mt-2 text-lg md:text-sm lg:text-base dark:[text-shadow:0_1px_10px_rgba(0,0,0,0.5)]">
-            Grave, transcreva e transforme reuniões em decisões. A IA resume, analisa e organiza
-            suas conversas — pensada para o dia a dia de quem lidera.
+            {t('login.heroSub')}
           </p>
         </div>
 
@@ -142,16 +143,16 @@ export function Login() {
         <div className="grid lg:grid-cols-2 gap-8 md:gap-5 lg:gap-8 lg:items-stretch w-full max-w-4xl mx-auto mt-10 md:mt-6">
           {/* Funcionalidades */}
           <div className="order-2 lg:order-1">
-            <h2 className="font-display text-lg md:text-base font-semibold mb-4 md:mb-3">O que a plataforma faz</h2>
+            <h2 className="font-display text-lg md:text-base font-semibold mb-4 md:mb-3">{t('login.whatItDoes')}</h2>
             <div className="grid sm:grid-cols-2 gap-3 md:gap-2">
               {FEATURES.map((f) => (
-                <div key={f.title} className="card p-4 md:p-3 flex gap-3 md:gap-2">
+                <div key={f.k} className="card p-4 md:p-3 flex gap-3 md:gap-2">
                   <div className="grid place-items-center h-9 w-9 md:h-8 md:w-8 rounded-xl bg-brand-500/10 text-brand-500 shrink-0">
                     {f.icon}
                   </div>
                   <div>
-                    <p className="font-medium text-sm">{f.title}</p>
-                    <p className="text-content-muted text-xs mt-0.5 leading-relaxed md:leading-snug">{f.desc}</p>
+                    <p className="font-medium text-sm">{t(`login.${f.k}t`)}</p>
+                    <p className="text-content-muted text-xs mt-0.5 leading-relaxed md:leading-snug">{t(`login.${f.k}d`)}</p>
                   </div>
                 </div>
               ))}
@@ -159,7 +160,7 @@ export function Login() {
                 <div className="grid place-items-center h-9 w-9 md:h-8 md:w-8 rounded-xl bg-brand-500/10 text-brand-500 shrink-0">
                   <Plus size={18} />
                 </div>
-                <p className="font-medium text-sm">Feedbacks e muito mais</p>
+                <p className="font-medium text-sm">{t('login.more')}</p>
               </div>
             </div>
           </div>
@@ -167,8 +168,8 @@ export function Login() {
           {/* Login */}
           <div className="order-1 lg:order-2 w-full max-w-md mx-auto h-full">
             <div className="card p-6 sm:p-8 md:p-6 shadow-float h-full flex flex-col justify-center">
-              <h2 className="font-display text-2xl font-bold">Entrar</h2>
-              <p className="text-content-secondary mt-1 mb-6 md:mb-4">Acesse sua conta corporativa.</p>
+              <h2 className="font-display text-2xl font-bold">{t('login.signin')}</h2>
+              <p className="text-content-secondary mt-1 mb-6 md:mb-4">{t('login.signinSub')}</p>
 
               {config.mockMode && (
                 <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
@@ -182,7 +183,7 @@ export function Login() {
 
               <form onSubmit={onSubmit} className="space-y-4">
                 <div>
-                  <label className="label" htmlFor="email">E-mail corporativo</label>
+                  <label className="label" htmlFor="email">{t('login.email')}</label>
                   <input
                     id="email"
                     type="email"
@@ -196,14 +197,14 @@ export function Login() {
                 </div>
 
                 <div>
-                  <label className="label" htmlFor="password">Senha</label>
+                  <label className="label" htmlFor="password">{t('login.password')}</label>
                   <div className="relative">
                     <input
                       id="password"
                       type={show ? 'text' : 'password'}
                       autoComplete="current-password"
                       className="input pr-12"
-                      placeholder="Sua senha"
+                      placeholder={t('login.yourPassword')}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
@@ -226,14 +227,14 @@ export function Login() {
                 )}
 
                 <button type="submit" className="btn-primary w-full py-3" disabled={loading}>
-                  {loading ? <Spinner /> : 'Entrar'}
+                  {loading ? <Spinner /> : t('login.signin')}
                 </button>
               </form>
 
               <p className="text-center text-content-secondary mt-6">
-                Não tem conta?{' '}
+                {t('login.noAccount')}{' '}
                 <Link to="/cadastro" className="text-brand-500 font-medium hover:underline">
-                  Criar conta
+                  {t('login.createAccount')}
                 </Link>
               </p>
 
