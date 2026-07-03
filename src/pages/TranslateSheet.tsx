@@ -2,9 +2,8 @@ import { useState } from 'react'
 import { Languages, Copy, Check } from 'lucide-react'
 import { Sheet, Spinner } from '../components/ui'
 import { translateText } from '../lib/ai'
+import { useT } from '../lib/i18n'
 import type { Note } from '../lib/types'
-
-const LANGS = ['Ingles', 'Espanhol', 'Frances', 'Portugues']
 
 export function TranslateSheet({
   note,
@@ -15,6 +14,14 @@ export function TranslateSheet({
   open: boolean
   onClose: () => void
 }) {
+  const t = useT()
+  // rotulo traduzido -> alvo enviado a IA (em portugues, como a edge espera)
+  const LANGS: { label: string; target: string }[] = [
+    { label: t('tr.en'), target: 'Ingles' },
+    { label: t('tr.es'), target: 'Espanhol' },
+    { label: t('tr.fr'), target: 'Frances' },
+    { label: t('tr.pt'), target: 'Portugues' },
+  ]
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -38,24 +45,24 @@ export function TranslateSheet({
   }
 
   return (
-    <Sheet open={open} onClose={onClose} title="Traduzir">
-      <p className="text-sm text-content-secondary mb-3">Traduz o resumo desta nota para o idioma escolhido.</p>
+    <Sheet open={open} onClose={onClose} title={t('tr.title')}>
+      <p className="text-sm text-content-secondary mb-3">{t('tr.intro')}</p>
       <div className="flex flex-wrap gap-2 mb-4">
         {LANGS.map((l) => (
           <button
-            key={l}
-            onClick={() => run(l)}
+            key={l.target}
+            onClick={() => run(l.target)}
             disabled={loading}
             className="px-3.5 py-2 rounded-xl text-sm font-medium border bg-surface-elevated border-surface-border hover:border-brand-500/40"
           >
-            {l}
+            {l.label}
           </button>
         ))}
       </div>
 
       {loading && (
         <div className="flex items-center gap-2 text-content-muted text-sm">
-          <Spinner size={16} /> Traduzindo...
+          <Spinner size={16} /> {t('tr.translating')}
         </div>
       )}
 
@@ -64,14 +71,14 @@ export function TranslateSheet({
           <textarea className="input min-h-[200px] resize-y mb-3 leading-relaxed" value={text} onChange={(e) => setText(e.target.value)} />
           <button className="btn-primary w-full" onClick={copy}>
             {copied ? <Check size={18} /> : <Copy size={18} />}
-            {copied ? 'Copiado' : 'Copiar traducao'}
+            {copied ? t('tr.copied') : t('tr.copyTr')}
           </button>
         </>
       )}
 
       {!text && !loading && (
         <div className="text-content-muted text-sm flex items-center gap-2">
-          <Languages size={16} /> Escolha um idioma acima.
+          <Languages size={16} /> {t('tr.choose')}
         </div>
       )}
     </Sheet>

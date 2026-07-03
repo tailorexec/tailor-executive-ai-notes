@@ -2,13 +2,8 @@ import { useState } from 'react'
 import { Sparkles, Send } from 'lucide-react'
 import { Sheet, Spinner } from '../components/ui'
 import { askAllNotes } from '../lib/ai'
+import { useT } from '../lib/i18n'
 import type { Note } from '../lib/types'
-
-const SUGGESTIONS = [
-  'O que ficou pendente nas ultimas reunioes?',
-  'Quais candidatos tiveram avaliacao positiva?',
-  'Resuma as decisoes comerciais recentes.',
-]
 
 export function AskNotesSheet({
   open,
@@ -19,6 +14,8 @@ export function AskNotesSheet({
   onClose: () => void
   notes: Note[]
 }) {
+  const t = useT()
+  const SUGGESTIONS = [t('ask.s1'), t('ask.s2'), t('ask.s3')]
   const [q, setQ] = useState('')
   const [answer, setAnswer] = useState('')
   const [loading, setLoading] = useState(false)
@@ -41,16 +38,15 @@ export function AskNotesSheet({
   }
 
   return (
-    <Sheet open={open} onClose={onClose} title="Conversar com todas as reunioes">
+    <Sheet open={open} onClose={onClose} title={t('ask.title')}>
       <p className="text-sm text-content-secondary mb-4">
-        Pergunte em linguagem natural e a IA responde consultando o conteudo de todas as suas
-        reunioes ({notes.length}).
+        {t('ask.intro').replace('{n}', String(notes.length))}
       </p>
 
       <div className="flex items-center gap-2 mb-4">
         <input
           className="input"
-          placeholder="Ex: o que ficou pendente com o cliente X?"
+          placeholder={t('ask.placeholder')}
           value={q}
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && ask()}
@@ -76,14 +72,14 @@ export function AskNotesSheet({
 
       {loading && (
         <div className="flex items-center gap-2 text-content-muted text-sm">
-          <Spinner size={16} /> Consultando suas reunioes...
+          <Spinner size={16} /> {t('ask.consulting')}
         </div>
       )}
 
       {answer && (
         <div className="card p-4">
           <div className="flex items-center gap-2 text-brand-500 mb-2 text-sm font-medium">
-            <Sparkles size={16} /> Resposta
+            <Sparkles size={16} /> {t('ask.answer')}
           </div>
           <p className="whitespace-pre-line leading-relaxed text-sm">{answer}</p>
         </div>

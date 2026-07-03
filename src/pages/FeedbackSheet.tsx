@@ -4,6 +4,7 @@ import { Sheet, Spinner } from '../components/ui'
 import { generateFeedback } from '../lib/ai'
 import { db } from '../lib/api'
 import { useAuth } from '../auth/AuthProvider'
+import { useT } from '../lib/i18n'
 import type { Note } from '../lib/types'
 
 type Audience = 'cliente' | 'candidato'
@@ -18,6 +19,7 @@ export function FeedbackSheet({
   onClose: () => void
 }) {
   const { profile } = useAuth()
+  const t = useT()
   const [audience, setAudience] = useState<Audience>('cliente')
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(false)
@@ -48,10 +50,8 @@ export function FeedbackSheet({
   }
 
   return (
-    <Sheet open={open} onClose={onClose} title="Gerar feedback">
-      <p className="text-sm text-content-secondary mb-3">
-        Feedback profissional a partir desta reuniao. Escolha o publico, gere e edite antes de enviar.
-      </p>
+    <Sheet open={open} onClose={onClose} title={t('fb.title')}>
+      <p className="text-sm text-content-secondary mb-3">{t('fb.intro')}</p>
 
       <div className="flex gap-2 mb-4">
         {(['cliente', 'candidato'] as Audience[]).map((a) => (
@@ -64,7 +64,7 @@ export function FeedbackSheet({
                 : 'bg-surface-elevated border-surface-border text-content-secondary'
             }`}
           >
-            {a}
+            {t(a === 'cliente' ? 'fb.client' : 'fb.candidate')}
           </button>
         ))}
       </div>
@@ -72,7 +72,7 @@ export function FeedbackSheet({
       {!text && (
         <button className="btn-primary w-full mb-2" onClick={generate} disabled={loading}>
           {loading ? <Spinner /> : <Sparkles size={18} />}
-          {loading ? 'Gerando...' : 'Gerar feedback'}
+          {loading ? t('fb.generating') : t('fb.generate')}
         </button>
       )}
 
@@ -86,15 +86,15 @@ export function FeedbackSheet({
           <div className="flex flex-wrap gap-2">
             <button className="btn-primary flex-1" onClick={copy}>
               {copied ? <Check size={18} /> : <Copy size={18} />}
-              {copied ? 'Copiado' : 'Copiar'}
+              {copied ? t('fb.copied') : t('fb.copy')}
             </button>
             <button className="btn-outline" onClick={sendWhats}>WhatsApp</button>
             <button className="btn-outline" onClick={sendEmail}>
-              <Mail size={16} /> E-mail
+              <Mail size={16} /> {t('fb.email')}
             </button>
           </div>
           <button className="btn-ghost w-full mt-2" onClick={generate} disabled={loading}>
-            {loading ? <Spinner /> : <Sparkles size={16} />} Gerar novamente
+            {loading ? <Spinner /> : <Sparkles size={16} />} {t('fb.again')}
           </button>
         </>
       )}

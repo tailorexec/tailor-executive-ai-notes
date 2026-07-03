@@ -4,6 +4,7 @@ import { db } from '../lib/api'
 import { useAuth } from '../auth/AuthProvider'
 import type { Note, Profile } from '../lib/types'
 import { Avatar, Sheet } from '../components/ui'
+import { useT } from '../lib/i18n'
 import {
   copyToClipboard,
   exportPdf,
@@ -36,6 +37,7 @@ export function ShareSheet({
   onUpdated: (n: Note) => void
 }) {
   const { profile } = useAuth()
+  const t = useT()
   const [partners, setPartners] = useState<Profile[]>([])
   const [copied, setCopied] = useState(false)
   const [savingShare, setSavingShare] = useState(false)
@@ -65,15 +67,15 @@ export function ShareSheet({
     { label: 'E-mail', icon: <Mail size={20} />, onClick: () => shareEmail(note) },
     { label: 'PDF', icon: <FileText size={20} />, onClick: () => exportPdf(note) },
     { label: 'Word', icon: <FileType size={20} />, onClick: () => exportWord(note) },
-    { label: 'Transcricao', icon: <ScrollText size={20} />, onClick: () => exportTranscript(note) },
+    { label: t('sh.transcript'), icon: <ScrollText size={20} />, onClick: () => exportTranscript(note) },
     ...(note.audio_url
-      ? [{ label: 'Audio', icon: <AudioLines size={20} />, onClick: () => downloadAudio(note.audio_url, `${slugify(note.title)}.webm`) }]
+      ? [{ label: t('sh.audio'), icon: <AudioLines size={20} />, onClick: () => downloadAudio(note.audio_url, `${slugify(note.title)}.webm`) }]
       : []),
-    { label: copied ? 'Copiado' : 'Copiar', icon: copied ? <Check size={20} /> : <Copy size={20} />, onClick: onCopy },
+    { label: copied ? t('sh.copied') : t('sh.copy'), icon: copied ? <Check size={20} /> : <Copy size={20} />, onClick: onCopy },
   ]
 
   return (
-    <Sheet open={open} onClose={onClose} title="Compartilhar">
+    <Sheet open={open} onClose={onClose} title={t('sh.title')}>
       <div className="grid grid-cols-5 gap-2 mb-6">
         {channels.map((c) => (
           <button
@@ -90,20 +92,18 @@ export function ShareSheet({
       {typeof navigator !== 'undefined' && 'share' in navigator && (
         <button className="btn-outline w-full mb-6" onClick={() => nativeShare(note)}>
           <ShareIcon size={18} />
-          Mais opcoes do dispositivo
+          {t('sh.moreDevice')}
         </button>
       )}
 
       <div>
         <h3 className="flex items-center gap-2 font-display font-semibold mb-1">
-          <Users size={18} className="text-brand-500" /> Compartilhar com parceiros
+          <Users size={18} className="text-brand-500" /> {t('sh.withPartners')}
         </h3>
-        <p className="text-sm text-content-muted mb-3">
-          Parceiros selecionados recebem esta nota (transcricao e resumo) diretamente no app.
-        </p>
+        <p className="text-sm text-content-muted mb-3">{t('sh.partnersDesc')}</p>
         <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
           {partners.length === 0 && (
-            <p className="text-sm text-content-muted py-4 text-center">Nenhum outro usuario cadastrado ainda.</p>
+            <p className="text-sm text-content-muted py-4 text-center">{t('sh.noPartners')}</p>
           )}
           {partners.map((p) => {
             const active = note.shared_with.includes(p.id)
