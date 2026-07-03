@@ -2,11 +2,10 @@ import { useEffect, useState } from 'react'
 import { CalendarDays, RefreshCw, Clock, Link2Off } from 'lucide-react'
 import {
   startCalendarConnect,
+  finishCalendarConnect,
   disconnectCalendar,
   isCalendarConnected,
   listUpcomingEvents,
-  GCAL_FLASH,
-  GCAL_ERROR,
   type CalEvent,
 } from '../lib/googleCalendar'
 import { fmtDate, fmtTime } from '../lib/format'
@@ -36,22 +35,29 @@ export function UpcomingEvents() {
   }
 
   useEffect(() => {
-    // Erro capturado no boot (apos voltar do Google)
-    const bootError = sessionStorage.getItem(GCAL_ERROR)
-    if (bootError) {
-      setError(bootError)
-      sessionStorage.removeItem(GCAL_ERROR)
-    }
-    if (isCalendarConnected()) {
-      setNeedsAuth(false)
-      refresh()
-      // Acabou de conectar via redirect: abre a lista automaticamente
-      if (sessionStorage.getItem(GCAL_FLASH) === 'ok') {
-        sessionStorage.removeItem(GCAL_FLASH)
-        setEventsOpen(true)
-        toast('Google Calendar conectado')
+    ;(async () => {
+      const returning = new URLSearchParams(window.location.search).has('code') ||
+        new URLSearchParams(window.location.search).has('error')
+      if (returning) setLoading(true)
+      // Voltou do Google com ?code= : conclui a troca por token.
+      const res = await finishCalendarConnect()
+      if (returning) setLoading(false)
+      if (res.done) {
+        if (res.ok) {
+          setNeedsAuth(false)
+          setEventsOpen(true)
+          toast('Google Calendar conectado')
+          refresh()
+        } else {
+          setError(res.error ?? 'Não foi possível conectar.')
+        }
+        return
       }
-    }
+      if (isCalendarConnected()) {
+        setNeedsAuth(false)
+        refresh()
+      }
+    })()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

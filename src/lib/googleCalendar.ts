@@ -1,7 +1,10 @@
-// Integracao com Google Calendar (leitura) via Google Identity Services (GIS).
-// Usa apenas o Client ID (publico). Sem secret no frontend.
+// Integracao com Google Calendar (leitura).
+// Fluxo: authorization code por redirect. O client e "confidencial" (tem secret),
+// entao o Google bloqueia o fluxo implicit; a troca do code por token e feita na
+// Edge Function google-oauth (que guarda o CLIENT_SECRET no servidor).
 
 import { config } from './config'
+import { supabase } from './supabase'
 
 const SCOPE = 'https://www.googleapis.com/auth/calendar.readonly'
 const STORE = 'tailor.gcal'
@@ -34,13 +37,12 @@ export function disconnectCalendar(): void {
 }
 
 /* ---------------------------------------------------------------------------
- * Fluxo de REDIRECIONAMENTO (implicit). Funciona no celular e no PWA, onde o
- * popup do GIS e bloqueado. Redireciona a pagina para o Google e, ao voltar,
- * o token vem no fragmento (#access_token=...) e e capturado no boot.
+ * Fluxo AUTHORIZATION CODE por redirect (funciona no celular e no PWA).
+ * 1) startCalendarConnect() manda a pagina para o Google (response_type=code).
+ * 2) Ao voltar, a URL tem ?code=... ; finishCalendarConnect() troca o code por
+ *    um access_token via Edge Function e salva.
  * ------------------------------------------------------------------------- */
 const STATE_KEY = 'tailor.gcal.state'
-export const GCAL_FLASH = 'tailor.gcal.flash' // 'ok' apos conectar
-export const GCAL_ERROR = 'tailor.gcal.error' // mensagem de erro apos voltar
 
 function redirectUri(): string {
   return window.location.origin + '/'
@@ -60,9 +62,10 @@ export function startCalendarConnect(): { ok: boolean; error?: string } {
   const params = new URLSearchParams({
     client_id: config.googleClientId,
     redirect_uri: redirectUri(),
-    response_type: 'token',
+    response_type: 'code',
     scope: SCOPE,
     include_granted_scopes: 'true',
+    access_type: 'online',
     state,
     // Permite escolher/trocar a conta e reexibe o consentimento.
     prompt: 'select_account consent',
@@ -72,17 +75,16 @@ export function startCalendarConnect(): { ok: boolean; error?: string } {
 }
 
 /**
- * Captura o token/erro do fragmento apos o redirect do Google. Chamar no boot
- * (antes do render). Limpa o hash da URL. Grava flags em sessionStorage para a UI.
+ * Ao voltar do Google: se houver ?code=..., troca por token via Edge Function.
+ * Retorna { done } indicando se havia um retorno OAuth para tratar.
  */
-export function captureCalendarRedirect(): void {
-  const hash = window.location.hash
-  if (!hash || (hash.indexOf('access_token=') === -1 && hash.indexOf('error=') === -1)) return
-  const p = new URLSearchParams(hash.slice(1))
-  const token = p.get('access_token')
-  const expiresIn = Number(p.get('expires_in') || '3300')
-  const state = p.get('state')
-  const err = p.get('error')
+export async function finishCalendarConnect(): Promise<{ done: boolean; ok?: boolean; error?: string }> {
+  const params = new URLSearchParams(window.location.search)
+  const code = params.get('code')
+  const err = params.get('error')
+  const state = params.get('state')
+  if (!code && !err) return { done: false }
+
   let saved: string | null = null
   try {
     saved = sessionStorage.getItem(STATE_KEY)
@@ -90,22 +92,34 @@ export function captureCalendarRedirect(): void {
   } catch {
     /* ignore */
   }
-  // Remove o token/erro da URL (nao deixa vazar no historico).
-  history.replaceState(null, '', window.location.pathname + window.location.search)
+  // Limpa a URL (remove code/state/error).
+  history.replaceState(null, '', window.location.pathname)
+
+  if (err) {
+    return { done: true, ok: false, error: err === 'access_denied' ? 'Permissão negada no Google.' : `Erro do Google: ${err}` }
+  }
+  if (saved && state !== saved) {
+    return { done: true, ok: false, error: 'Falha de segurança (state) ao conectar. Tente de novo.' }
+  }
+  if (!supabase) {
+    return { done: true, ok: false, error: 'Supabase não configurado para concluir a conexão.' }
+  }
   try {
-    if (token && (!saved || state === saved)) {
-      localStorage.setItem(STORE, JSON.stringify({ token, exp: Date.now() + expiresIn * 1000 }))
-      sessionStorage.setItem(GCAL_FLASH, 'ok')
-    } else if (err) {
-      sessionStorage.setItem(
-        GCAL_ERROR,
-        err === 'access_denied' ? 'Permissão negada no Google.' : `Erro do Google: ${err}`,
+    const { data, error } = await supabase.functions.invoke('google-oauth', {
+      body: { code, redirect_uri: redirectUri() },
+    })
+    if (error) return { done: true, ok: false, error: error.message || 'Falha ao trocar o código.' }
+    const d = data as { access_token?: string; expires_in?: number; error?: string }
+    if (d.access_token) {
+      localStorage.setItem(
+        STORE,
+        JSON.stringify({ token: d.access_token, exp: Date.now() + (d.expires_in ? d.expires_in * 1000 : 3300000) }),
       )
-    } else if (token && saved && state !== saved) {
-      sessionStorage.setItem(GCAL_ERROR, 'Falha de segurança (state) ao conectar. Tente de novo.')
+      return { done: true, ok: true }
     }
-  } catch {
-    /* ignore */
+    return { done: true, ok: false, error: d.error || 'O Google não retornou um token.' }
+  } catch (e) {
+    return { done: true, ok: false, error: String(e) }
   }
 }
 
