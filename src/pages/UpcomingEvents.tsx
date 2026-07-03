@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { CalendarDays, RefreshCw, Clock, Link2Off } from 'lucide-react'
 import {
-  connectCalendar,
+  startCalendarConnect,
   disconnectCalendar,
   isCalendarConnected,
   listUpcomingEvents,
+  GCAL_FLASH,
+  GCAL_ERROR,
   type CalEvent,
 } from '../lib/googleCalendar'
 import { fmtDate, fmtTime } from '../lib/format'
@@ -34,40 +36,32 @@ export function UpcomingEvents() {
   }
 
   useEffect(() => {
-    if (isCalendarConnected()) refresh()
-    // Reverifica ao voltar o foco (apos o popup do Google): se o token foi salvo,
-    // atualiza o botao para "Ver meus eventos" mesmo que o callback nao tenha re-renderizado.
-    const onFocus = () => {
-      if (isCalendarConnected()) setNeedsAuth(false)
+    // Erro capturado no boot (apos voltar do Google)
+    const bootError = sessionStorage.getItem(GCAL_ERROR)
+    if (bootError) {
+      setError(bootError)
+      sessionStorage.removeItem(GCAL_ERROR)
     }
-    window.addEventListener('focus', onFocus)
-    document.addEventListener('visibilitychange', onFocus)
-    return () => {
-      window.removeEventListener('focus', onFocus)
-      document.removeEventListener('visibilitychange', onFocus)
+    if (isCalendarConnected()) {
+      setNeedsAuth(false)
+      refresh()
+      // Acabou de conectar via redirect: abre a lista automaticamente
+      if (sessionStorage.getItem(GCAL_FLASH) === 'ok') {
+        sessionStorage.removeItem(GCAL_FLASH)
+        setEventsOpen(true)
+        toast('Google Calendar conectado')
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  async function connect() {
-    setLoading(true)
+  function connect() {
     setError(null)
-    try {
-      const res = await connectCalendar()
-      // Fonte de verdade: o token salvo. Evita ficar preso em "Conectar".
-      if (res.ok || isCalendarConnected()) {
-        setNeedsAuth(false)
-        setEventsOpen(true) // abre a lista de eventos assim que conecta
-        await refresh()
-        toast('Google Calendar conectado')
-      } else {
-        setError(res.error ?? 'Não foi possível conectar.')
-        toast('Não foi possível conectar', 'error')
-      }
-    } catch (e) {
-      setError(String(e))
-      toast('Não foi possível conectar', 'error')
-    } finally {
+    setLoading(true)
+    // Redireciona a pagina para o consentimento do Google (volta com o token no boot).
+    const res = startCalendarConnect()
+    if (!res.ok) {
+      setError(res.error ?? 'Não foi possível conectar.')
       setLoading(false)
     }
   }

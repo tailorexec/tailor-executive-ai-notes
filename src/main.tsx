@@ -10,6 +10,7 @@ import { ToastProvider } from './components/Toast'
 import { I18nProvider } from './lib/i18n'
 import { initButtonShine } from './lib/buttonShine'
 import { initLang } from './lib/lang'
+import { captureCalendarRedirect } from './lib/googleCalendar'
 
 // Remove sessoes corrompidas no localStorage (residuo de tentativas antigas) que
 // causavam "String contains non ISO-8859-1 code point" ao montar headers do fetch.
@@ -40,6 +41,7 @@ function sanitizeAuthStorage() {
 }
 
 sanitizeAuthStorage()
+captureCalendarRedirect() // captura o token do Google apos o redirect (antes do render)
 initButtonShine()
 initLang()
 
