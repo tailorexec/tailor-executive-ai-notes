@@ -13,21 +13,6 @@ export interface CalEvent {
   allDay: boolean
 }
 
-let scriptPromise: Promise<void> | null = null
-function loadGis(): Promise<void> {
-  if (scriptPromise) return scriptPromise
-  scriptPromise = new Promise((resolve, reject) => {
-    if ((window as unknown as { google?: unknown }).google) return resolve()
-    const s = document.createElement('script')
-    s.src = 'https://accounts.google.com/gsi/client'
-    s.async = true
-    s.defer = true
-    s.onload = () => resolve()
-    s.onerror = () => reject(new Error('Falha ao carregar o Google.'))
-    document.head.appendChild(s)
-  })
-  return scriptPromise
-}
 
 function storedToken(): string | null {
   try {
@@ -121,61 +106,6 @@ export function captureCalendarRedirect(): void {
   } catch {
     /* ignore */
   }
-}
-
-export interface ConnectResult {
-  ok: boolean
-  error?: string
-}
-
-function gisErrorMessage(err: { type?: string; message?: string } | undefined): string {
-  const type = err?.type
-  if (type === 'popup_failed_to_open')
-    return 'O navegador bloqueou a janela do Google. Permita pop-ups para este site e tente de novo.'
-  if (type === 'popup_closed') return 'A janela de login foi fechada antes de concluir.'
-  return err?.message || type || 'Falha desconhecida ao autenticar.'
-}
-
-export async function connectCalendar(): Promise<ConnectResult> {
-  if (!config.googleClientId) {
-    return { ok: false, error: 'Client ID do Google não configurado (VITE_GOOGLE_CLIENT_ID).' }
-  }
-  await loadGis()
-  return new Promise((resolve) => {
-    let settled = false
-    const done = (r: ConnectResult) => {
-      if (!settled) {
-        settled = true
-        resolve(r)
-      }
-    }
-    try {
-      // @ts-expect-error GIS global
-      const client = window.google.accounts.oauth2.initTokenClient({
-        client_id: config.googleClientId,
-        scope: SCOPE,
-        callback: (resp: { access_token?: string; expires_in?: number; error?: string; error_description?: string }) => {
-          if (resp.access_token) {
-            localStorage.setItem(
-              STORE,
-              JSON.stringify({
-                token: resp.access_token,
-                exp: Date.now() + (resp.expires_in ? resp.expires_in * 1000 : 3300000),
-              }),
-            )
-            done({ ok: true })
-          } else {
-            done({ ok: false, error: resp.error_description || resp.error || 'O Google não retornou um token de acesso.' })
-          }
-        },
-        // Sem isso, fechar/cancelar o popup deixava a Promise pendente (carregando pra sempre).
-        error_callback: (err: { type?: string; message?: string }) => done({ ok: false, error: gisErrorMessage(err) }),
-      })
-      client.requestAccessToken({ prompt: 'consent' })
-    } catch (e) {
-      done({ ok: false, error: String(e) })
-    }
-  })
 }
 
 export async function listUpcomingEvents(
