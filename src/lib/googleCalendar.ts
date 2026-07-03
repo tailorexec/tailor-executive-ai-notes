@@ -64,7 +64,8 @@ export function startCalendarConnect(): { ok: boolean; error?: string } {
     scope: SCOPE,
     include_granted_scopes: 'true',
     state,
-    prompt: 'consent',
+    // Permite escolher/trocar a conta e reexibe o consentimento.
+    prompt: 'select_account consent',
   })
   window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`
   return { ok: true }
