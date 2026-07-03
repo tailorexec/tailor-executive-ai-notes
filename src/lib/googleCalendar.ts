@@ -106,7 +106,7 @@ export async function finishCalendarConnect(): Promise<{ done: boolean; ok?: boo
   }
   try {
     const { data, error } = await supabase.functions.invoke('google-oauth', {
-      body: { code, redirect_uri: redirectUri() },
+      body: { code, redirect_uri: redirectUri(), client_id: config.googleClientId },
     })
     if (error) return { done: true, ok: false, error: error.message || 'Falha ao trocar o código.' }
     const d = data as { access_token?: string; expires_in?: number; error?: string }

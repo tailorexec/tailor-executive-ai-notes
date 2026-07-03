@@ -25,15 +25,18 @@ function json(obj: unknown, status = 200): Response {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   try {
-    if (!CLIENT_ID || !CLIENT_SECRET) {
-      return json({ error: 'GOOGLE_CLIENT_ID/SECRET nao configurados no servidor.' }, 500)
+    if (!CLIENT_SECRET) {
+      return json({ error: 'GOOGLE_CLIENT_SECRET nao configurado no servidor.' }, 500)
     }
-    const { code, redirect_uri } = await req.json()
-    if (!code || !redirect_uri) return json({ error: 'code e redirect_uri sao obrigatorios.' }, 400)
+    const { code, redirect_uri, client_id } = await req.json()
+    // O client_id e publico; usamos o enviado pelo frontend (garante que bate com o
+    // usado no pedido de autorizacao) e caimos no env como fallback.
+    const cid = client_id || CLIENT_ID
+    if (!code || !redirect_uri || !cid) return json({ error: 'code, redirect_uri e client_id sao obrigatorios.' }, 400)
 
     const body = new URLSearchParams({
       code,
-      client_id: CLIENT_ID,
+      client_id: cid,
       client_secret: CLIENT_SECRET,
       redirect_uri,
       grant_type: 'authorization_code',
