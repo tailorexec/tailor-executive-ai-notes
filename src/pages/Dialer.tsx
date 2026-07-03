@@ -9,12 +9,14 @@ import { currentDevice } from '../lib/device'
 import { isSilentAudio } from '../lib/audioLevel'
 import { fmtClock, fmtTime } from '../lib/format'
 import { Sheet, Spinner } from '../components/ui'
+import { useT } from '../lib/i18n'
 
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#']
 
 export function Dialer() {
   const navigate = useNavigate()
   const { profile } = useAuth()
+  const t = useT()
   const recorder = useRecorder()
   const [number, setNumber] = useState('')
   const [inCall, setInCall] = useState(false)
@@ -106,8 +108,8 @@ export function Dialer() {
       <div className="min-h-screen grid place-items-center px-8 text-center">
         <div>
           <Spinner size={30} className="text-brand-500 mx-auto mb-4" />
-          <p className="font-display font-semibold">Processando a ligação...</p>
-          <p className="text-content-secondary text-sm mt-1">Transcrevendo e resumindo.</p>
+          <p className="font-display font-semibold">{t('dialer.processing')}</p>
+          <p className="text-content-secondary text-sm mt-1">{t('dialer.summarizing')}</p>
         </div>
       </div>
     )
@@ -123,7 +125,7 @@ export function Dialer() {
         >
           <ArrowLeft size={18} />
         </button>
-        <h1 className="font-display text-xl font-bold">Discador</h1>
+        <h1 className="font-display text-xl font-bold">{t('dialer.title')}</h1>
       </header>
 
       {inCall ? (
@@ -138,7 +140,7 @@ export function Dialer() {
             </div>
           </div>
           <p className="font-display text-2xl font-bold">{number}</p>
-          <p className="text-content-muted mt-1 mb-1">Gravando pelo microfone (viva-voz)</p>
+          <p className="text-content-muted mt-1 mb-1">{t('dialer.recording')}</p>
           <p className="font-mono text-lg tabular-nums mb-10">{fmtClock(recorder.seconds)}</p>
           <button onClick={endCall} className="btn bg-brand-500 hover:bg-brand-600 text-white h-16 w-16 rounded-full p-0" aria-label="Encerrar">
             <Square size={26} />
@@ -149,7 +151,7 @@ export function Dialer() {
           <div className="text-center py-6">
             <input
               className="w-full bg-transparent text-center font-display text-3xl font-bold outline-none tracking-wide"
-              placeholder="Digite o número"
+              placeholder={t('dialer.number')}
               value={number}
               onChange={(e) => setNumber(e.target.value)}
               inputMode="tel"
@@ -159,8 +161,8 @@ export function Dialer() {
           {history.length > 0 && (
             <div className="max-w-sm mx-auto w-full mb-4">
               <div className="flex items-center justify-between mb-1 px-1">
-                <p className="text-xs uppercase tracking-wide text-content-muted">Historico</p>
-                <button className="text-xs text-brand-500" onClick={() => saveHistory([])}>Limpar</button>
+                <p className="text-xs uppercase tracking-wide text-content-muted">{t('dialer.history')}</p>
+                <button className="text-xs text-brand-500" onClick={() => saveHistory([])}>{t('dialer.clear')}</button>
               </div>
               <div className="space-y-1 max-h-40 overflow-y-auto">
                 {history.map((h, i) => (
@@ -212,48 +214,42 @@ export function Dialer() {
         </div>
       )}
 
-      <Sheet open={consentOpen} onClose={() => setConsentOpen(false)} title="Aviso de gravação">
+      <Sheet open={consentOpen} onClose={() => setConsentOpen(false)} title={t('dialer.consentTitle')}>
         <div className="flex items-start gap-3 mb-4">
           <ShieldAlert size={22} className="text-brand-500 shrink-0 mt-0.5" />
-          <p className="text-content-secondary text-sm">
-            A gravação será feita pelo microfone do aparelho — <span className="text-content-primary font-medium">ative o viva-voz</span>.
-            Por questoes legais (LGPD), informe e obtenha o consentimento da outra parte antes de gravar.
-          </p>
+          <p className="text-content-secondary text-sm">{t('dialer.consentText')}</p>
         </div>
         <div className="text-xs text-content-muted bg-surface-elevated border border-surface-border rounded-xl px-3 py-2 mb-4">
-          No celular, durante uma ligacao real, o navegador pode nao captar o audio (o sistema reserva o
-          microfone para a chamada). Se ficar mudo, avisamos e nao geramos transcricao.
+          {t('dialer.consentMobile')}
         </div>
-        <p className="text-sm font-medium mb-3">Como deseja ligar? (a gravação inicia junto)</p>
+        <p className="text-sm font-medium mb-3">{t('dialer.howToCall')}</p>
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => startCall('whatsapp')}
             className="flex flex-col items-center justify-center gap-2 rounded-2xl py-5 bg-green-600 hover:bg-green-700 text-white font-medium transition-colors"
           >
             <MessageCircle size={26} />
-            WhatsApp
+            {t('dialer.whatsapp')}
           </button>
           <button
             onClick={() => startCall('phone')}
             className="flex flex-col items-center justify-center gap-2 rounded-2xl py-5 bg-green-600 hover:bg-green-700 text-white font-medium transition-colors"
           >
             <Phone size={26} />
-            Telefone
+            {t('dialer.phone')}
           </button>
         </div>
         <button className="btn-outline w-full mt-3" onClick={() => setConsentOpen(false)}>
-          Cancelar
+          {t('common.cancel')}
         </button>
       </Sheet>
 
-      <Sheet open={noAudioOpen} onClose={() => setNoAudioOpen(false)} title="Sem áudio na ligação">
+      <Sheet open={noAudioOpen} onClose={() => setNoAudioOpen(false)} title={t('dialer.noAudioTitle')}>
         <p className="text-sm text-content-secondary leading-relaxed mb-5">
-          Não captamos áudio desta ligação. Em ligações reais no celular, o navegador não consegue
-          acessar o microfone (o sistema reserva para a chamada). Use o viva-voz, grave uma reunião no
-          desktop, ou use o app.
+          {t('dialer.noAudioText')}
         </p>
         <button className="btn-primary w-full" onClick={() => setNoAudioOpen(false)}>
-          Entendi
+          {t('dialer.understood')}
         </button>
       </Sheet>
     </div>

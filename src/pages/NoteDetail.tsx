@@ -28,6 +28,7 @@ import { speak, stopSpeaking, ttsSupported } from '../lib/tts'
 import { fmtDateTime, fmtDuration } from '../lib/format'
 import { Spinner, ConfirmDialog } from '../components/ui'
 import { useToast } from '../components/Toast'
+import { useT } from '../lib/i18n'
 import { AudioPlayer } from '../components/AudioPlayer'
 import { deleteAudio } from '../lib/audioStore'
 import type { ChatMessage, Note } from '../lib/types'
@@ -47,6 +48,7 @@ export function NoteDetail() {
   const navigate = useNavigate()
   const { profile } = useAuth()
   const toast = useToast()
+  const t = useT()
   const [note, setNote] = useState<Note | null | undefined>(undefined)
   const [tab, setTab] = useState<Tab>('summary')
   const [busy, setBusy] = useState<null | 'detailed' | 'analysis' | 'mindmap'>(null)
@@ -101,8 +103,8 @@ export function NoteDetail() {
     return (
       <div className="min-h-screen grid place-items-center px-6 text-center">
         <div>
-          <p className="text-content-secondary mb-4">Nota não encontrada.</p>
-          <button className="btn-primary" onClick={() => navigate('/')}>Voltar</button>
+          <p className="text-content-secondary mb-4">{t('note.notFound')}</p>
+          <button className="btn-primary" onClick={() => navigate('/')}>{t('note.back')}</button>
         </div>
       </div>
     )
@@ -122,7 +124,7 @@ export function NoteDetail() {
     const updated = await db.updateNote(note.id, patch)
     setNote(updated)
     setEditField(null)
-    toast('Alteracoes salvas')
+    toast(t('note.saved'))
   }
 
   async function copyNote() {
@@ -134,7 +136,7 @@ export function NoteDetail() {
       note.action_items.forEach((a) => lines.push(`- ${a.text}${a.owner ? ` (${a.owner})` : ''}`))
     }
     await navigator.clipboard.writeText(lines.join('\n'))
-    toast('Nota copiada')
+    toast(t('note.copied'))
   }
 
   async function runDetailed() {
@@ -241,10 +243,10 @@ export function NoteDetail() {
   }
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
-    { key: 'summary', label: 'Resumo', icon: <FileText size={16} /> },
-    { key: 'detailed', label: 'Detalhado', icon: <Sparkles size={16} /> },
-    { key: 'analysis', label: 'Análise', icon: <BarChart3 size={16} /> },
-    { key: 'transcript', label: 'Transcrição', icon: <ScrollText size={16} /> },
+    { key: 'summary', label: t('note.tabSummary'), icon: <FileText size={16} /> },
+    { key: 'detailed', label: t('note.tabDetailed'), icon: <Sparkles size={16} /> },
+    { key: 'analysis', label: t('note.tabAnalysis'), icon: <BarChart3 size={16} /> },
+    { key: 'transcript', label: t('note.tabTranscript'), icon: <ScrollText size={16} /> },
   ]
 
   return (
@@ -261,13 +263,13 @@ export function NoteDetail() {
           <div className="flex items-center gap-2">
             <button onClick={() => setShareOpen(true)} className="btn-primary rounded-full px-4 py-2">
               <Share2 size={16} />
-              Compartilhar
+              {t('note.share')}
             </button>
             <div className="relative">
               <button
                 onClick={() => setMenuOpen((v) => !v)}
                 className="grid place-items-center h-10 w-10 rounded-full bg-surface-elevated border border-surface-border"
-                aria-label="Mais opções"
+                aria-label={t('note.more')}
               >
                 <MoreVertical size={18} />
               </button>
@@ -277,16 +279,16 @@ export function NoteDetail() {
                   <div className="absolute right-0 mt-2 w-52 z-20 bg-surface-card border border-surface-border rounded-2xl shadow-float overflow-hidden py-1">
                     {canEdit && (
                       <button onClick={() => openEdit('title')} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left hover:bg-surface-elevated">
-                        <Pencil size={16} className="text-content-secondary" /> Editar título
+                        <Pencil size={16} className="text-content-secondary" /> {t('note.editTitle')}
                       </button>
                     )}
                     {canEdit && (
                       <button onClick={() => openEdit('summary')} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left hover:bg-surface-elevated">
-                        <FileText size={16} className="text-content-secondary" /> Editar resumo
+                        <FileText size={16} className="text-content-secondary" /> {t('note.editSummary')}
                       </button>
                     )}
                     <button onClick={copyNote} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left hover:bg-surface-elevated">
-                      <Copy size={16} className="text-content-secondary" /> Copiar nota
+                      <Copy size={16} className="text-content-secondary" /> {t('note.copyNote')}
                     </button>
                     {canEdit && (
                       <button
@@ -296,7 +298,7 @@ export function NoteDetail() {
                         }}
                         className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left text-brand-500 hover:bg-surface-elevated border-t border-surface-border"
                       >
-                        <Trash2 size={16} /> Excluir nota
+                        <Trash2 size={16} /> {t('note.deleteNote')}
                       </button>
                     )}
                   </div>
@@ -330,7 +332,7 @@ export function NoteDetail() {
                 </>
               ) : (
                 <>
-                  <FolderPlus size={14} /> Adicionar a uma pasta
+                  <FolderPlus size={14} /> {t('note.addFolder')}
                 </>
               )
             })()}
@@ -354,15 +356,20 @@ export function NoteDetail() {
                 />
               </span>
               <span className="min-w-0">
-                <span className="block text-sm font-medium">Manter áudio para sempre</span>
+                <span className="block text-sm font-medium">{t('note.keepAudio')}</span>
                 <span className="block text-xs text-content-muted leading-snug">
                   {note.keep_audio
-                    ? 'O áudio desta nota não será excluído automaticamente.'
-                    : `Ao deixar desmarcado, o áudio é excluído em ${Math.max(
-                        0,
-                        config.audioRetentionDays -
-                          Math.floor((Date.now() - Date.parse(note.created_at)) / 86400000),
-                      )} dia(s) — a transcrição e as informações são mantidas na sua conta.`}
+                    ? t('note.keepAudioOn')
+                    : t('note.keepAudioOff').replace(
+                        '{n}',
+                        String(
+                          Math.max(
+                            0,
+                            config.audioRetentionDays -
+                              Math.floor((Date.now() - Date.parse(note.created_at)) / 86400000),
+                          ),
+                        ),
+                      )}
                 </span>
               </span>
             </button>
@@ -370,8 +377,7 @@ export function NoteDetail() {
         )}
         {!note.audio_url && note.audio_deleted_at && (
           <div className="mb-5 card px-4 py-3 text-sm text-content-muted">
-            Áudio removido automaticamente após {config.audioRetentionDays} dias (política de retenção). A
-            transcrição e as informações foram mantidas.
+            {t('note.audioRemoved').replace('{n}', String(config.audioRetentionDays))}
           </div>
         )}
 
@@ -379,28 +385,28 @@ export function NoteDetail() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
           <ActionButton
             icon={<MessageSquareQuote size={18} />}
-            label="Gerar feedback"
-            hint="Cliente ou candidato"
+            label={t('note.genFeedback')}
+            hint={t('note.genFeedbackHint')}
             onClick={() => setFeedbackOpen(true)}
           />
           <ActionButton
             icon={<Languages size={18} />}
-            label="Traduzir"
-            hint="Outro idioma"
+            label={t('note.translate')}
+            hint={t('note.translateHint')}
             onClick={() => setTranslateOpen(true)}
           />
           <ActionButton
             icon={busy === 'mindmap' ? <Spinner size={18} /> : <Network size={18} />}
-            label="Mapa mental"
-            hint={busy === 'mindmap' ? 'Gerando...' : 'Tema central e ramos'}
+            label={t('note.mindmap')}
+            hint={busy === 'mindmap' ? t('note.generating') : t('note.mindmapHint')}
             onClick={openMindMap}
             disabled={busy === 'mindmap'}
           />
           {ttsSupported() && (
             <ActionButton
               icon={narrating ? <Square size={18} /> : <Volume2 size={18} />}
-              label={narrating ? 'Parar narracao' : 'Narrar'}
-              hint="Ouvir esta seção"
+              label={narrating ? t('note.stopNarr') : t('note.narrate')}
+              hint={t('note.narrateHint')}
               onClick={toggleNarration}
             />
           )}
@@ -428,11 +434,11 @@ export function NoteDetail() {
         <div className="pb-40">
           {tab === 'summary' && (
             <>
-              <ProseBlock text={note.summary} empty="Resumo indisponível." />
+              <ProseBlock text={note.summary} empty={t('note.summaryNA')} />
               {note.action_items.length > 0 && (
                 <div className="mt-6">
                   <h3 className="flex items-center gap-2 font-display font-semibold mb-3">
-                    <ListChecks size={18} className="text-brand-500" /> Action Items
+                    <ListChecks size={18} className="text-brand-500" /> {t('note.actionItems')}
                   </h3>
                   <ul className="space-y-2">
                     {note.action_items.map((a) => (
@@ -466,26 +472,28 @@ export function NoteDetail() {
               <ProseBlock text={note.detailed_summary} />
             ) : (
               <GenerateCta
-                title="Resumo detalhado mais inteligente"
-                subtitle="Gera um resumo aprofundado com o modelo Sonnet."
+                title={t('note.detailedTitle')}
+                subtitle={t('note.detailedSub')}
                 loading={busy === 'detailed'}
                 onClick={runDetailed}
+                t={t}
               />
             ))}
 
           {tab === 'analysis' &&
             (note.analysis ? (
-              <AnalysisView analysis={note.analysis} />
+              <AnalysisView analysis={note.analysis} t={t} />
             ) : (
               <GenerateCta
-                title="Análise de reunião"
-                subtitle="Tom, perguntas feitas, sugestões, ritmo e pontos de melhoria."
+                title={t('note.analysisTitle')}
+                subtitle={t('note.analysisSub')}
                 loading={busy === 'analysis'}
                 onClick={runAnalysis}
+                t={t}
               />
             ))}
 
-          {tab === 'transcript' && <ProseBlock text={note.transcript} empty="Transcrição indisponível." mono />}
+          {tab === 'transcript' && <ProseBlock text={note.transcript} empty={t('note.transcriptNA')} mono />}
         </div>
       </div>
 
@@ -519,7 +527,7 @@ export function NoteDetail() {
               <MessageSquare size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-content-muted" />
               <input
                 className="input pl-10 py-2.5"
-                placeholder="Conversar com esta nota"
+                placeholder={t('note.chatPlaceholder')}
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && sendChat()}
@@ -539,9 +547,10 @@ export function NoteDetail() {
 
       <ConfirmDialog
         open={confirmDelete}
-        title="Excluir esta nota?"
-        message="Esta ação não pode ser desfeita. A transcrição, o resumo e o áudio serão removidos."
-        confirmLabel="Excluir"
+        title={t('note.delTitle')}
+        message={t('note.delMsg')}
+        confirmLabel={t('note.delConfirm')}
+        cancelLabel={t('common.cancel')}
         danger
         onConfirm={doDelete}
         onClose={() => setConfirmDelete(false)}
@@ -551,7 +560,7 @@ export function NoteDetail() {
         <ShareSheet note={note} open={shareOpen} onClose={() => setShareOpen(false)} onUpdated={setNote} />
       )}
       {mindmapOpen && note.mindmap && (
-        <Sheet open={mindmapOpen} onClose={() => setMindmapOpen(false)} title="Mapa mental">
+        <Sheet open={mindmapOpen} onClose={() => setMindmapOpen(false)} title={t('note.mindmap')}>
           <MindMapView map={note.mindmap} />
         </Sheet>
       )}
@@ -617,11 +626,13 @@ function GenerateCta({
   subtitle,
   loading,
   onClick,
+  t,
 }: {
   title: string
   subtitle: string
   loading: boolean
   onClick: () => void
+  t: (k: string) => string
 }) {
   return (
     <div className="card p-6 text-center">
@@ -629,7 +640,7 @@ function GenerateCta({
       <p className="text-content-secondary mt-1 mb-5">{subtitle}</p>
       <button className="btn-primary mx-auto" onClick={onClick} disabled={loading}>
         {loading ? <Spinner /> : <Sparkles size={18} />}
-        {loading ? 'Gerando...' : 'Gerar agora'}
+        {loading ? t('note.generating') : t('note.genNow')}
       </button>
     </div>
   )
@@ -661,7 +672,7 @@ function ProseBlock({ text, empty, mono }: { text: string; empty?: string; mono?
   )
 }
 
-function AnalysisView({ analysis }: { analysis: NonNullable<Note['analysis']> }) {
+function AnalysisView({ analysis, t }: { analysis: NonNullable<Note['analysis']>; t: (k: string) => string }) {
   return (
     <div className="space-y-5">
       {typeof analysis.overallScore === 'number' && (
@@ -670,18 +681,18 @@ function AnalysisView({ analysis }: { analysis: NonNullable<Note['analysis']> })
             {analysis.overallScore}
           </div>
           <div>
-            <p className="font-semibold">Qualidade da reunião</p>
+            <p className="font-semibold">{t('note.quality')}</p>
             <p className="text-sm text-content-muted">{analysis.pacing}</p>
           </div>
         </div>
       )}
-      <AnalysisSection title="Tom" items={[analysis.tone]} />
-      <AnalysisSection title="Pontos fortes" items={analysis.strengths} accent />
-      <AnalysisSection title="Melhorias sugeridas" items={analysis.improvements} />
-      <AnalysisSection title="Perguntas feitas" items={analysis.questionsAsked} />
-      <AnalysisSection title="Perguntas sugeridas" items={analysis.suggestedQuestions} accent />
-      <AnalysisSection title="Pontos-chave" items={analysis.keyPoints} />
-      <AnalysisSection title="Riscos" items={analysis.risks} />
+      <AnalysisSection title={t('note.tone')} items={[analysis.tone]} />
+      <AnalysisSection title={t('note.strengths')} items={analysis.strengths} accent />
+      <AnalysisSection title={t('note.improvements')} items={analysis.improvements} />
+      <AnalysisSection title={t('note.questionsAsked')} items={analysis.questionsAsked} />
+      <AnalysisSection title={t('note.suggestedQuestions')} items={analysis.suggestedQuestions} accent />
+      <AnalysisSection title={t('note.keyPoints')} items={analysis.keyPoints} />
+      <AnalysisSection title={t('note.risks')} items={analysis.risks} />
     </div>
   )
 }

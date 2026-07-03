@@ -6,6 +6,7 @@ import { Logo } from '../components/Logo'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { Spinner } from '../components/ui'
 import { config, isAllowedDomain } from '../lib/config'
+import { useT } from '../lib/i18n'
 
 const COUNTRY_CODES = [
   { code: '+55', label: 'BR +55' },
@@ -19,6 +20,7 @@ const COUNTRY_CODES = [
 export function Register() {
   const { signUp } = useAuth()
   const navigate = useNavigate()
+  const t = useT()
 
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -42,15 +44,15 @@ export function Register() {
     setInfo(null)
 
     if (!isAllowedDomain(email)) {
-      setError(`Apenas e-mails @${config.allowedDomain} podem se cadastrar.`)
+      setError(t('reg.errDomain').replace('{d}', config.allowedDomain))
       return
     }
     if (password !== confirm) {
-      setError('As senhas nao coincidem.')
+      setError(t('reg.mismatch'))
       return
     }
     if (!strongEnough) {
-      setError('A senha deve ter ao menos 6 caracteres.')
+      setError(t('reg.errWeak'))
       return
     }
 
@@ -65,7 +67,7 @@ export function Register() {
       })
       navigate('/', { replace: true })
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Falha ao cadastrar.'
+      const msg = err instanceof Error ? err.message : t('reg.errFail')
       // In Supabase mode signUp may require email confirmation.
       if (/confirmar|verifique/i.test(msg)) setInfo(msg)
       else setError(msg)
@@ -83,26 +85,24 @@ export function Register() {
 
       <div className="flex-1 flex flex-col justify-center px-6 py-8 max-w-md w-full mx-auto">
         <div className="mb-6">
-          <h1 className="font-display text-3xl font-bold">Criar conta</h1>
-          <p className="text-content-secondary mt-2">
-            Cadastro exclusivo para e-mails <span className="text-content-primary font-medium">@{config.allowedDomain}</span>.
-          </p>
+          <h1 className="font-display text-3xl font-bold">{t('reg.title')}</h1>
+          <p className="text-content-secondary mt-2">{t('reg.subtitleFull').replace('{d}', config.allowedDomain)}</p>
         </div>
 
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label" htmlFor="first">Nome</label>
+              <label className="label" htmlFor="first">{t('reg.firstName')}</label>
               <input id="first" className="input" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
             </div>
             <div>
-              <label className="label" htmlFor="last">Sobrenome</label>
+              <label className="label" htmlFor="last">{t('reg.lastName')}</label>
               <input id="last" className="input" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
             </div>
           </div>
 
           <div>
-            <label className="label" htmlFor="email">E-mail corporativo</label>
+            <label className="label" htmlFor="email">{t('reg.email')}</label>
             <input
               id="email"
               type="email"
@@ -113,12 +113,12 @@ export function Register() {
               required
             />
             {!emailOk && (
-              <p className="text-xs text-brand-400 mt-1">O e-mail deve terminar em @{config.allowedDomain}</p>
+              <p className="text-xs text-brand-400 mt-1">{t('reg.emailMust').replace('{d}', config.allowedDomain)}</p>
             )}
           </div>
 
           <div>
-            <label className="label" htmlFor="phone">Telefone (com DDD)</label>
+            <label className="label" htmlFor="phone">{t('reg.phoneLabel')}</label>
             <div className="flex gap-2">
               <select
                 aria-label="Codigo internacional"
@@ -143,7 +143,7 @@ export function Register() {
           </div>
 
           <div>
-            <label className="label" htmlFor="password">Senha</label>
+            <label className="label" htmlFor="password">{t('reg.password')}</label>
             <div className="relative">
               <input
                 id="password"
@@ -165,7 +165,7 @@ export function Register() {
           </div>
 
           <div>
-            <label className="label" htmlFor="confirm">Confirmar senha</label>
+            <label className="label" htmlFor="confirm">{t('reg.confirm')}</label>
             <div className="relative">
               <input
                 id="confirm"
@@ -179,7 +179,7 @@ export function Register() {
                 <Check size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500" />
               )}
             </div>
-            {!passwordsMatch && <p className="text-xs text-brand-400 mt-1">As senhas nao coincidem.</p>}
+            {!passwordsMatch && <p className="text-xs text-brand-400 mt-1">{t('reg.mismatch')}</p>}
           </div>
 
           {error && (
@@ -194,14 +194,14 @@ export function Register() {
           )}
 
           <button type="submit" className="btn-primary w-full py-3" disabled={loading}>
-            {loading ? <Spinner /> : 'Criar conta'}
+            {loading ? <Spinner /> : t('reg.create')}
           </button>
         </form>
 
         <p className="text-center text-content-secondary mt-6">
-          Ja tem conta?{' '}
+          {t('reg.have')}{' '}
           <Link to="/login" className="text-brand-500 font-medium hover:underline">
-            Entrar
+            {t('reg.signin')}
           </Link>
         </p>
       </div>
