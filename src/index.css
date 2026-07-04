@@ -56,16 +56,21 @@
     height: 100%;
   }
 
-  /* Trava o "puxar" para os lados/cima/baixo (pull-to-refresh e bounce) p/ navegacao fluida */
+  /* Trava o "puxar" para os lados/cima/baixo (pull-to-refresh e bounce) + arrasto horizontal.
+     overflow-x apenas em html/body (nao no #root, p/ nao criar scroller aninhado). */
   html,
   body {
     overscroll-behavior: none;
+    overflow-x: hidden;
+    max-width: 100%;
   }
 
   body {
     @apply bg-surface-bg text-content-primary font-sans antialiased;
     overscroll-behavior: none;
     overflow-x: hidden;
+    position: relative;
+    width: 100%;
   }
 
   /* Respect iOS safe areas */

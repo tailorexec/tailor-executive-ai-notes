@@ -169,10 +169,10 @@ export function AppShell() {
   }
 
   return (
-    <div className="min-h-screen bg-surface-bg">
+    <div className="min-h-screen bg-surface-bg overflow-x-hidden">
       <Sidebar />
       <div className="md:pl-64">
-        <main className={`mx-auto w-full max-w-6xl ${hideMobileNav ? '' : 'pb-28 md:pb-10'}`}>
+        <main className={`mx-auto w-full max-w-6xl overflow-x-hidden ${hideMobileNav ? '' : 'pb-28 md:pb-10'}`}>
           {!hideMobileNav && (
             <div className="px-5 pt-4">
               <AnnouncementBanner />

@@ -273,7 +273,7 @@ export function NoteDetail() {
   ]
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col overflow-x-hidden">
       <header className="sticky top-0 z-20 bg-surface-bg/90 backdrop-blur px-5 pt-6 pb-3 safe-top">
         <div className="flex items-center justify-between mb-3">
           <button
@@ -588,7 +588,7 @@ export function NoteDetail() {
               {note.chat.map((m) => (
                 <div
                   key={m.id}
-                  className={`max-w-[85%] px-3.5 py-2 rounded-2xl text-sm ${
+                  className={`max-w-[85%] px-3.5 py-2 rounded-2xl text-sm break-words whitespace-pre-line ${
                     m.role === 'user'
                       ? 'ml-auto bg-brand-500 text-white'
                       : 'mr-auto bg-surface-elevated text-content-primary'
@@ -735,7 +735,7 @@ function ProseBlock({ text, empty, mono }: { text: string; empty?: string; mono?
   if (!text?.trim()) return <p className="text-content-muted">{empty ?? 'Sem conteudo.'}</p>
   const lines = text.split('\n')
   return (
-    <div className={`space-y-2 leading-relaxed ${mono ? 'text-content-secondary' : ''}`}>
+    <div className={`space-y-2 leading-relaxed break-words ${mono ? 'text-content-secondary' : ''}`}>
       {lines.map((line, i) => {
         const t = line.trim()
         if (!t) return <div key={i} className="h-2" />
