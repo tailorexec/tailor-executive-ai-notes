@@ -23,7 +23,7 @@ function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string
   return (
     <div className="card p-4">
       <div className="flex items-center gap-2 text-content-muted mb-2">
-        <span className="text-brand-500">{icon}</span>
+        <span className="text-accent">{icon}</span>
         <span className="text-xs uppercase tracking-wide">{label}</span>
       </div>
       <p className="font-display text-2xl font-bold">{value}</p>
@@ -122,7 +122,7 @@ export function Admin() {
 
       {rows === null ? (
         <div className="grid place-items-center py-20">
-          <Spinner size={24} className="text-brand-500" />
+          <Spinner size={24} className="text-accent" />
         </div>
       ) : (
         <>
@@ -172,7 +172,7 @@ export function Admin() {
                           <p className="font-medium truncate flex items-center gap-2">
                             {r.profile.first_name} {r.profile.last_name}
                             {r.profile.role === 'admin' && (
-                              <span className="text-[10px] uppercase bg-brand-500/15 text-brand-500 px-1.5 py-0.5 rounded">
+                              <span className="text-[10px] uppercase bg-accent/15 text-accent px-1.5 py-0.5 rounded">
                                 admin
                               </span>
                             )}
@@ -199,7 +199,7 @@ export function Admin() {
                         <button
                           onClick={() => deleteUser(r.profile)}
                           disabled={r.profile.id === me?.id}
-                          className="grid place-items-center h-8 w-8 rounded-lg text-brand-500 hover:bg-brand-500/10 disabled:opacity-30"
+                          className="grid place-items-center h-8 w-8 rounded-lg text-accent hover:bg-accent/10 disabled:opacity-30"
                           aria-label="Excluir"
                         >
                           <Trash2 size={16} />
@@ -222,7 +222,7 @@ export function Admin() {
                     <p className="font-medium truncate flex items-center gap-2">
                       {r.profile.first_name} {r.profile.last_name}
                       {r.profile.role === 'admin' && (
-                        <span className="text-[10px] uppercase bg-brand-500/15 text-brand-500 px-1.5 py-0.5 rounded">
+                        <span className="text-[10px] uppercase bg-accent/15 text-accent px-1.5 py-0.5 rounded">
                           admin
                         </span>
                       )}
@@ -248,7 +248,7 @@ export function Admin() {
                   <button
                     onClick={() => deleteUser(r.profile)}
                     disabled={r.profile.id === me?.id}
-                    className="btn-outline h-9 text-sm text-brand-500 disabled:opacity-30"
+                    className="btn-outline h-9 text-sm text-accent disabled:opacity-30"
                   >
                     <Trash2 size={15} /> Excluir
                   </button>
@@ -276,7 +276,7 @@ export function Admin() {
             <input className="input" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
           </div>
           {actionError && (
-            <div className="text-sm text-brand-400 bg-brand-500/10 border border-brand-500/20 rounded-xl px-4 py-3">
+            <div className="text-sm text-accent bg-accent/10 border border-accent/20 rounded-xl px-4 py-3">
               {actionError}
             </div>
           )}

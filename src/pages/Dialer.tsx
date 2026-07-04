@@ -107,7 +107,7 @@ export function Dialer() {
     return (
       <div className="min-h-screen grid place-items-center px-8 text-center">
         <div>
-          <Spinner size={30} className="text-brand-500 mx-auto mb-4" />
+          <Spinner size={30} className="text-accent mx-auto mb-4" />
           <p className="font-display font-semibold">{t('dialer.processing')}</p>
           <p className="text-content-secondary text-sm mt-1">{t('dialer.summarizing')}</p>
         </div>
@@ -132,7 +132,7 @@ export function Dialer() {
         <div className="flex-1 flex flex-col items-center justify-center pb-20">
           <div className="relative mb-6">
             <div
-              className="absolute inset-0 rounded-full bg-brand-500/25"
+              className="absolute inset-0 rounded-full bg-accent/25"
               style={{ transform: `scale(${1 + recorder.level * 0.8})`, transition: 'transform 80ms' }}
             />
             <div className="grid place-items-center h-24 w-24 rounded-full bg-brand-500 text-white relative">
@@ -162,7 +162,7 @@ export function Dialer() {
             <div className="max-w-sm mx-auto w-full mb-4">
               <div className="flex items-center justify-between mb-1 px-1">
                 <p className="text-xs uppercase tracking-wide text-content-muted">{t('dialer.history')}</p>
-                <button className="text-xs text-brand-500" onClick={() => saveHistory([])}>{t('dialer.clear')}</button>
+                <button className="text-xs text-accent" onClick={() => saveHistory([])}>{t('dialer.clear')}</button>
               </div>
               <div className="space-y-1 max-h-40 overflow-y-auto">
                 {history.map((h, i) => (
@@ -172,7 +172,7 @@ export function Dialer() {
                       <span className="font-medium truncate">{h.number}</span>
                       <span className="text-xs text-content-muted ml-auto">{fmtTime(h.at)}</span>
                     </button>
-                    <button onClick={() => saveHistory(history.filter((_, idx) => idx !== i))} aria-label="Apagar" className="text-content-muted hover:text-brand-500 shrink-0">
+                    <button onClick={() => saveHistory(history.filter((_, idx) => idx !== i))} aria-label="Apagar" className="text-content-muted hover:text-accent shrink-0">
                       <Trash2 size={15} />
                     </button>
                   </div>
@@ -186,7 +186,7 @@ export function Dialer() {
               <button
                 key={k}
                 onClick={() => press(k)}
-                className="h-16 rounded-full bg-surface-elevated border border-surface-border font-display text-2xl font-semibold hover:border-brand-500/40 transition-colors"
+                className="h-16 rounded-full bg-surface-elevated border border-surface-border font-display text-2xl font-semibold hover:border-accent/40 transition-colors"
               >
                 {k}
               </button>
@@ -216,7 +216,7 @@ export function Dialer() {
 
       <Sheet open={consentOpen} onClose={() => setConsentOpen(false)} title={t('dialer.consentTitle')}>
         <div className="flex items-start gap-3 mb-4">
-          <ShieldAlert size={22} className="text-brand-500 shrink-0 mt-0.5" />
+          <ShieldAlert size={22} className="text-accent shrink-0 mt-0.5" />
           <p className="text-content-secondary text-sm">{t('dialer.consentText')}</p>
         </div>
         <div className="text-xs text-content-muted bg-surface-elevated border border-surface-border rounded-xl px-3 py-2 mb-4">

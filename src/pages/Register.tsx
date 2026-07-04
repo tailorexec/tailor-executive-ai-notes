@@ -113,7 +113,7 @@ export function Register() {
               required
             />
             {!emailOk && (
-              <p className="text-xs text-brand-400 mt-1">{t('reg.emailMust').replace('{d}', config.allowedDomain)}</p>
+              <p className="text-xs text-accent mt-1">{t('reg.emailMust').replace('{d}', config.allowedDomain)}</p>
             )}
           </div>
 
@@ -179,11 +179,11 @@ export function Register() {
                 <Check size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500" />
               )}
             </div>
-            {!passwordsMatch && <p className="text-xs text-brand-400 mt-1">{t('reg.mismatch')}</p>}
+            {!passwordsMatch && <p className="text-xs text-accent mt-1">{t('reg.mismatch')}</p>}
           </div>
 
           {error && (
-            <div className="text-sm text-brand-400 bg-brand-500/10 border border-brand-500/20 rounded-xl px-4 py-3">
+            <div className="text-sm text-accent bg-accent/10 border border-accent/20 rounded-xl px-4 py-3">
               {error}
             </div>
           )}
@@ -200,7 +200,7 @@ export function Register() {
 
         <p className="text-center text-content-secondary mt-6">
           {t('reg.have')}{' '}
-          <Link to="/login" className="text-brand-500 font-medium hover:underline">
+          <Link to="/login" className="text-accent font-medium hover:underline">
             {t('reg.signin')}
           </Link>
         </p>

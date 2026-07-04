@@ -223,7 +223,7 @@ export function Capture() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-8 text-center safe-top">
         <div className="relative mb-8">
-          <div className="absolute inset-0 rounded-full bg-brand-500/30 animate-pulse-ring" />
+          <div className="absolute inset-0 rounded-full bg-accent/30 animate-pulse-ring" />
           <div className="grid place-items-center h-20 w-20 rounded-full bg-brand-500 text-white relative">
             <Spinner size={28} />
           </div>
@@ -337,7 +337,7 @@ export function Capture() {
       )}
 
       {error && (
-        <div className="text-sm text-brand-400 bg-brand-500/10 border border-brand-500/20 rounded-xl px-4 py-3 mb-4">
+        <div className="text-sm text-accent bg-accent/10 border border-accent/20 rounded-xl px-4 py-3 mb-4">
           {error}
         </div>
       )}
@@ -347,7 +347,7 @@ export function Capture() {
           {mode === 'meeting' && recorder.state === 'idle' && !recorder.error ? (
             !canCaptureSystemAudio() ? (
               <div className="card p-6 text-center max-w-sm">
-                <MonitorSmartphone size={36} className="text-brand-500 mx-auto mb-3" />
+                <MonitorSmartphone size={36} className="text-accent mx-auto mb-3" />
                 <h3 className="font-display font-semibold text-lg">Gravação completa só no app ou desktop</h3>
                 <p className="text-content-secondary mt-2 text-sm">
                   A captura do <span className="text-content-primary font-medium">áudio interno da reunião</span>
@@ -361,7 +361,7 @@ export function Capture() {
               </div>
             ) : (
               <div className="card p-6 max-w-md">
-                <Headphones size={32} className="text-brand-500 mb-3" />
+                <Headphones size={32} className="text-accent mb-3" />
                 <h3 className="font-display font-semibold text-lg">Gravar a reunião (mesmo de fone)</h3>
                 <ol className="text-content-secondary text-sm mt-3 space-y-2 list-decimal list-inside">
                   <li>Abra sua reunião (Zoom, Meet ou Teams) em uma aba/janela.</li>
@@ -381,7 +381,7 @@ export function Capture() {
             )
           ) : mode === 'record' && recorder.state === 'idle' && !recorder.error ? (
             <div className="card p-6 text-center max-w-sm">
-              <div className="grid place-items-center h-16 w-16 rounded-full bg-brand-500/10 text-brand-500 mx-auto mb-4">
+              <div className="grid place-items-center h-16 w-16 rounded-full bg-accent/10 text-accent mx-auto mb-4">
                 <Mic size={30} />
               </div>
               <h3 className="font-display font-semibold text-lg">Pronto para gravar</h3>
@@ -394,7 +394,7 @@ export function Capture() {
             </div>
           ) : recorder.error ? (
             <div className="text-center max-w-sm">
-              <p className="text-brand-400 mb-4">{recorder.error}</p>
+              <p className="text-accent mb-4">{recorder.error}</p>
               <button className="btn-primary mx-auto" onClick={mode === 'meeting' ? startMeeting : startRecord}>
                 Tentar novamente
               </button>
@@ -403,7 +403,7 @@ export function Capture() {
             <>
               <div className="relative mb-8">
                 <div
-                  className="absolute inset-0 rounded-full bg-brand-500/25"
+                  className="absolute inset-0 rounded-full bg-accent/25"
                   style={{ transform: `scale(${1 + recorder.level * 0.8})`, transition: 'transform 80ms' }}
                 />
                 <div className="grid place-items-center h-28 w-28 rounded-full bg-brand-500 text-white relative">
@@ -422,7 +422,7 @@ export function Capture() {
                 const remaining = config.recordingMaxSeconds - recorder.seconds
                 const low = remaining <= 300
                 return (
-                  <p className={`mb-9 text-sm ${low ? 'text-brand-400 font-medium' : 'text-content-muted'}`}>
+                  <p className={`mb-9 text-sm ${low ? 'text-accent font-medium' : 'text-content-muted'}`}>
                     Limite de 2 horas • restam {fmtDuration(Math.max(0, remaining))}
                   </p>
                 )
@@ -460,9 +460,9 @@ export function Capture() {
         <div className="flex-1 flex flex-col items-center justify-center pb-24">
           <button
             onClick={() => fileRef.current?.click()}
-            className="card w-full max-w-sm py-12 flex flex-col items-center gap-3 border-dashed hover:border-brand-500/50"
+            className="card w-full max-w-sm py-12 flex flex-col items-center gap-3 border-dashed hover:border-accent/50"
           >
-            <Upload size={36} className="text-brand-500" />
+            <Upload size={36} className="text-accent" />
             <p className="font-medium">Selecionar arquivo de áudio</p>
             <p className="text-sm text-content-muted">MP3, M4A, WAV, WEBM</p>
           </button>
@@ -474,9 +474,9 @@ export function Capture() {
         <div className="flex-1 flex flex-col items-center justify-center pb-24">
           <button
             onClick={() => fileRef.current?.click()}
-            className="card w-full max-w-sm py-12 flex flex-col items-center gap-3 border-dashed hover:border-brand-500/50"
+            className="card w-full max-w-sm py-12 flex flex-col items-center gap-3 border-dashed hover:border-accent/50"
           >
-            <Video size={36} className="text-brand-500" />
+            <Video size={36} className="text-accent" />
             <p className="font-medium">Selecionar vídeo</p>
             <p className="text-sm text-content-muted">MP4, MOV, WEBM • ate {MAX_VIDEO_MB} MB</p>
           </button>
@@ -491,9 +491,9 @@ export function Capture() {
         <div className="flex-1 flex flex-col gap-4 pb-24">
           <button
             onClick={() => fileRef.current?.click()}
-            className="card w-full py-10 flex flex-col items-center gap-3 border-dashed hover:border-brand-500/50"
+            className="card w-full py-10 flex flex-col items-center gap-3 border-dashed hover:border-accent/50"
           >
-            <FileText size={32} className="text-brand-500" />
+            <FileText size={32} className="text-accent" />
             <p className="font-medium">{fileName ? 'Trocar arquivo' : 'Selecionar PDF, TXT, DOCX...'}</p>
             {fileName && <p className="text-sm text-content-secondary">{fileName}</p>}
           </button>

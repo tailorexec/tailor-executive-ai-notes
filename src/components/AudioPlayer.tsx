@@ -48,7 +48,7 @@ export function AudioPlayer({ audioRef }: { audioRef: string }) {
   if (loading)
     return (
       <div className="card p-4 grid place-items-center h-24">
-        <Spinner className="text-brand-500" />
+        <Spinner className="text-accent" />
       </div>
     )
 
@@ -80,7 +80,7 @@ export function AudioPlayer({ audioRef }: { audioRef: string }) {
         onChange={(e) => {
           if (el.current) el.current.currentTime = Number(e.target.value)
         }}
-        className="w-full accent-brand-500 mb-2"
+        className="w-full accent-accent mb-2"
         aria-label="Progresso do audio"
       />
       <div className="flex items-center justify-between text-xs text-content-muted mb-3 tabular-nums">

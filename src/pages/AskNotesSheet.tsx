@@ -3,6 +3,7 @@ import { Sparkles, Send } from 'lucide-react'
 import { Sheet, Spinner } from '../components/ui'
 import { askAllNotes } from '../lib/ai'
 import { useT } from '../lib/i18n'
+import { useToast } from '../components/Toast'
 import type { Note } from '../lib/types'
 
 export function AskNotesSheet({
@@ -15,6 +16,7 @@ export function AskNotesSheet({
   notes: Note[]
 }) {
   const t = useT()
+  const toast = useToast()
   const SUGGESTIONS = [t('ask.s1'), t('ask.s2'), t('ask.s3')]
   const [q, setQ] = useState('')
   const [answer, setAnswer] = useState('')
@@ -32,6 +34,8 @@ export function AskNotesSheet({
         notes.map((n) => ({ title: n.title, created_at: n.created_at, summary: n.summary })),
       )
       setAnswer(a)
+    } catch {
+      toast(t('common.error'), 'error')
     } finally {
       setLoading(false)
     }
@@ -62,7 +66,7 @@ export function AskNotesSheet({
             <button
               key={s}
               onClick={() => ask(s)}
-              className="w-full text-left text-sm bg-surface-elevated border border-surface-border rounded-xl px-3 py-2.5 hover:border-brand-500/40"
+              className="w-full text-left text-sm bg-surface-elevated border border-surface-border rounded-xl px-3 py-2.5 hover:border-accent/40"
             >
               {s}
             </button>
@@ -78,7 +82,7 @@ export function AskNotesSheet({
 
       {answer && (
         <div className="card p-4">
-          <div className="flex items-center gap-2 text-brand-500 mb-2 text-sm font-medium">
+          <div className="flex items-center gap-2 text-accent mb-2 text-sm font-medium">
             <Sparkles size={16} /> {t('ask.answer')}
           </div>
           <p className="whitespace-pre-line leading-relaxed text-sm">{answer}</p>

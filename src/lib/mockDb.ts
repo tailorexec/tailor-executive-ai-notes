@@ -297,6 +297,7 @@ export const mockDb: Db = {
       chat: input.chat ?? [],
       shared_with: input.shared_with ?? [],
       status: input.status ?? 'processing',
+      priority: input.priority ?? null,
       keep_audio: input.keep_audio ?? false,
       audio_deleted_at: null,
       deleted_at: null,

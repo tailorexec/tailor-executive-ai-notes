@@ -8,7 +8,7 @@ export function Maintenance({ settings }: { settings: AppSettings }) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center text-center px-6 safe-top">
       <Logo size="md" className="mb-10" />
-      <div className="grid place-items-center h-20 w-20 rounded-full bg-brand-500/10 text-brand-500 mb-6">
+      <div className="grid place-items-center h-20 w-20 rounded-full bg-accent/10 text-accent mb-6">
         <Wrench size={34} />
       </div>
       <h1 className="font-display text-2xl font-bold">Em manutencao</h1>
@@ -17,7 +17,7 @@ export function Maintenance({ settings }: { settings: AppSettings }) {
       </p>
       {settings.maintenance_eta && (
         <div className="mt-5 inline-flex items-center gap-2 text-sm text-content-secondary bg-surface-elevated border border-surface-border rounded-full px-4 py-2">
-          <Clock size={16} className="text-brand-500" />
+          <Clock size={16} className="text-accent" />
           Previsao de retorno: {settings.maintenance_eta}
         </div>
       )}

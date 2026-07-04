@@ -82,7 +82,7 @@ export function AdminSettings() {
       <div className="card p-5">
         <div className="flex items-center justify-between mb-4">
           <h3 className="flex items-center gap-2 font-display font-semibold">
-            <Megaphone size={18} className="text-brand-500" /> Faixa de avisos
+            <Megaphone size={18} className="text-accent" /> Faixa de avisos
           </h3>
           {s.announcement_enabled && (
             <span className="text-[10px] uppercase tracking-wide bg-green-500/15 text-green-600 dark:text-green-400 px-2 py-0.5 rounded-full">
@@ -134,7 +134,7 @@ export function AdminSettings() {
         <p className="text-xs text-content-muted mb-4">Sem datas = fixo ate voce remover.</p>
 
         {s.announcement_enabled ? (
-          <button className="btn-outline w-full text-brand-500" onClick={() => saveAnnouncement(false)} disabled={savingAnn}>
+          <button className="btn-outline w-full text-accent" onClick={() => saveAnnouncement(false)} disabled={savingAnn}>
             {savingAnn ? <Spinner /> : null} Remover aviso
           </button>
         ) : (
@@ -149,10 +149,10 @@ export function AdminSettings() {
       <div className="card p-5">
         <div className="flex items-center justify-between mb-4">
           <h3 className="flex items-center gap-2 font-display font-semibold">
-            <Wrench size={18} className="text-brand-500" /> Modo manutencao
+            <Wrench size={18} className="text-accent" /> Modo manutencao
           </h3>
           {s.maintenance_enabled && (
-            <span className="text-[10px] uppercase tracking-wide bg-brand-500/15 text-brand-500 px-2 py-0.5 rounded-full">
+            <span className="text-[10px] uppercase tracking-wide bg-accent/15 text-accent px-2 py-0.5 rounded-full">
               ativo
             </span>
           )}
@@ -175,12 +175,12 @@ export function AdminSettings() {
         />
 
         {s.maintenance_enabled ? (
-          <button className="btn-outline w-full text-brand-500" onClick={() => saveMaintenance(false)} disabled={savingMaint}>
+          <button className="btn-outline w-full text-accent" onClick={() => saveMaintenance(false)} disabled={savingMaint}>
             {savingMaint ? <Spinner /> : null} Remover manutencao
           </button>
         ) : (
           <>
-            <div className="text-xs text-brand-400 bg-brand-500/10 border border-brand-500/20 rounded-xl px-3 py-2 mb-3">
+            <div className="text-xs text-accent bg-accent/10 border border-accent/20 rounded-xl px-3 py-2 mb-3">
               Ao publicar, o app fica bloqueado para todos (voce, admin, continua com acesso).
             </div>
             <button className="btn-primary w-full" onClick={() => saveMaintenance(true)} disabled={savingMaint}>

@@ -81,9 +81,9 @@ export function ShareSheet({
           <button
             key={c.label}
             onClick={c.onClick}
-            className="flex flex-col items-center gap-2 py-3 rounded-2xl bg-surface-elevated border border-surface-border hover:border-brand-500/40 transition-colors"
+            className="flex flex-col items-center gap-2 py-3 rounded-2xl bg-surface-elevated border border-surface-border hover:border-accent/40 transition-colors"
           >
-            <span className="text-brand-500">{c.icon}</span>
+            <span className="text-accent">{c.icon}</span>
             <span className="text-[11px] text-content-secondary">{c.label}</span>
           </button>
         ))}
@@ -98,7 +98,7 @@ export function ShareSheet({
 
       <div>
         <h3 className="flex items-center gap-2 font-display font-semibold mb-1">
-          <Users size={18} className="text-brand-500" /> {t('sh.withPartners')}
+          <Users size={18} className="text-accent" /> {t('sh.withPartners')}
         </h3>
         <p className="text-sm text-content-muted mb-3">{t('sh.partnersDesc')}</p>
         <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
@@ -113,7 +113,7 @@ export function ShareSheet({
                 onClick={() => togglePartner(p.id)}
                 disabled={savingShare}
                 className={`w-full flex items-center gap-3 rounded-2xl px-3 py-2.5 border text-left transition-colors ${
-                  active ? 'border-brand-500 bg-brand-500/5' : 'border-surface-border bg-surface-elevated'
+                  active ? 'border-brand-500 bg-accent/5' : 'border-surface-border bg-surface-elevated'
                 }`}
               >
                 <Avatar first={p.first_name} last={p.last_name} size={36} />

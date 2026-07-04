@@ -37,6 +37,8 @@ export default {
           secondary: 'rgb(var(--content-secondary) / <alpha-value>)',
           muted: 'rgb(var(--content-muted) / <alpha-value>)',
         },
+        // Vermelho de destaque que adapta ao tema (texto/icone/tint). Fills solidos usam brand-500.
+        accent: 'rgb(var(--accent) / <alpha-value>)',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
@@ -49,6 +51,7 @@ export default {
       },
       boxShadow: {
         card: '0 1px 2px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06)',
+        hover: '0 2px 4px rgba(0,0,0,0.05), 0 12px 28px rgba(0,0,0,0.10)',
         float: '0 8px 30px rgba(0,0,0,0.12)',
       },
       keyframes: {

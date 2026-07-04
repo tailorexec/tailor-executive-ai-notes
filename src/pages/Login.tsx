@@ -147,7 +147,7 @@ export function Login() {
             <div className="grid sm:grid-cols-2 gap-3 md:gap-2">
               {FEATURES.map((f) => (
                 <div key={f.k} className="card p-4 md:p-3 flex gap-3 md:gap-2">
-                  <div className="grid place-items-center h-9 w-9 md:h-8 md:w-8 rounded-xl bg-brand-500/10 text-brand-500 shrink-0">
+                  <div className="grid place-items-center h-9 w-9 md:h-8 md:w-8 rounded-xl bg-accent/10 text-accent shrink-0">
                     {f.icon}
                   </div>
                   <div>
@@ -157,7 +157,7 @@ export function Login() {
                 </div>
               ))}
               <div className="card p-4 md:p-3 flex items-center gap-3 md:gap-2 border-dashed">
-                <div className="grid place-items-center h-9 w-9 md:h-8 md:w-8 rounded-xl bg-brand-500/10 text-brand-500 shrink-0">
+                <div className="grid place-items-center h-9 w-9 md:h-8 md:w-8 rounded-xl bg-accent/10 text-accent shrink-0">
                   <Plus size={18} />
                 </div>
                 <p className="font-medium text-sm">{t('login.more')}</p>
@@ -221,7 +221,7 @@ export function Login() {
                 </div>
 
                 {error && (
-                  <div className="text-sm text-brand-400 bg-brand-500/10 border border-brand-500/20 rounded-xl px-4 py-3">
+                  <div className="text-sm text-accent bg-accent/10 border border-accent/20 rounded-xl px-4 py-3">
                     {error}
                   </div>
                 )}
@@ -233,7 +233,7 @@ export function Login() {
 
               <p className="text-center text-content-secondary mt-6">
                 {t('login.noAccount')}{' '}
-                <Link to="/cadastro" className="text-brand-500 font-medium hover:underline">
+                <Link to="/cadastro" className="text-accent font-medium hover:underline">
                   {t('login.createAccount')}
                 </Link>
               </p>
@@ -255,7 +255,7 @@ export function Login() {
           href="https://tailorexec.com.br"
           target="_blank"
           rel="noreferrer"
-          className="hover:text-brand-500 transition-colors"
+          className="hover:text-accent transition-colors"
         >
           Tailorexec.com.br
         </a>

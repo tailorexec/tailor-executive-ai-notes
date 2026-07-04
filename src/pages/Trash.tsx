@@ -57,7 +57,7 @@ export function TrashPage() {
 
       {notes === null ? (
         <div className="grid place-items-center py-20">
-          <Spinner size={24} className="text-brand-500" />
+          <Spinner size={24} className="text-accent" />
         </div>
       ) : notes.length === 0 ? (
         <EmptyState
@@ -88,7 +88,7 @@ export function TrashPage() {
               <button
                 onClick={() => setPurgeTarget(n)}
                 disabled={busy === n.id}
-                className="grid place-items-center h-9 w-9 rounded-xl text-brand-500 hover:bg-brand-500/10"
+                className="grid place-items-center h-9 w-9 rounded-xl text-accent hover:bg-accent/10"
                 aria-label="Excluir definitivamente"
               >
                 <Trash2 size={18} />

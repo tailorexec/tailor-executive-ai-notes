@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Plus, Pencil, Trash2, Check, Folder as FolderIcon } from 'lucide-react'
 import { Sheet, Spinner } from '../components/ui'
+import { useToast } from '../components/Toast'
+import { useT } from '../lib/i18n'
 import { db } from '../lib/api'
 import type { Folder } from '../lib/types'
 
 const COLORS = ['#941010', '#2563eb', '#059669', '#d97706', '#7c3aed', '#0891b2', '#db2777', '#4b5563']
+const MAX_FOLDERS = 10
 
 function ColorPicker({ value, onChange }: { value: string; onChange: (c: string) => void }) {
   return (
@@ -40,11 +43,14 @@ export function FolderSheet({
   onSelect?: (id: string | null) => void
   onChanged?: () => void
 }) {
+  const toast = useToast()
+  const t = useT()
   const [folders, setFolders] = useState<Folder[] | null>(null)
   const [name, setName] = useState('')
   const [color, setColor] = useState(COLORS[0])
   const [editing, setEditing] = useState<Folder | null>(null)
   const [busy, setBusy] = useState(false)
+  const atLimit = (folders?.length ?? 0) >= MAX_FOLDERS
 
   function load() {
     db.listFolders(userId).then(setFolders)
@@ -57,6 +63,10 @@ export function FolderSheet({
 
   async function create() {
     if (!name.trim()) return
+    if (atLimit) {
+      toast(t('folder.limit'), 'info')
+      return
+    }
     setBusy(true)
     try {
       const f = await db.createFolder(userId, name.trim(), color)
@@ -97,11 +107,16 @@ export function FolderSheet({
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && create()}
           />
-          <button className="btn-primary h-11 px-4" onClick={create} disabled={busy || !name.trim()}>
+          <button className="btn-primary h-11 px-4" onClick={create} disabled={busy || !name.trim() || atLimit}>
             <Plus size={18} /> Criar
           </button>
         </div>
         <ColorPicker value={color} onChange={setColor} />
+        {mode === 'manage' && (
+          <p className={`text-xs mt-2 ${atLimit ? 'text-accent' : 'text-content-muted'}`}>
+            {folders?.length ?? 0}/{MAX_FOLDERS} {atLimit ? `· ${t('folder.limit')}` : ''}
+          </p>
+        )}
       </div>
 
       {mode === 'assign' && (
@@ -111,7 +126,7 @@ export function FolderSheet({
             onClose()
           }}
           className={`w-full flex items-center gap-3 rounded-xl px-3 py-2.5 mb-2 border text-left ${
-            !selectedId ? 'border-brand-500 bg-brand-500/5' : 'border-surface-border bg-surface-elevated'
+            !selectedId ? 'border-brand-500 bg-accent/5' : 'border-surface-border bg-surface-elevated'
           }`}
         >
           <FolderIcon size={18} className="text-content-muted" /> Sem pasta
@@ -119,7 +134,7 @@ export function FolderSheet({
       )}
 
       {folders === null ? (
-        <div className="grid place-items-center py-6"><Spinner className="text-brand-500" /></div>
+        <div className="grid place-items-center py-6"><Spinner className="text-accent" /></div>
       ) : folders.length === 0 ? (
         <p className="text-sm text-content-muted text-center py-4">Nenhuma pasta ainda.</p>
       ) : (
@@ -138,7 +153,7 @@ export function FolderSheet({
               <div
                 key={f.id}
                 className={`flex items-center gap-3 rounded-xl px-3 py-2.5 border ${
-                  mode === 'assign' && selectedId === f.id ? 'border-brand-500 bg-brand-500/5' : 'border-surface-border bg-surface-elevated'
+                  mode === 'assign' && selectedId === f.id ? 'border-brand-500 bg-accent/5' : 'border-surface-border bg-surface-elevated'
                 }`}
               >
                 <button
@@ -152,14 +167,14 @@ export function FolderSheet({
                 >
                   <span className="h-4 w-4 rounded-full shrink-0" style={{ background: f.color }} />
                   <span className="font-medium truncate">{f.name}</span>
-                  {mode === 'assign' && selectedId === f.id && <Check size={16} className="text-brand-500 ml-auto" />}
+                  {mode === 'assign' && selectedId === f.id && <Check size={16} className="text-accent ml-auto" />}
                 </button>
                 {mode === 'manage' && (
                   <>
                     <button onClick={() => setEditing(f)} className="text-content-muted hover:text-content-primary" aria-label="Editar">
                       <Pencil size={16} />
                     </button>
-                    <button onClick={() => remove(f.id)} className="text-content-muted hover:text-brand-500" aria-label="Excluir">
+                    <button onClick={() => remove(f.id)} className="text-content-muted hover:text-accent" aria-label="Excluir">
                       <Trash2 size={16} />
                     </button>
                   </>

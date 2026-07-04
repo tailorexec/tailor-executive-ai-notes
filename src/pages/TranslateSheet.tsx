@@ -3,6 +3,7 @@ import { Languages, Copy, Check } from 'lucide-react'
 import { Sheet, Spinner } from '../components/ui'
 import { translateText } from '../lib/ai'
 import { useT } from '../lib/i18n'
+import { useToast } from '../components/Toast'
 import type { Note } from '../lib/types'
 
 export function TranslateSheet({
@@ -15,6 +16,7 @@ export function TranslateSheet({
   onClose: () => void
 }) {
   const t = useT()
+  const toast = useToast()
   // rotulo traduzido -> alvo enviado a IA (em portugues, como a edge espera)
   const LANGS: { label: string; target: string }[] = [
     { label: t('tr.en'), target: 'Ingles' },
@@ -33,6 +35,8 @@ export function TranslateSheet({
     setText('')
     try {
       setText(await translateText(source, lang))
+    } catch {
+      toast(t('common.error'), 'error')
     } finally {
       setLoading(false)
     }
@@ -53,7 +57,7 @@ export function TranslateSheet({
             key={l.target}
             onClick={() => run(l.target)}
             disabled={loading}
-            className="px-3.5 py-2 rounded-xl text-sm font-medium border bg-surface-elevated border-surface-border hover:border-brand-500/40"
+            className="px-3.5 py-2 rounded-xl text-sm font-medium border bg-surface-elevated border-surface-border hover:border-accent/40"
           >
             {l.label}
           </button>

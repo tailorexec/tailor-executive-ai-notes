@@ -9,7 +9,7 @@ const DISMISS_KEY = 'tailor.ann.dismissed'
 const STYLES: Record<AnnouncementType, { cls: string; icon: React.ReactNode }> = {
   info: { cls: 'bg-surface-elevated border-surface-border text-content-primary', icon: <Info size={18} /> },
   warning: { cls: 'bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400', icon: <AlertTriangle size={18} /> },
-  maintenance: { cls: 'bg-brand-500/15 border-brand-500/30 text-brand-500', icon: <Wrench size={18} /> },
+  maintenance: { cls: 'bg-accent/15 border-accent/30 text-accent', icon: <Wrench size={18} /> },
   promo: { cls: 'bg-brand-500 border-brand-600 text-white', icon: <Megaphone size={18} /> },
 }
 

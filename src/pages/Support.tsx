@@ -97,7 +97,7 @@ export function Support() {
 
       <h2 className="font-display font-semibold mb-3">{isAdmin ? 'Chamados recebidos' : 'Meus chamados'}</h2>
       {tickets === null ? (
-        <div className="grid place-items-center py-8"><Spinner className="text-brand-500" /></div>
+        <div className="grid place-items-center py-8"><Spinner className="text-accent" /></div>
       ) : tickets.length === 0 ? (
         <p className="text-sm text-content-muted">Nenhum chamado ainda.</p>
       ) : (
@@ -105,7 +105,7 @@ export function Support() {
           {tickets.map((t) => (
             <li key={t.id} className="card p-4">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-[10px] uppercase tracking-wide bg-brand-500/10 text-brand-500 px-2 py-0.5 rounded-full">{t.topic}</span>
+                <span className="text-[10px] uppercase tracking-wide bg-accent/10 text-accent px-2 py-0.5 rounded-full">{t.topic}</span>
                 {t.subject && <span className="font-medium text-sm truncate">{t.subject}</span>}
                 <span className="text-xs text-content-muted ml-auto">{fmtDateTime(t.created_at)}</span>
               </div>

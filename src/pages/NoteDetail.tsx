@@ -20,13 +20,14 @@ import {
   Pencil,
   Copy,
   FolderPlus,
+  X,
 } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
 import { db, config } from '../lib/api'
 import { chatWithNote, generateAnalysis, generateDetailed, generateMindMap } from '../lib/ai'
 import { speak, stopSpeaking, ttsSupported } from '../lib/tts'
 import { fmtDateTime, fmtDuration } from '../lib/format'
-import { Spinner, ConfirmDialog } from '../components/ui'
+import { Spinner, ConfirmDialog, PriorityBadge } from '../components/ui'
 import { useToast } from '../components/Toast'
 import { useT } from '../lib/i18n'
 import { AudioPlayer } from '../components/AudioPlayer'
@@ -65,11 +66,12 @@ export function NoteDetail() {
   const [editValue, setEditValue] = useState('')
   const [chatInput, setChatInput] = useState('')
   const [chatBusy, setChatBusy] = useState(false)
+  const [chatOpen, setChatOpen] = useState(false)
   const chatEndRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     if (!id) return
-    db.getNote(id).then((n) => setNote(n))
+    db.getNote(id).then((n) => setNote(n)).catch(() => setNote(null))
     return () => stopSpeaking()
   }, [id])
 
@@ -96,7 +98,7 @@ export function NoteDetail() {
   if (note === undefined)
     return (
       <div className="min-h-screen grid place-items-center">
-        <Spinner size={26} className="text-brand-500" />
+        <Spinner size={26} className="text-accent" />
       </div>
     )
   if (note === null)
@@ -148,6 +150,8 @@ export function NoteDetail() {
       if (profile) await db.logUsage(profile.id, 'ai_detailed', note.id)
       setNote(updated)
       setTab('detailed')
+    } catch {
+      toast(t('common.error'), 'error')
     } finally {
       setBusy(null)
     }
@@ -162,6 +166,8 @@ export function NoteDetail() {
       if (profile) await db.logUsage(profile.id, 'ai_analysis', note.id)
       setNote(updated)
       setTab('analysis')
+    } catch {
+      toast(t('common.error'), 'error')
     } finally {
       setBusy(null)
     }
@@ -176,6 +182,8 @@ export function NoteDetail() {
       if (profile) await db.logUsage(profile.id, 'ai_analysis', note.id)
       setNote(updated)
       setMindmapOpen(true)
+    } catch {
+      toast(t('common.error'), 'error')
     } finally {
       setBusy(null)
     }
@@ -230,8 +238,23 @@ export function NoteDetail() {
       const updated = await db.updateNote(note.id, { chat: [...withUser.chat, botMsg] })
       if (profile) await db.logUsage(profile.id, 'ai_chat', note.id)
       setNote(updated)
+    } catch {
+      toast(t('common.error'), 'error')
     } finally {
       setChatBusy(false)
+    }
+  }
+
+  /** Define/limpa a prioridade da nota. */
+  async function setPriority(priority: Note['priority']) {
+    if (!note) return
+    try {
+      const updated = await db.updateNote(note.id, { priority })
+      setNote(updated)
+      setMenuOpen(false)
+      toast(t('note.saved'))
+    } catch {
+      toast(t('common.error'), 'error')
     }
   }
 
@@ -291,12 +314,44 @@ export function NoteDetail() {
                       <Copy size={16} className="text-content-secondary" /> {t('note.copyNote')}
                     </button>
                     {canEdit && (
+                      <div className="px-4 py-2 border-t border-surface-border">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-content-muted mb-1.5">
+                          {t('prio.label')}
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {(['alta', 'media', 'baixa'] as const).map((p) => (
+                            <button
+                              key={p}
+                              onClick={() => setPriority(note.priority === p ? null : p)}
+                              className={`text-[11px] font-medium rounded-full px-2.5 py-1 border transition-colors ${
+                                note.priority === p
+                                  ? 'bg-accent/10 text-accent border-accent/30'
+                                  : 'bg-surface-elevated text-content-secondary border-surface-border hover:border-accent/40'
+                              }`}
+                            >
+                              {t(`prio.${p}`)}
+                            </button>
+                          ))}
+                          <button
+                            onClick={() => setPriority(null)}
+                            className={`text-[11px] font-medium rounded-full px-2.5 py-1 border transition-colors ${
+                              !note.priority
+                                ? 'bg-accent/10 text-accent border-accent/30'
+                                : 'bg-surface-elevated text-content-secondary border-surface-border hover:border-accent/40'
+                            }`}
+                          >
+                            {t('prio.none')}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {canEdit && (
                       <button
                         onClick={() => {
                           setMenuOpen(false)
                           setConfirmDelete(true)
                         }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left text-brand-500 hover:bg-surface-elevated border-t border-surface-border"
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left text-accent hover:bg-surface-elevated border-t border-surface-border"
                       >
                         <Trash2 size={16} /> {t('note.deleteNote')}
                       </button>
@@ -314,14 +369,15 @@ export function NoteDetail() {
           {note.folder ? ` • ${note.folder}` : ''}
         </p>
         <div className="flex flex-wrap items-center gap-2 mt-2">
+          {note.priority && <PriorityBadge level={note.priority} className="px-2.5 py-1 text-[11px]" />}
           {note.template && note.template !== 'geral' && (
-            <span className="text-[11px] font-medium uppercase tracking-wide text-brand-500 bg-brand-500/10 border border-brand-500/20 rounded-full px-2.5 py-1">
+            <span className="text-[11px] font-medium uppercase tracking-wide text-accent bg-accent/10 border border-accent/20 rounded-full px-2.5 py-1">
               {templateLabel(note.template)}
             </span>
           )}
           <button
             onClick={() => setFolderOpen(true)}
-            className="inline-flex items-center gap-1.5 text-xs font-medium bg-surface-elevated border border-surface-border rounded-full px-2.5 py-1 hover:border-brand-500/40"
+            className="inline-flex items-center gap-1.5 text-xs font-medium bg-surface-elevated border border-surface-border rounded-full px-2.5 py-1 hover:border-accent/40"
           >
             {(() => {
               const cf = folders.find((f) => f.id === note.folder_id)
@@ -438,7 +494,7 @@ export function NoteDetail() {
               {note.action_items.length > 0 && (
                 <div className="mt-6">
                   <h3 className="flex items-center gap-2 font-display font-semibold mb-3">
-                    <ListChecks size={18} className="text-brand-500" /> {t('note.actionItems')}
+                    <ListChecks size={18} className="text-accent" /> {t('note.actionItems')}
                   </h3>
                   <ul className="space-y-2">
                     {note.action_items.map((a) => (
@@ -497,9 +553,35 @@ export function NoteDetail() {
         </div>
       </div>
 
-      {/* Chat bar */}
+      {/* Chat da nota: fechado = pilula flutuante; aberto = barra com botao de fechar */}
+      {!chatOpen ? (
+        <button
+          onClick={() => setChatOpen(true)}
+          className="fixed right-5 bottom-5 z-30 btn-primary shadow-float rounded-full pl-4 pr-5 py-3"
+        >
+          <MessageSquare size={18} />
+          {t('note.chatOpen')}
+          {note.chat.length > 0 && (
+            <span className="grid place-items-center min-w-5 h-5 px-1 rounded-full bg-white/20 text-[11px]">
+              {note.chat.length}
+            </span>
+          )}
+        </button>
+      ) : (
       <div className="fixed bottom-0 left-0 right-0 md:left-64 z-30 bg-surface-bg/95 backdrop-blur border-t border-surface-border safe-bottom">
         <div className="mx-auto max-w-3xl px-4 py-3">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-content-secondary flex items-center gap-2">
+              <MessageSquare size={15} className="text-accent" /> {t('note.chatPlaceholder')}
+            </span>
+            <button
+              onClick={() => setChatOpen(false)}
+              aria-label={t('note.chatClose')}
+              className="grid place-items-center h-8 w-8 rounded-full text-content-muted hover:bg-surface-elevated hover:text-content-primary"
+            >
+              <X size={18} />
+            </button>
+          </div>
           {note.chat.length > 0 && (
             <div className="max-h-52 overflow-y-auto space-y-2 mb-3 pr-1">
               {note.chat.map((m) => (
@@ -544,6 +626,7 @@ export function NoteDetail() {
           </div>
         </div>
       </div>
+      )}
 
       <ConfirmDialog
         open={confirmDelete}
@@ -610,9 +693,9 @@ function ActionButton({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="card flex items-center gap-3 px-4 py-3 text-left hover:border-brand-500/40 transition-colors disabled:opacity-50"
+      className="card flex items-center gap-3 px-4 py-3 text-left hover:border-accent/40 transition-colors disabled:opacity-50"
     >
-      <span className="text-brand-500 shrink-0">{icon}</span>
+      <span className="text-accent shrink-0">{icon}</span>
       <span className="min-w-0">
         <span className="block font-medium text-sm truncate">{label}</span>
         <span className="block text-xs text-content-muted truncate">{hint}</span>
@@ -656,13 +739,13 @@ function ProseBlock({ text, empty, mono }: { text: string; empty?: string; mono?
         const t = line.trim()
         if (!t) return <div key={i} className="h-2" />
         if (t.startsWith('## '))
-          return <h3 key={i} className="font-display font-semibold text-lg text-brand-500 mt-4">{t.slice(3)}</h3>
+          return <h3 key={i} className="font-display font-semibold text-lg text-accent mt-4">{t.slice(3)}</h3>
         if (t.startsWith('# '))
           return <h2 key={i} className="font-display font-bold text-xl mt-4">{t.slice(2)}</h2>
         if (t.startsWith('- '))
           return (
             <div key={i} className="flex gap-2">
-              <span className="text-brand-500 mt-1.5 h-1.5 w-1.5 rounded-full bg-brand-500 shrink-0" />
+              <span className="text-accent mt-1.5 h-1.5 w-1.5 rounded-full bg-brand-500 shrink-0" />
               <span>{t.slice(2)}</span>
             </div>
           )
@@ -677,7 +760,7 @@ function AnalysisView({ analysis, t }: { analysis: NonNullable<Note['analysis']>
     <div className="space-y-5">
       {typeof analysis.overallScore === 'number' && (
         <div className="card p-5 flex items-center gap-4">
-          <div className="grid place-items-center h-16 w-16 rounded-full bg-brand-500/10 text-brand-500 font-display font-bold text-xl">
+          <div className="grid place-items-center h-16 w-16 rounded-full bg-accent/10 text-accent font-display font-bold text-xl">
             {analysis.overallScore}
           </div>
           <div>
@@ -704,7 +787,7 @@ function AnalysisSection({ title, items, accent }: { title: string; items: strin
       <h3 className="font-display font-semibold mb-2">{title}</h3>
       <ul className="space-y-2">
         {items.map((it, i) => (
-          <li key={i} className={`card px-4 py-3 ${accent ? 'border-brand-500/30' : ''}`}>
+          <li key={i} className={`card px-4 py-3 ${accent ? 'border-accent/30' : ''}`}>
             {it}
           </li>
         ))}
@@ -724,7 +807,7 @@ function MindMapView({ map }: { map: NonNullable<Note['mindmap']> }) {
       <div className="grid sm:grid-cols-2 gap-3">
         {map.branches.map((b, i) => (
           <div key={i} className="card overflow-hidden">
-            <div className="px-4 py-2.5 bg-brand-500/10 text-brand-500 font-semibold border-b border-surface-border">
+            <div className="px-4 py-2.5 bg-accent/10 text-accent font-semibold border-b border-surface-border">
               {b.title}
             </div>
             <ul className="p-4 space-y-2">

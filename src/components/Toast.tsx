@@ -36,7 +36,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             <span
               className={
                 t.variant === 'error'
-                  ? 'text-brand-500'
+                  ? 'text-accent'
                   : t.variant === 'info'
                     ? 'text-content-secondary'
                     : 'text-emerald-500'

@@ -14,6 +14,8 @@
     --content-secondary: 74 74 78;
     --content-muted: 135 134 132;   /* graphite */
 
+    --accent: 148 16 16;            /* vermelho de destaque (texto/icone) no claro */
+
     color-scheme: light;
   }
 
@@ -25,13 +27,27 @@
 
     --content-primary: 245 245 245;
     --content-secondary: 190 190 192;
-    --content-muted: 135 134 132;
+    --content-muted: 150 149 147;
+
+    --accent: 241 12 39;           /* no escuro usa o vermelho vivo p/ contraste */
 
     color-scheme: dark;
   }
 
   * {
     -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Foco visivel e consistente para teclado em TODOS os interativos (acessibilidade) */
+  a:focus-visible,
+  button:focus-visible,
+  [role='button']:focus-visible,
+  [role='switch']:focus-visible,
+  [tabindex]:focus-visible,
+  summary:focus-visible {
+    outline: 2px solid rgb(var(--accent) / 0.7);
+    outline-offset: 2px;
+    border-radius: 0.5rem;
   }
 
   html,
@@ -68,8 +84,7 @@
 
   .btn {
     @apply inline-flex items-center justify-center gap-2 font-medium rounded-xl
-           transition-colors disabled:opacity-50 disabled:pointer-events-none
-           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60;
+           transition-colors disabled:opacity-50 disabled:pointer-events-none;
   }
   .btn-primary {
     @apply btn bg-brand-500 hover:bg-brand-600 text-white px-4 py-2.5;
@@ -80,14 +95,15 @@
   .btn-outline {
     @apply btn border border-surface-border hover:bg-surface-elevated text-content-primary px-4 py-2.5;
   }
+  /* Destrutivo: contorno vermelho que preenche no hover — distinto do primario solido */
   .btn-danger {
-    @apply btn bg-brand-600 hover:bg-brand-700 text-white px-4 py-2.5;
+    @apply btn border border-brand-400 text-brand-400 hover:bg-brand-400 hover:text-white px-4 py-2.5;
   }
 
   .input {
     @apply w-full bg-surface-elevated border border-surface-border rounded-xl px-4 py-3
            text-content-primary placeholder:text-content-muted
-           focus:outline-none focus:ring-2 focus:ring-brand-400/50 focus:border-brand-400/50
+           focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent/50
            transition-shadow;
   }
 
@@ -96,32 +112,15 @@
   }
 }
 
-/* Red translucent shine burst on button clicks (see buttonShine.ts) */
-.btn-shine {
-  position: fixed;
-  z-index: 9999;
-  width: 150px;
-  height: 150px;
-  margin: 0;
-  border-radius: 9999px;
-  pointer-events: none;
-  will-change: transform, opacity;
-  background: radial-gradient(
-    circle,
-    rgba(241, 12, 39, 0.55) 0%,
-    rgba(241, 12, 39, 0.25) 35%,
-    rgba(241, 12, 39, 0) 70%
-  );
-}
-
-/* Subtle press feedback for buttons */
-.btn:active,
-button:active {
+/* Feedback de clique sutil apenas nos botoes de acao (nao em cards/itens) */
+.btn:active {
   transform: scale(0.98);
 }
-.btn,
-button {
-  transition: transform 0.08s ease;
+.btn {
+  transition:
+    transform 0.08s ease,
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
 
 /* Thin, unobtrusive scrollbars */

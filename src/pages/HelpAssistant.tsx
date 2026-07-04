@@ -37,7 +37,7 @@ export function HelpAssistant({ open, onClose }: { open: boolean; onClose: () =>
   return (
     <Sheet open={open} onClose={onClose} title="ANA — Ajuda">
       <div className="flex items-center gap-2 text-xs text-content-muted mb-3">
-        <Sparkles size={14} className="text-brand-500" />
+        <Sparkles size={14} className="text-accent" />
         Pergunte como usar o aplicativo. Só respondo sobre as funções da plataforma.
       </div>
 
@@ -48,7 +48,7 @@ export function HelpAssistant({ open, onClose }: { open: boolean; onClose: () =>
               <button
                 key={s}
                 onClick={() => ask(s)}
-                className="w-full text-left text-sm bg-surface-elevated border border-surface-border rounded-xl px-3 py-2.5 hover:border-brand-500/40"
+                className="w-full text-left text-sm bg-surface-elevated border border-surface-border rounded-xl px-3 py-2.5 hover:border-accent/40"
               >
                 {s}
               </button>

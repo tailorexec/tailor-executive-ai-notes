@@ -5,6 +5,7 @@ import { generateFeedback } from '../lib/ai'
 import { db } from '../lib/api'
 import { useAuth } from '../auth/AuthProvider'
 import { useT } from '../lib/i18n'
+import { useToast } from '../components/Toast'
 import type { Note } from '../lib/types'
 
 type Audience = 'cliente' | 'candidato'
@@ -20,6 +21,7 @@ export function FeedbackSheet({
 }) {
   const { profile } = useAuth()
   const t = useT()
+  const toast = useToast()
   const [audience, setAudience] = useState<Audience>('cliente')
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(false)
@@ -31,6 +33,8 @@ export function FeedbackSheet({
       const fb = await generateFeedback(note.transcript, audience)
       setText(fb)
       if (profile) await db.logUsage(profile.id, 'ai_feedback', note.id)
+    } catch {
+      toast(t('common.error'), 'error')
     } finally {
       setLoading(false)
     }

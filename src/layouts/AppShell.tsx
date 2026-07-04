@@ -58,7 +58,7 @@ function Sidebar() {
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-colors ${
                 isActive
-                  ? 'bg-brand-500/10 text-brand-500'
+                  ? 'bg-accent/10 text-accent'
                   : 'text-content-secondary hover:bg-surface-elevated hover:text-content-primary'
               }`
             }
@@ -69,24 +69,20 @@ function Sidebar() {
         ))}
       </nav>
 
-      {/* Card ANA: assistente de ajuda inteligente */}
+      {/* Card ANA: assistente de ajuda */}
       <div className="px-3 mb-3">
         <button
           onClick={() => setHelpOpen(true)}
-          className="relative w-full overflow-hidden rounded-2xl p-[1.5px] group text-left"
+          className="w-full text-left rounded-2xl border border-accent/25 bg-accent/5 hover:bg-accent/10 hover:border-accent/40 transition-colors px-3.5 py-3"
         >
-          <span className="absolute inset-0 bg-[linear-gradient(110deg,#941010,#F10C27,#640816,#F10C27,#941010)] bg-[length:200%_100%] animate-shine opacity-80 group-hover:opacity-100" />
-          <span className="relative block rounded-2xl bg-surface-card px-3.5 py-3">
-            <span className="flex items-center gap-2 mb-1">
-              <span className="relative grid place-items-center h-7 w-7 rounded-lg bg-brand-500 text-white shrink-0">
-                <span className="absolute inset-0 rounded-lg bg-brand-500 animate-ping opacity-30" />
-                <AnaIcon size={15} className="relative" />
-              </span>
-              <span className="text-sm font-semibold">{t('sidebar.talkAna')}</span>
+          <span className="flex items-center gap-2 mb-1">
+            <span className="grid place-items-center h-7 w-7 rounded-lg bg-brand-500 text-white shrink-0">
+              <AnaIcon size={15} />
             </span>
-            <span className="block text-xs text-content-muted leading-snug">
-              {t('sidebar.anaSub')}
-            </span>
+            <span className="text-sm font-semibold">{t('sidebar.talkAna')}</span>
+          </span>
+          <span className="block text-xs text-content-muted leading-snug">
+            {t('sidebar.anaSub')}
           </span>
         </button>
       </div>
@@ -116,7 +112,7 @@ function NavItem({ to, icon, label }: { to: string; icon: React.ReactNode; label
       end
       className={({ isActive }) =>
         `flex flex-col items-center justify-center gap-1 flex-1 py-1.5 text-[11px] font-medium transition-colors ${
-          isActive ? 'text-brand-500' : 'text-content-muted hover:text-content-secondary'
+          isActive ? 'text-accent' : 'text-content-muted hover:text-content-secondary'
         }`
       }
     >

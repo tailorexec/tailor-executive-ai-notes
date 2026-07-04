@@ -34,6 +34,7 @@ export interface SupportTicket {
 
 export type NoteSourceType = 'recording' | 'upload' | 'file' | 'link' | 'call' | 'video'
 export type NoteDevice = 'mobile' | 'desktop' | null
+export type NotePriority = 'alta' | 'media' | 'baixa'
 
 export interface ActionItem {
   id: string
@@ -95,6 +96,7 @@ export interface Note {
   chat: ChatMessage[]
   shared_with: string[] // profile ids
   status: 'processing' | 'ready' | 'error'
+  priority: NotePriority | null
   keep_audio: boolean
   audio_deleted_at: string | null
   deleted_at: string | null

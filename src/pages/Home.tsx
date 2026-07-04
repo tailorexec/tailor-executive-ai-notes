@@ -24,7 +24,7 @@ import { useAuth } from '../auth/AuthProvider'
 import { db } from '../lib/api'
 import type { Note, Folder } from '../lib/types'
 import { fmtDate, fmtDuration, fmtTime } from '../lib/format'
-import { Avatar, EmptyState, Sheet, Chip, NoteCardSkeleton } from '../components/ui'
+import { Avatar, EmptyState, Sheet, Chip, NoteCardSkeleton, PriorityBadge } from '../components/ui'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { Logo } from '../components/Logo'
 import { AskNotesSheet } from './AskNotesSheet'
@@ -33,6 +33,7 @@ import { getNotifPrefs, notify } from '../lib/notifications'
 import { UpcomingEvents } from './UpcomingEvents'
 import { HelpAssistant } from './HelpAssistant'
 import { useT } from '../lib/i18n'
+import { useToast } from '../components/Toast'
 
 /** Icone de origem: diferencia como a nota foi criada. */
 function sourceIcon(n: Note): React.ReactNode {
@@ -49,6 +50,7 @@ export function Home() {
   const { profile } = useAuth()
   const navigate = useNavigate()
   const t = useT()
+  const toast = useToast()
   const [notes, setNotes] = useState<Note[] | null>(null)
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<'recent' | 'oldest' | 'longest'>('recent')
@@ -79,8 +81,11 @@ export function Home() {
       } catch {
         /* ignore */
       }
+    }).catch(() => {
+      setNotes([])
+      toast(t('common.error'), 'error')
     })
-    db.listFolders(profile.id).then(setFolderList)
+    db.listFolders(profile.id).then(setFolderList).catch(() => {})
   }, [profile])
 
   const folderName = (id: string | null) => folderList.find((f) => f.id === id)?.name
@@ -113,8 +118,8 @@ export function Home() {
   }
 
   return (
-    <div className="px-5 pt-5 md:pt-6 safe-top">
-      <header className="mb-4">
+    <div className="px-5 pt-5 md:pt-6 safe-top md:h-[calc(100dvh-4rem)] md:flex md:flex-col md:overflow-hidden">
+      <header className="mb-4 md:shrink-0">
         {/* Logo ANA no topo, centralizada (apenas mobile; no desktop fica na sidebar) */}
         <Logo part="ana" heightClass="h-[27px]" className="md:hidden w-full justify-center mb-3" />
         <div className="flex items-center justify-between">
@@ -136,21 +141,9 @@ export function Home() {
         </div>
       </header>
 
-      <UpcomingEvents />
-
-      <div className="relative mb-3">
-        <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-content-muted" />
-        <input
-          className="input pl-11"
-          placeholder={t('home.search')}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-      </div>
-
       <button
         onClick={() => setAskOpen(true)}
-        className="w-full flex items-center gap-3 bg-surface-elevated border border-surface-border rounded-2xl px-4 py-2.5 mb-3 text-left hover:border-brand-500/40 transition-colors"
+        className="md:shrink-0 w-full flex items-center gap-3 bg-surface-elevated border border-surface-border rounded-2xl px-4 py-2.5 mb-3 text-left hover:border-accent/40 transition-colors"
       >
         <span className="grid place-items-center h-9 w-9 rounded-xl bg-brand-500 text-white shrink-0">
           <MessageSquare size={18} />
@@ -162,8 +155,22 @@ export function Home() {
         <ChevronRight size={18} className="text-content-muted shrink-0" />
       </button>
 
+      <div className="md:shrink-0">
+        <UpcomingEvents />
+      </div>
+
+      <div className="relative mb-3 md:shrink-0">
+        <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-content-muted" />
+        <input
+          className="input pl-11"
+          placeholder={t('home.search')}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </div>
+
       {folderList.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-2 -mx-1 px-1">
+        <div className="flex gap-2 overflow-x-auto pb-2 mb-2 -mx-1 px-1 md:shrink-0">
           <Chip active={folderFilter === 'all'} onClick={() => setFolderFilter('all')}>
             {t('home.all')}
           </Chip>
@@ -179,7 +186,7 @@ export function Home() {
       )}
 
       {notes && filtered.length > 0 && (
-        <div className="flex items-center justify-between mb-2 px-1">
+        <div className="flex items-center justify-between mb-2 px-1 md:shrink-0">
           <span className="text-xs text-content-muted">
             {filtered.length} {filtered.length === 1 ? t('home.noteOne') : t('home.noteMany')}
           </span>
@@ -199,6 +206,7 @@ export function Home() {
         </div>
       )}
 
+      <div className="md:flex-1 md:min-h-0 md:overflow-y-auto md:-mx-1 md:px-1 pb-2">
       {notes === null ? (
         <ul className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mt-2">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -243,19 +251,22 @@ export function Home() {
             <li key={n.id}>
               <button
                 onClick={() => navigate(`/nota/${n.id}`)}
-                className="card w-full h-full text-left px-4 py-3.5 hover:border-brand-500/40 transition-colors"
+                className="card w-full h-full text-left px-4 py-3.5 hover:border-accent/40 transition-colors"
               >
-                {/* Topo: data + icone de origem */}
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-content-muted">{fmtDate(n.created_at)}</span>
-                  <span className="grid place-items-center h-7 w-7 rounded-full bg-brand-500/10 text-brand-500">
+                {/* Topo: data + prioridade + icone de origem */}
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-xs text-content-muted shrink-0">{fmtDate(n.created_at)}</span>
+                    {n.priority && <PriorityBadge level={n.priority} />}
+                  </div>
+                  <span className="grid place-items-center h-7 w-7 rounded-full bg-accent/10 text-accent shrink-0">
                     {sourceIcon(n)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <h3 className="font-semibold truncate">{n.title}</h3>
                   {n.status === 'processing' && (
-                    <span className="text-[10px] uppercase tracking-wide text-brand-400 bg-brand-500/10 px-1.5 py-0.5 rounded shrink-0">
+                    <span className="text-[10px] uppercase tracking-wide text-accent bg-accent/10 px-1.5 py-0.5 rounded shrink-0">
                       {t('home.processing')}
                     </span>
                   )}
@@ -271,8 +282,9 @@ export function Home() {
           ))}
         </ul>
       )}
+      </div>
 
-      {/* FAB unico: o icone da ANA (piscando) abre "Nova nota" e "Perguntar a ANA" */}
+      {/* FAB unico: o icone da ANA abre "Nova nota" e "Perguntar a ANA" */}
       {fabOpen && <div className="fixed inset-0 z-30" onClick={() => setFabOpen(false)} />}
       <div className="fixed right-5 bottom-24 md:bottom-8 z-40 flex flex-col items-end gap-3">
         {fabOpen && (
@@ -287,7 +299,7 @@ export function Home() {
               <span className="text-sm font-medium bg-surface-card border border-surface-border shadow-float rounded-full px-3.5 py-1.5">
                 {t('home.newNote')}
               </span>
-              <span className="grid place-items-center h-12 w-12 rounded-full bg-surface-card border border-surface-border text-brand-500 shadow-float shrink-0">
+              <span className="grid place-items-center h-12 w-12 rounded-full bg-surface-card border border-surface-border text-accent shadow-float shrink-0">
                 <NotebookPen size={20} />
               </span>
             </button>
@@ -301,7 +313,7 @@ export function Home() {
               <span className="text-sm font-medium bg-surface-card border border-surface-border shadow-float rounded-full px-3.5 py-1.5">
                 {t('sidebar.talkAna')}
               </span>
-              <span className="grid place-items-center h-12 w-12 rounded-full bg-surface-card border border-surface-border text-brand-500 shadow-float shrink-0">
+              <span className="grid place-items-center h-12 w-12 rounded-full bg-surface-card border border-surface-border text-accent shadow-float shrink-0">
                 <AnaIcon size={22} />
               </span>
             </button>
@@ -310,10 +322,9 @@ export function Home() {
         <button
           onClick={() => setFabOpen((v) => !v)}
           aria-label={fabOpen ? 'Fechar' : 'Ações'}
-          className="relative grid place-items-center h-14 w-14 rounded-full bg-brand-500 text-white shadow-float"
+          className="grid place-items-center h-14 w-14 rounded-full bg-brand-500 hover:bg-brand-600 text-white shadow-float transition-colors"
         >
-          {!fabOpen && <span className="absolute inset-0 rounded-full bg-brand-500 animate-ping opacity-40" />}
-          {fabOpen ? <X size={26} className="relative" /> : <AnaIcon size={28} className="relative" />}
+          {fabOpen ? <X size={26} /> : <AnaIcon size={28} />}
         </button>
       </div>
 
@@ -357,9 +368,9 @@ function NewOption({
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-4 bg-surface-elevated border border-surface-border rounded-2xl px-4 py-3.5 text-left hover:border-brand-500/40 transition-colors"
+      className="w-full flex items-center gap-4 bg-surface-elevated border border-surface-border rounded-2xl px-4 py-3.5 text-left hover:border-accent/40 transition-colors"
     >
-      <div className="grid place-items-center h-10 w-10 rounded-full bg-brand-500/10 text-brand-500 shrink-0">
+      <div className="grid place-items-center h-10 w-10 rounded-full bg-accent/10 text-accent shrink-0">
         {icon}
       </div>
       <div>

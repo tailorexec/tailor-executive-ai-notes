@@ -46,10 +46,10 @@ function Row({
     <button
       onClick={onClick}
       className={`w-full flex items-center gap-3 px-4 py-3.5 text-left ${
-        danger ? 'text-brand-500' : 'text-content-primary'
+        danger ? 'text-accent' : 'text-content-primary'
       }`}
     >
-      <span className={danger ? 'text-brand-500' : 'text-content-secondary'}>{icon}</span>
+      <span className={danger ? 'text-accent' : 'text-content-secondary'}>{icon}</span>
       <span className="flex-1 font-medium">{label}</span>
       {right ?? <ChevronRight size={18} className="text-content-muted" />}
     </button>
@@ -164,7 +164,7 @@ export function Settings() {
       {isAdmin && (
         <div className="card divide-y divide-surface-border mb-6">
           <Row
-            icon={<ShieldCheck size={20} className="text-brand-500" />}
+            icon={<ShieldCheck size={20} className="text-accent" />}
             label={t('settings.adminPanel')}
             onClick={() => navigate('/admin')}
           />
@@ -222,12 +222,12 @@ export function Settings() {
               }}
               className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-colors ${
                 lang === l.code
-                  ? 'border-brand-500 bg-brand-500/10'
-                  : 'border-surface-border bg-surface-elevated hover:border-brand-500/40'
+                  ? 'border-brand-500 bg-accent/10'
+                  : 'border-surface-border bg-surface-elevated hover:border-accent/40'
               }`}
             >
               <span className="font-medium">{l.label}</span>
-              {lang === l.code && <Check size={18} className="text-brand-500" />}
+              {lang === l.code && <Check size={18} className="text-accent" />}
             </button>
           ))}
         </div>
@@ -259,7 +259,7 @@ export function Settings() {
 
       <div className="flex flex-col items-center gap-2 pb-4 text-content-muted">
         <Logo size="lg" />
-        <p className="text-xs">ANA by Tailor • v0.1.2</p>
+        <p className="text-xs">ANA by Tailor • v0.1.3</p>
       </div>
     </div>
   )

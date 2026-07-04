@@ -1,9 +1,38 @@
 import { Loader2, X } from 'lucide-react'
 import { useEffect, type ReactNode } from 'react'
 import { initials } from '../lib/format'
+import { useT } from '../lib/i18n'
+import type { NotePriority } from '../lib/types'
 
 export function Spinner({ size = 18, className = '' }: { size?: number; className?: string }) {
   return <Loader2 size={size} className={`animate-spin ${className}`} />
+}
+
+/** Selo de prioridade da nota (alta/media/baixa). */
+export function PriorityBadge({ level, className = '' }: { level: NotePriority; className?: string }) {
+  const t = useT()
+  const map: Record<NotePriority, { key: string; cls: string; dot: string }> = {
+    alta: { key: 'prio.alta', cls: 'text-accent bg-accent/10 border-accent/25', dot: 'bg-accent' },
+    media: {
+      key: 'prio.media',
+      cls: 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/25',
+      dot: 'bg-amber-500',
+    },
+    baixa: {
+      key: 'prio.baixa',
+      cls: 'text-content-muted bg-surface-elevated border-surface-border',
+      dot: 'bg-content-muted',
+    },
+  }
+  const m = map[level]
+  return (
+    <span
+      className={`inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 border ${m.cls} ${className}`}
+    >
+      <span className={`h-1.5 w-1.5 rounded-full ${m.dot}`} />
+      {t(m.key)}
+    </span>
+  )
 }
 
 export function Avatar({
@@ -29,7 +58,7 @@ export function Avatar({
   }
   return (
     <div
-      className="grid place-items-center rounded-full bg-brand-500/15 text-brand-500 font-semibold shrink-0"
+      className="grid place-items-center rounded-full bg-accent/15 text-accent font-semibold shrink-0"
       style={{ width: size, height: size, fontSize: size * 0.38 }}
     >
       {initials(first, last)}
@@ -101,7 +130,7 @@ export function Sheet({
 /** Selo para funcoes ainda nao disponiveis no web-mobile. */
 export function SoonBadge({ children = 'EM BREVE NO APP' }: { children?: string }) {
   return (
-    <span className="text-[10px] font-semibold uppercase tracking-wide text-brand-500 bg-brand-500/10 border border-brand-500/20 rounded-full px-2 py-0.5 whitespace-nowrap">
+    <span className="text-[10px] font-semibold uppercase tracking-wide text-accent bg-accent/10 border border-accent/20 rounded-full px-2 py-0.5 whitespace-nowrap">
       {children}
     </span>
   )
