@@ -124,7 +124,7 @@ export function Home() {
         {/* Logo ANA no topo, centralizada (apenas mobile; no desktop fica na sidebar) */}
         <Logo part="ana" heightClass="h-[27px]" className="md:hidden w-full justify-center mb-3" />
         <div className="flex items-center justify-between">
-          <h1 className="font-display text-3xl font-bold">{t('home.title')}</h1>
+          <h1 className="font-display text-2xl sm:text-3xl font-bold whitespace-nowrap">{t('home.title')}</h1>
           {/* No desktop, os controles vao para o canto superior direito da tela */}
           <div className="flex items-center gap-2 md:fixed md:top-5 md:right-8 md:z-40">
             <button
@@ -259,7 +259,7 @@ export function Home() {
             <li key={n.id}>
               <button
                 onClick={() => navigate(`/nota/${n.id}`)}
-                className="card w-full h-full text-left px-4 py-3.5 hover:border-accent/40 transition-colors"
+                className="card w-full h-full text-left px-4 py-3.5 border-content-muted/40 hover:border-accent/50 hover:shadow-hover transition-all"
               >
                 {/* Topo: data + prioridade + icone de origem */}
                 <div className="flex items-center justify-between gap-2 mb-2">
@@ -330,9 +330,18 @@ export function Home() {
         <button
           onClick={() => setFabOpen((v) => !v)}
           aria-label={fabOpen ? 'Fechar' : 'Ações'}
-          className="grid place-items-center h-14 w-14 rounded-full bg-brand-500 hover:bg-brand-600 text-white shadow-float transition-colors"
+          className="relative overflow-hidden grid place-items-center h-14 w-14 rounded-full bg-brand-500 hover:bg-brand-600 text-white shadow-float transition-colors"
         >
-          {fabOpen ? <X size={26} /> : <AnaIcon size={28} />}
+          {/* Reflexo estatico (brilho de vidro) */}
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-0 rounded-full"
+            style={{
+              background:
+                'linear-gradient(135deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.12) 28%, rgba(255,255,255,0) 52%)',
+            }}
+          />
+          <span className="relative">{fabOpen ? <X size={26} /> : <AnaIcon size={28} />}</span>
         </button>
       </div>
 
