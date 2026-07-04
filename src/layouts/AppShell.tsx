@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Home, Phone, Settings as SettingsIcon, Sparkles, ShieldCheck, Mic } from 'lucide-react'
+import { Home, Phone, Settings as SettingsIcon, Sparkles, ShieldCheck, Mic, ListChecks } from 'lucide-react'
 import { AnaIcon } from '../components/AnaIcon'
 import { useAuth } from '../auth/AuthProvider'
 import { Logo } from '../components/Logo'
@@ -22,6 +22,7 @@ interface Item {
 
 const ITEMS: Item[] = [
   { to: '/', icon: <Home size={20} />, labelKey: 'nav.notes' },
+  { to: '/tarefas', icon: <ListChecks size={20} />, labelKey: 'nav.tasks' },
   { to: '/discador', icon: <Phone size={20} />, labelKey: 'nav.dialer' },
   { to: '/admin', icon: <ShieldCheck size={20} />, labelKey: 'nav.admin', adminOnly: true },
   { to: '/config', icon: <SettingsIcon size={20} />, labelKey: 'nav.config' },

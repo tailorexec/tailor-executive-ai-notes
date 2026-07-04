@@ -5,6 +5,7 @@ import { AppShell } from './layouts/AppShell'
 import { Login } from './pages/Login'
 import { Register } from './pages/Register'
 import { Home } from './pages/Home'
+import { TasksPage } from './pages/Tasks'
 import { NoteDetail } from './pages/NoteDetail'
 import { Capture } from './pages/Capture'
 import { Dialer } from './pages/Dialer'
@@ -63,6 +64,7 @@ export default function App() {
         }
       >
         <Route path="/" element={<Home />} />
+        <Route path="/tarefas" element={<TasksPage />} />
         <Route path="/nota/:id" element={<NoteDetail />} />
         <Route path="/capturar" element={<Capture />} />
         <Route path="/discador" element={<Dialer />} />

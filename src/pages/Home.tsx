@@ -17,6 +17,7 @@ import {
   Video,
   StickyNote,
   X,
+  ListChecks,
   Folder as FolderIcon,
 } from 'lucide-react'
 import { AnaIcon } from '../components/AnaIcon'
@@ -126,6 +127,13 @@ export function Home() {
           <h1 className="font-display text-3xl font-bold">{t('home.title')}</h1>
           {/* No desktop, os controles vao para o canto superior direito da tela */}
           <div className="flex items-center gap-2 md:fixed md:top-5 md:right-8 md:z-40">
+            <button
+              onClick={() => navigate('/tarefas')}
+              aria-label={t('nav.tasks')}
+              className="md:hidden grid place-items-center h-10 w-10 rounded-full bg-surface-elevated border border-surface-border text-content-secondary hover:text-content-primary"
+            >
+              <ListChecks size={18} />
+            </button>
             <button
               onClick={() => setFolderOpen(true)}
               aria-label="Pastas"

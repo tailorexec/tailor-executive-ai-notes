@@ -38,9 +38,10 @@ export function Capture() {
   const { profile } = useAuth()
   const recorder = useRecorder()
 
-  const [title, setTitle] = useState('')
+  // Prefill via query (ex.: vindo de um evento do calendario).
+  const [title, setTitle] = useState(params.get('title') ?? '')
   const [template, setTemplate] = useState('geral')
-  const [context, setContext] = useState('')
+  const [context, setContext] = useState(params.get('context') ?? '')
   const [diarize, setDiarize] = useState(false)
   const [textInput, setTextInput] = useState('')
   const [fileName, setFileName] = useState<string | null>(null)

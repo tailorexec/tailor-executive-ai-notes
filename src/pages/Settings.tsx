@@ -20,7 +20,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
 import { useTheme } from '../theme/ThemeProvider'
-import { Avatar, Sheet, Spinner, SoonBadge } from '../components/ui'
+import { Avatar, Sheet, Spinner } from '../components/ui'
 import { useToast } from '../components/Toast'
 import { Logo } from '../components/Logo'
 import { uploadAvatar } from '../lib/avatar'
@@ -194,8 +194,7 @@ export function Settings() {
         <Row
           icon={<Bell size={20} />}
           label={t('settings.notifications')}
-          onClick={() => toast(t('settings.notifSoon'), 'info')}
-          right={<SoonBadge />}
+          onClick={() => navigate('/notificacoes')}
         />
         <Row
           icon={<Languages size={20} />}
@@ -259,7 +258,7 @@ export function Settings() {
 
       <div className="flex flex-col items-center gap-2 pb-4 text-content-muted">
         <Logo size="lg" />
-        <p className="text-xs">ANA by Tailor • v0.1.3</p>
+        <p className="text-xs">ANA by Tailor • v0.1.4</p>
       </div>
     </div>
   )

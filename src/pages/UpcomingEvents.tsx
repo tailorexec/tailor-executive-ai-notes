@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { CalendarDays, RefreshCw, Clock, Link2Off } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { CalendarDays, RefreshCw, Clock, Link2Off, Mic } from 'lucide-react'
 import {
   startCalendarConnect,
   finishCalendarConnect,
@@ -21,6 +22,12 @@ export function UpcomingEvents() {
   const [error, setError] = useState<string | null>(null)
   const toast = useToast()
   const t = useT()
+  const navigate = useNavigate()
+
+  function recordFromEvent(e: CalEvent) {
+    const qs = new URLSearchParams({ mode: 'meeting', title: e.title, context: e.title })
+    navigate(`/capturar?${qs.toString()}`)
+  }
 
   async function refresh() {
     setLoading(true)
@@ -172,18 +179,26 @@ export function UpcomingEvents() {
           ) : (
             <ul className="grid sm:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto pr-1">
               {events.map((e) => (
-                <li key={e.id} className="card p-4 flex gap-3">
-                  <div className="grid place-items-center h-10 w-10 rounded-xl bg-accent/10 text-accent shrink-0">
-                    <CalendarDays size={18} />
+                <li key={e.id} className="card p-4">
+                  <div className="flex gap-3">
+                    <div className="grid place-items-center h-10 w-10 rounded-xl bg-accent/10 text-accent shrink-0">
+                      <CalendarDays size={18} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium truncate">{e.title}</p>
+                      <p className="text-xs text-content-muted mt-0.5 flex items-center gap-1">
+                        <Clock size={12} />
+                        {e.start ? fmtDate(e.start) : ''}
+                        {e.start && !e.allDay ? ` · ${fmtTime(e.start)}` : e.allDay ? ` · ${t('events.allDay')}` : ''}
+                      </p>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium truncate">{e.title}</p>
-                    <p className="text-xs text-content-muted mt-0.5 flex items-center gap-1">
-                      <Clock size={12} />
-                      {e.start ? fmtDate(e.start) : ''}
-                      {e.start && !e.allDay ? ` · ${fmtTime(e.start)}` : e.allDay ? ` · ${t('events.allDay')}` : ''}
-                    </p>
-                  </div>
+                  <button
+                    onClick={() => recordFromEvent(e)}
+                    className="btn-outline w-full h-9 mt-3 text-sm"
+                  >
+                    <Mic size={16} /> {t('events.record')}
+                  </button>
                 </li>
               ))}
             </ul>
