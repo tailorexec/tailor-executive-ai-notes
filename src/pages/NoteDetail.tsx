@@ -553,20 +553,21 @@ export function NoteDetail() {
         </div>
       </div>
 
-      {/* Chat da nota: fechado = pilula flutuante; aberto = barra com botao de fechar */}
+      {/* Chat da nota: fechado = barra inferior com botao; aberto = barra com botao de fechar */}
       {!chatOpen ? (
-        <button
-          onClick={() => setChatOpen(true)}
-          className="fixed right-5 bottom-5 z-30 btn-primary shadow-float rounded-full pl-4 pr-5 py-3"
-        >
-          <MessageSquare size={18} />
-          {t('note.chatOpen')}
-          {note.chat.length > 0 && (
-            <span className="grid place-items-center min-w-5 h-5 px-1 rounded-full bg-white/20 text-[11px]">
-              {note.chat.length}
-            </span>
-          )}
-        </button>
+        <div className="fixed bottom-0 left-0 right-0 md:left-64 z-30 bg-surface-bg/95 backdrop-blur border-t border-surface-border safe-bottom">
+          <div className="mx-auto max-w-3xl px-4 py-3">
+            <button onClick={() => setChatOpen(true)} className="btn-primary w-full">
+              <MessageSquare size={18} />
+              {t('note.chatOpen')}
+              {note.chat.length > 0 && (
+                <span className="grid place-items-center min-w-5 h-5 px-1 rounded-full bg-white/20 text-[11px]">
+                  {note.chat.length}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
       ) : (
       <div className="fixed bottom-0 left-0 right-0 md:left-64 z-30 bg-surface-bg/95 backdrop-blur border-t border-surface-border safe-bottom">
         <div className="mx-auto max-w-3xl px-4 py-3">
