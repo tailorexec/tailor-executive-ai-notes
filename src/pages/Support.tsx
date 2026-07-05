@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, LifeBuoy, Check } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
 import { db } from '../lib/api'
-import type { SupportTicket, TicketTopic, Profile } from '../lib/types'
+import type { SupportTicket, TicketTopic } from '../lib/types'
 import { fmtDateTime } from '../lib/format'
 import { Spinner } from '../components/ui'
 import { useT } from '../lib/i18n'
@@ -16,7 +16,7 @@ const TOPICS: { v: TicketTopic; key: string }[] = [
 ]
 
 export function Support() {
-  const { profile, isAdmin } = useAuth()
+  const { profile } = useAuth()
   const navigate = useNavigate()
   const t = useT()
   const [topic, setTopic] = useState<TicketTopic>('tecnico')
@@ -24,12 +24,12 @@ export function Support() {
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
-  const [tickets, setTickets] = useState<(SupportTicket & { profile?: Profile })[] | null>(null)
+  const [tickets, setTickets] = useState<SupportTicket[] | null>(null)
 
   function load() {
-    db.listTickets().then(setTickets)
+    if (profile) db.listMyTickets(profile.id).then(setTickets)
   }
-  useEffect(load, [])
+  useEffect(load, [profile])
 
   async function submit() {
     if (!profile || !message.trim()) return
@@ -97,7 +97,7 @@ export function Support() {
         </button>
       </div>
 
-      <h2 className="font-display font-semibold mb-3">{isAdmin ? t('sup.received') : t('sup.mine')}</h2>
+      <h2 className="font-display font-semibold mb-3">{t('sup.mine')}</h2>
       {tickets === null ? (
         <div className="grid place-items-center py-8"><Spinner className="text-accent" /></div>
       ) : tickets.length === 0 ? (
@@ -112,11 +112,6 @@ export function Support() {
                 <span className="text-xs text-content-muted ml-auto">{fmtDateTime(tk.created_at)}</span>
               </div>
               <p className="text-sm text-content-secondary whitespace-pre-line">{tk.message}</p>
-              {isAdmin && tk.profile && (
-                <p className="text-xs text-content-muted mt-2">
-                  {tk.profile.first_name} {tk.profile.last_name} • {tk.profile.email}
-                </p>
-              )}
             </li>
           ))}
         </ul>

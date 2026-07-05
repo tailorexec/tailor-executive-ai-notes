@@ -240,6 +240,16 @@ export const supabaseDb: Db = {
     return tickets.map((t) => ({ ...t, profile: profiles.find((p) => p.id === t.user_id) }))
   },
 
+  async listMyTickets(userId) {
+    const { data, error } = await client()
+      .from('support_tickets')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return (data ?? []) as SupportTicket[]
+  },
+
   async listNotes(userId) {
     const { data, error } = await client()
       .from('notes')

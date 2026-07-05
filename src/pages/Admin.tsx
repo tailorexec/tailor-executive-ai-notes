@@ -11,12 +11,13 @@ import {
   NotebookPen,
   Pencil,
   Trash2,
+  LifeBuoy,
 } from 'lucide-react'
 import { db } from '../lib/api'
 import { useAuth } from '../auth/AuthProvider'
-import type { AdminUserRow, Profile } from '../lib/types'
+import type { AdminUserRow, Profile, SupportTicket } from '../lib/types'
 import { Avatar, Sheet, Spinner } from '../components/ui'
-import { fmtRelative } from '../lib/format'
+import { fmtRelative, fmtDateTime } from '../lib/format'
 import { AdminSettings } from './AdminSettings'
 
 function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
@@ -40,9 +41,11 @@ export function Admin() {
   const [form, setForm] = useState({ first_name: '', last_name: '', email: '' })
   const [busy, setBusy] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
+  const [tickets, setTickets] = useState<(SupportTicket & { profile?: Profile })[] | null>(null)
 
   function load() {
     db.adminRows().then(setRows)
+    db.listTickets().then(setTickets).catch(() => setTickets([]))
   }
   useEffect(load, [])
 
@@ -255,6 +258,39 @@ export function Admin() {
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Chamados de suporte recebidos (somente admin) */}
+          <div className="mt-8 mb-10">
+            <h2 className="flex items-center gap-2 font-display font-semibold mb-3">
+              <LifeBuoy size={18} className="text-accent" /> Chamados recebidos
+              {tickets && tickets.length > 0 && (
+                <span className="text-xs font-normal text-content-muted">({tickets.length})</span>
+              )}
+            </h2>
+            {tickets === null ? (
+              <div className="grid place-items-center py-8"><Spinner className="text-accent" /></div>
+            ) : tickets.length === 0 ? (
+              <p className="text-sm text-content-muted">Nenhum chamado recebido.</p>
+            ) : (
+              <ul className="space-y-3 max-w-2xl">
+                {tickets.map((tk) => (
+                  <li key={tk.id} className="card p-4">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <span className="text-[10px] uppercase tracking-wide bg-accent/10 text-accent px-2 py-0.5 rounded-full">{tk.topic}</span>
+                      {tk.subject && <span className="font-medium text-sm truncate">{tk.subject}</span>}
+                      <span className="text-xs text-content-muted ml-auto">{fmtDateTime(tk.created_at)}</span>
+                    </div>
+                    <p className="text-sm text-content-secondary whitespace-pre-line">{tk.message}</p>
+                    {tk.profile && (
+                      <p className="text-xs text-content-muted mt-2">
+                        {tk.profile.first_name} {tk.profile.last_name} • {tk.profile.email}
+                      </p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </>
       )}

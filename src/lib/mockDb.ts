@@ -235,6 +235,12 @@ export const mockDb: Db = {
       .sort((a, b) => b.created_at.localeCompare(a.created_at))
   },
 
+  async listMyTickets(userId) {
+    return read<SupportTicket[]>(K.tickets, [])
+      .filter((t) => t.user_id === userId)
+      .sort((a, b) => b.created_at.localeCompare(a.created_at))
+  },
+
   async listNotes(userId) {
     seed()
     cleanupExpiredAudio()

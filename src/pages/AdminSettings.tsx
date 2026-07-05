@@ -118,18 +118,24 @@ export function AdminSettings() {
 
         <label className="label">Periodo (opcional)</label>
         <div className="grid grid-cols-2 gap-3 mb-1">
-          <input
-            type="datetime-local"
-            className="input"
-            value={toLocalInput(s.announcement_starts_at)}
-            onChange={(e) => set({ announcement_starts_at: fromLocalInput(e.target.value) })}
-          />
-          <input
-            type="datetime-local"
-            className="input"
-            value={toLocalInput(s.announcement_ends_at)}
-            onChange={(e) => set({ announcement_ends_at: fromLocalInput(e.target.value) })}
-          />
+          <div className="min-w-0">
+            <span className="block text-[11px] text-content-muted mb-1">Inicio</span>
+            <input
+              type="datetime-local"
+              className="input w-full min-w-0 px-2"
+              value={toLocalInput(s.announcement_starts_at)}
+              onChange={(e) => set({ announcement_starts_at: fromLocalInput(e.target.value) })}
+            />
+          </div>
+          <div className="min-w-0">
+            <span className="block text-[11px] text-content-muted mb-1">Fim</span>
+            <input
+              type="datetime-local"
+              className="input w-full min-w-0 px-2"
+              value={toLocalInput(s.announcement_ends_at)}
+              onChange={(e) => set({ announcement_ends_at: fromLocalInput(e.target.value) })}
+            />
+          </div>
         </div>
         <p className="text-xs text-content-muted mb-4">Sem datas = fixo ate voce remover.</p>
 

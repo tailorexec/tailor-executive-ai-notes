@@ -46,7 +46,10 @@ export interface Db {
 
   // --- suporte ---
   createTicket(input: { user_id: string; topic: TicketTopic; subject: string; message: string }): Promise<void>
+  /** Todos os chamados (admin). */
   listTickets(): Promise<(SupportTicket & { profile?: Profile })[]>
+  /** Apenas os chamados do proprio usuario. */
+  listMyTickets(userId: string): Promise<SupportTicket[]>
 
   // --- notes ---
   listNotes(userId: string): Promise<Note[]>

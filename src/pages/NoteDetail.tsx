@@ -24,7 +24,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
 import { db, config } from '../lib/api'
-import { chatWithNote, generateAnalysis, generateDetailed, generateMindMap } from '../lib/ai'
+import { chatWithNote, generateAnalysis, generateDetailed } from '../lib/ai'
 import { speak, stopSpeaking, ttsSupported } from '../lib/tts'
 import { fmtDateTime, fmtDuration } from '../lib/format'
 import { Spinner, ConfirmDialog, PriorityBadge } from '../components/ui'
@@ -58,7 +58,6 @@ export function NoteDetail() {
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const [translateOpen, setTranslateOpen] = useState(false)
   const [folderOpen, setFolderOpen] = useState(false)
-  const [mindmapOpen, setMindmapOpen] = useState(false)
   const [folders, setFolders] = useState<Folder[]>([])
   const [menuOpen, setMenuOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -173,27 +172,10 @@ export function NoteDetail() {
     }
   }
 
-  async function runMindMap() {
-    if (!note) return
-    setBusy('mindmap')
-    try {
-      const mindmap = await generateMindMap(note.transcript, { template: note.template, context: note.context })
-      const updated = await db.updateNote(note.id, { mindmap })
-      if (profile) await db.logUsage(profile.id, 'ai_analysis', note.id)
-      setNote(updated)
-      setMindmapOpen(true)
-    } catch {
-      toast(t('common.error'), 'error')
-    } finally {
-      setBusy(null)
-    }
-  }
-
-  /** Abre o mapa mental num card grande (gera se ainda nao existir). */
+  /** Abre o mapa mental em pagina propria (que gera na primeira vez e salva). */
   function openMindMap() {
     if (!note) return
-    if (note.mindmap) setMindmapOpen(true)
-    else runMindMap()
+    navigate(`/nota/${note.id}/mapa-mental`)
   }
 
   function toggleNarration() {
@@ -452,11 +434,10 @@ export function NoteDetail() {
             onClick={() => setTranslateOpen(true)}
           />
           <ActionButton
-            icon={busy === 'mindmap' ? <Spinner size={18} /> : <Network size={18} />}
+            icon={<Network size={18} />}
             label={t('note.mindmap')}
-            hint={busy === 'mindmap' ? t('note.generating') : t('note.mindmapHint')}
+            hint={t('note.mindmapHint')}
             onClick={openMindMap}
-            disabled={busy === 'mindmap'}
           />
           {ttsSupported() && (
             <ActionButton
@@ -643,11 +624,6 @@ export function NoteDetail() {
       {shareOpen && (
         <ShareSheet note={note} open={shareOpen} onClose={() => setShareOpen(false)} onUpdated={setNote} />
       )}
-      {mindmapOpen && note.mindmap && (
-        <Sheet open={mindmapOpen} onClose={() => setMindmapOpen(false)} title={t('note.mindmap')}>
-          <MindMapView map={note.mindmap} />
-        </Sheet>
-      )}
       {feedbackOpen && <FeedbackSheet note={note} open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />}
       {translateOpen && <TranslateSheet note={note} open={translateOpen} onClose={() => setTranslateOpen(false)} />}
       {folderOpen && profile && (
@@ -793,35 +769,6 @@ function AnalysisSection({ title, items, accent }: { title: string; items: strin
           </li>
         ))}
       </ul>
-    </div>
-  )
-}
-
-function MindMapView({ map }: { map: NonNullable<Note['mindmap']> }) {
-  return (
-    <div className="space-y-5">
-      <div className="flex justify-center">
-        <div className="px-5 py-3 rounded-2xl bg-brand-500 text-white font-display font-bold text-lg shadow-float text-center">
-          {map.central}
-        </div>
-      </div>
-      <div className="grid sm:grid-cols-2 gap-3">
-        {map.branches.map((b, i) => (
-          <div key={i} className="card overflow-hidden">
-            <div className="px-4 py-2.5 bg-accent/10 text-accent font-semibold border-b border-surface-border">
-              {b.title}
-            </div>
-            <ul className="p-4 space-y-2">
-              {b.children.map((c, j) => (
-                <li key={j} className="flex gap-2">
-                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-brand-500 shrink-0" />
-                  <span className="text-sm">{c}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </div>
     </div>
   )
 }
