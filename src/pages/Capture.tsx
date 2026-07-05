@@ -45,6 +45,8 @@ export function Capture() {
   const [diarize, setDiarize] = useState(false)
   const [textInput, setTextInput] = useState('')
   const [fileName, setFileName] = useState<string | null>(null)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [submitting, setSubmitting] = useState(false)
   const [processing, setProcessing] = useState(false)
   const [step, setStep] = useState(0)
   const [error, setError] = useState<string | null>(null)
@@ -201,22 +203,52 @@ export function Capture() {
     if (!file) return
     setError(null)
     setFileName(file.name)
+    setSelectedFile(file)
     const isText = /\.(txt|md|csv)$/i.test(file.name)
     setTextInput(isText ? await file.text() : '')
   }
 
   async function onSubmitText() {
-    const content = textInput.trim()
-    if (!content && !fileName) {
+    setError(null)
+    let content = textInput.trim()
+    if (mode === 'link') {
+      if (!/^https?:\/\//i.test(content)) {
+        setError('Informe uma URL valida (comecando com http:// ou https://).')
+        return
+      }
+    } else if (!content && !selectedFile) {
       setError('Selecione um arquivo ou cole um texto para continuar.')
       return
     }
+
+    // Extracao real (link no servidor; PDF/DOCX no navegador).
+    setSubmitting(true)
+    try {
+      const { extractFile, extractLink } = await import('../lib/extract')
+      if (mode === 'link') {
+        content = await extractLink(content)
+      } else if (!content && selectedFile) {
+        content = await extractFile(selectedFile)
+      }
+    } catch (err) {
+      setSubmitting(false)
+      setError(`Nao consegui extrair o conteudo. ${err instanceof Error ? err.message : String(err)}`)
+      return
+    }
+    setSubmitting(false)
+
+    if (!content.trim()) {
+      setError('Nao consegui extrair texto deste conteudo.')
+      return
+    }
+
     await finalize({
       type: mode === 'link' ? 'link' : 'file',
-      transcript:
-        content ||
-        `Documento importado: ${fileName}. (Extracao de conteudo sera feita no servidor.)`,
-      fallbackTitle: mode === 'link' ? 'Conteudo do link' : fileName?.replace(/\.[^.]+$/, '') || 'Nota de texto',
+      transcript: content,
+      fallbackTitle:
+        mode === 'link'
+          ? 'Resumo do link'
+          : fileName?.replace(/\.[^.]+$/, '') || 'Nota de texto',
     })
   }
 
@@ -498,10 +530,10 @@ export function Capture() {
             <p className="font-medium">{fileName ? 'Trocar arquivo' : 'Selecionar PDF, TXT, DOCX...'}</p>
             {fileName && <p className="text-sm text-content-secondary">{fileName}</p>}
           </button>
-          <input ref={fileRef} type="file" accept=".pdf,.txt,.md,.csv,.doc,.docx" className="hidden" onChange={onFileText} />
+          <input ref={fileRef} type="file" accept=".pdf,.txt,.md,.csv,.docx" className="hidden" onChange={onFileText} />
           {fileName && (
             <p className="text-xs text-content-muted -mt-1">
-              Arquivo selecionado. Revise o texto (se aplicavel) e clique em "Processar" — nada e gerado antes disso.
+              Arquivo selecionado. O texto do PDF/DOCX e extraido ao clicar em "Processar".
             </p>
           )}
           <div className="text-center text-content-muted text-sm">ou cole o texto abaixo</div>
@@ -511,8 +543,9 @@ export function Capture() {
             value={textInput}
             onChange={(e) => setTextInput(e.target.value)}
           />
-          <button className="btn-primary" onClick={onSubmitText}>
-            Processar texto
+          <button className="btn-primary" onClick={onSubmitText} disabled={submitting}>
+            {submitting ? <Spinner size={18} /> : null}
+            {submitting ? 'Extraindo...' : 'Processar'}
           </button>
         </div>
       )}
@@ -528,11 +561,12 @@ export function Capture() {
               onChange={(e) => setTextInput(e.target.value)}
             />
           </div>
-          <button className="btn-primary" onClick={onSubmitText}>
-            Resumir link
+          <button className="btn-primary" onClick={onSubmitText} disabled={submitting}>
+            {submitting ? <Spinner size={18} /> : null}
+            {submitting ? 'Extraindo...' : 'Resumir link'}
           </button>
           <p className="text-xs text-content-muted">
-            A extracao do conteudo da pagina e feita no servidor (modo real).
+            A IA abre a pagina, extrai o conteudo principal e gera o resumo.
           </p>
         </div>
       )}

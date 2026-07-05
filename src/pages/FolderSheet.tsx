@@ -90,25 +90,25 @@ export function FolderSheet({
   }
 
   async function remove(id: string) {
-    if (!confirm('Excluir esta pasta? As notas voltam a ficar sem pasta.')) return
+    if (!confirm(t('folder.deleteConfirm'))) return
     await db.deleteFolder(id)
     load()
   }
 
   return (
-    <Sheet open={open} onClose={onClose} title={mode === 'assign' ? 'Adicionar a uma pasta' : 'Pastas'}>
+    <Sheet open={open} onClose={onClose} title={mode === 'assign' ? t('folder.assignTitle') : t('folder.manageTitle')}>
       {/* Criar nova */}
       <div className="card p-3 mb-4">
         <div className="flex gap-2 mb-2">
           <input
             className="input py-2"
-            placeholder="Nome da pasta"
+            placeholder={t('folder.name')}
             value={name}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && create()}
           />
           <button className="btn-primary h-11 px-4" onClick={create} disabled={busy || !name.trim() || atLimit}>
-            <Plus size={18} /> Criar
+            <Plus size={18} /> {t('folder.create')}
           </button>
         </div>
         <ColorPicker value={color} onChange={setColor} />
@@ -129,14 +129,14 @@ export function FolderSheet({
             !selectedId ? 'border-brand-500 bg-accent/5' : 'border-surface-border bg-surface-elevated'
           }`}
         >
-          <FolderIcon size={18} className="text-content-muted" /> Sem pasta
+          <FolderIcon size={18} className="text-content-muted" /> {t('folder.none')}
         </button>
       )}
 
       {folders === null ? (
         <div className="grid place-items-center py-6"><Spinner className="text-accent" /></div>
       ) : folders.length === 0 ? (
-        <p className="text-sm text-content-muted text-center py-4">Nenhuma pasta ainda.</p>
+        <p className="text-sm text-content-muted text-center py-4">{t('folder.empty')}</p>
       ) : (
         <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
           {folders.map((f) =>
@@ -145,8 +145,8 @@ export function FolderSheet({
                 <input className="input py-2" value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} />
                 <ColorPicker value={editing.color} onChange={(c) => setEditing({ ...editing, color: c })} />
                 <div className="flex gap-2">
-                  <button className="btn-outline flex-1 h-9" onClick={() => setEditing(null)}>Cancelar</button>
-                  <button className="btn-primary flex-1 h-9" onClick={saveEdit}>Salvar</button>
+                  <button className="btn-outline flex-1 h-9" onClick={() => setEditing(null)}>{t('common.cancel')}</button>
+                  <button className="btn-primary flex-1 h-9" onClick={saveEdit}>{t('common.save')}</button>
                 </div>
               </div>
             ) : (

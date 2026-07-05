@@ -137,9 +137,18 @@ Foque em: tom, perguntas feitas e sugeridas, ritmo/andamento, pontos fortes, mel
     } else if (task === 'help') {
       const question = String(body.question ?? '').slice(0, 500)
       const kb = String(body.kb ?? '').slice(0, 9000)
+      const lang = String(body.lang ?? 'pt')
+      const langName = lang === 'en' ? 'ingles' : lang === 'es' ? 'espanhol' : 'portugues do Brasil'
+      const refusal =
+        lang === 'en'
+          ? 'I can only help with questions about using the app.'
+          : lang === 'es'
+            ? 'Solo puedo ayudar con dudas sobre el uso de la app.'
+            : 'So consigo ajudar com duvidas sobre o uso do aplicativo.'
       const text = await claude(
         HAIKU,
-        'Voce e a ANA, assistente de ajuda do aplicativo TENA (notas, transcricoes e analise de reunioes). Responda SOMENTE sobre como usar o aplicativo e suas funcoes, com base na BASE DE AJUDA fornecida. Se a pergunta NAO for sobre o uso do aplicativo, responda apenas: "So consigo ajudar com duvidas sobre o uso do aplicativo." Nao invente funcoes inexistentes. Portugues do Brasil, respostas curtas e diretas.' + GUARD,
+        `Voce e a ANA, assistente de ajuda do aplicativo TENA (notas, transcricoes e analise de reunioes). Responda SOMENTE sobre como usar o aplicativo e suas funcoes, com base na BASE DE AJUDA fornecida. Se a pergunta NAO for sobre o uso do aplicativo, responda apenas: "${refusal}". Nao invente funcoes inexistentes. Responda em ${langName}, de forma curta e direta.` +
+          GUARD,
         `BASE DE AJUDA:\n<<<INICIO_DADOS>>>\n${kb}\n<<<FIM_DADOS>>>\n\nPERGUNTA DO USUARIO: ${question}`,
         600,
       )

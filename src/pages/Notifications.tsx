@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { getNotifPrefs, setNotifPrefs, ensureNotifPermission, notifSupported, type NotifPrefs } from '../lib/notifications'
+import { useT } from '../lib/i18n'
 
 function Toggle({ on }: { on: boolean }) {
   return (
@@ -13,6 +14,7 @@ function Toggle({ on }: { on: boolean }) {
 
 export function NotificationsPage() {
   const navigate = useNavigate()
+  const t = useT()
   const [prefs, setPrefs] = useState<NotifPrefs>(getNotifPrefs())
 
   async function toggle(key: keyof NotifPrefs) {
@@ -23,9 +25,9 @@ export function NotificationsPage() {
   }
 
   const items: { key: keyof NotifPrefs; label: string; desc: string; soon?: boolean }[] = [
-    { key: 'shared', label: 'Nova transcricao compartilhada', desc: 'Avisar quando alguem compartilhar uma nota com voce.' },
-    { key: 'announcements', label: 'Novidades e avisos', desc: 'Comunicados e novos recursos da plataforma.' },
-    { key: 'calendar', label: 'Evento proximo (calendario)', desc: 'Lembrete de reunioes do seu calendario.', soon: true },
+    { key: 'shared', label: t('notif.sharedT'), desc: t('notif.sharedD') },
+    { key: 'announcements', label: t('notif.annT'), desc: t('notif.annD') },
+    { key: 'calendar', label: t('notif.calT'), desc: t('notif.calD'), soon: true },
   ]
 
   return (
@@ -34,12 +36,12 @@ export function NotificationsPage() {
         <button onClick={() => navigate('/config')} className="grid place-items-center h-10 w-10 rounded-full bg-surface-elevated border border-surface-border" aria-label="Voltar">
           <ArrowLeft size={18} />
         </button>
-        <h1 className="font-display text-2xl font-bold">Notificacoes</h1>
+        <h1 className="font-display text-2xl font-bold">{t('notif.title')}</h1>
       </header>
 
       {!notifSupported() && (
         <div className="text-sm text-content-muted bg-surface-elevated border border-surface-border rounded-xl px-4 py-3 mb-4 max-w-xl">
-          Seu navegador nao suporta notificacoes. No app instalado (PWA/Android) elas funcionam melhor.
+          {t('notif.unsupported')}
         </div>
       )}
 
@@ -54,7 +56,7 @@ export function NotificationsPage() {
             <div className="flex-1 min-w-0">
               <p className="font-medium flex items-center gap-2">
                 {it.label}
-                {it.soon && <span className="text-[10px] uppercase bg-surface-elevated border border-surface-border px-1.5 py-0.5 rounded">em breve</span>}
+                {it.soon && <span className="text-[10px] uppercase bg-surface-elevated border border-surface-border px-1.5 py-0.5 rounded">{t('notif.soon')}</span>}
               </p>
               <p className="text-sm text-content-muted mt-0.5">{it.desc}</p>
             </div>

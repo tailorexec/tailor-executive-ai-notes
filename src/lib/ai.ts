@@ -94,16 +94,24 @@ export async function generateAnalysis(transcript: string, meta: AiMeta = {}): P
   return r.analysis
 }
 
-/** Assistente de ajuda: responde SO sobre o uso do app. Tenta a base local antes da IA. */
-export async function askHelp(question: string): Promise<string> {
+/** Assistente de ajuda: responde SO sobre o uso do app. Em pt tenta a base local (gratis)
+ *  antes da IA; em outros idiomas vai direto na IA (que responde no idioma do usuario). */
+export async function askHelp(question: string, lang: 'pt' | 'en' | 'es' = 'pt'): Promise<string> {
   const { searchHelp, HELP_KB_TEXT } = await import('./helpKb')
-  const local = searchHelp(question)
-  if (local) return local.a // resposta gratuita da base
+  if (lang === 'pt') {
+    const local = searchHelp(question)
+    if (local) return local.a // resposta gratuita da base
+  }
   if (config.mockMode) {
     await delay(500)
-    return 'Só consigo ajudar com dúvidas sobre o uso do aplicativo. Tente perguntar sobre gravar, transcrever, compartilhar, pastas, discador ou configurações.'
+    const msg: Record<string, string> = {
+      pt: 'Só consigo ajudar com dúvidas sobre o uso do aplicativo. Tente perguntar sobre gravar, transcrever, compartilhar, pastas, discador ou configurações.',
+      en: 'I can only help with questions about using the app. Try asking about recording, transcribing, sharing, folders, the dialer or settings.',
+      es: 'Solo puedo ayudar con dudas sobre el uso de la app. Prueba a preguntar sobre grabar, transcribir, compartir, carpetas, el marcador o los ajustes.',
+    }
+    return msg[lang] ?? msg.pt
   }
-  const r = await invoke<{ answer: string }>('ai', { task: 'help', question, kb: HELP_KB_TEXT })
+  const r = await invoke<{ answer: string }>('ai', { task: 'help', question, kb: HELP_KB_TEXT, lang })
   return r.answer
 }
 

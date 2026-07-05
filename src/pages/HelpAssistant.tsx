@@ -3,15 +3,11 @@ import { Send } from 'lucide-react'
 import { Sheet, Spinner } from '../components/ui'
 import { AnaIcon } from '../components/AnaIcon'
 import { askHelp } from '../lib/ai'
-
-const SUGGESTIONS = [
-  'Como gravar uma reunião?',
-  'Como compartilho uma nota?',
-  'Como funcionam as pastas?',
-  'Por quanto tempo o áudio fica guardado?',
-]
+import { useI18n } from '../lib/i18n'
 
 export function HelpAssistant({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { t, lang } = useI18n()
+  const SUGGESTIONS = [t('help.s1'), t('help.s2'), t('help.s3'), t('help.s4')]
   const [messages, setMessages] = useState<{ role: 'user' | 'ana'; text: string }[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -28,7 +24,7 @@ export function HelpAssistant({ open, onClose }: { open: boolean; onClose: () =>
     setMessages((m) => [...m, { role: 'user', text: question }])
     setLoading(true)
     try {
-      const a = await askHelp(question)
+      const a = await askHelp(question, lang)
       setMessages((m) => [...m, { role: 'ana', text: a }])
     } finally {
       setLoading(false)
@@ -41,7 +37,7 @@ export function HelpAssistant({ open, onClose }: { open: boolean; onClose: () =>
         <span className="grid place-items-center h-7 w-7 rounded-full bg-brand-500 text-white shrink-0">
           <AnaIcon size={16} />
         </span>
-        Sou a ANA, pergunte o que quiser.
+        {t('help.greeting')}
       </div>
 
       <div className="max-h-72 overflow-y-auto space-y-2 mb-3 pr-1">
@@ -79,7 +75,7 @@ export function HelpAssistant({ open, onClose }: { open: boolean; onClose: () =>
       <div className="flex items-center gap-2">
         <input
           className="input py-2.5"
-          placeholder="Pergunte algo sobre o app..."
+          placeholder={t('help.placeholder')}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && ask()}
