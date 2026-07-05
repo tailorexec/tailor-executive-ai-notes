@@ -70,7 +70,7 @@ export function MindMapPage() {
     )
 
   return (
-    <div className="px-5 pt-6 safe-top pb-16 max-w-3xl mx-auto">
+    <div className="px-5 pt-6 safe-top pb-16 max-w-5xl mx-auto">
       <header className="flex items-center gap-3 mb-6">
         <button
           onClick={() => navigate(`/nota/${note.id}`)}
