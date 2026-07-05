@@ -6,7 +6,8 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const RETENTION_DAYS = 14
+const RETENTION_DAYS = 14 // audio
+const TRASH_DAYS = 7 // lixeira -> exclusao definitiva
 const BUCKET = 'recordings'
 
 Deno.serve(async (req) => {
@@ -41,7 +42,26 @@ Deno.serve(async (req) => {
     removed++
   }
 
-  return new Response(JSON.stringify({ ok: true, removed }), {
+  // Lixeira: exclui DEFINITIVAMENTE notas na lixeira ha mais de TRASH_DAYS dias.
+  const trashCutoff = new Date(Date.now() - TRASH_DAYS * 86400000).toISOString()
+  const { data: trashed } = await admin
+    .from('notes')
+    .select('id, audio_url')
+    .not('deleted_at', 'is', null)
+    .lt('deleted_at', trashCutoff)
+    .limit(500)
+
+  let purged = 0
+  for (const n of trashed ?? []) {
+    const path = n.audio_url as string
+    if (path && !path.startsWith('idb:') && !path.startsWith('http')) {
+      await admin.storage.from(BUCKET).remove([path])
+    }
+    await admin.from('notes').delete().eq('id', n.id)
+    purged++
+  }
+
+  return new Response(JSON.stringify({ ok: true, removed, purged }), {
     headers: { 'content-type': 'application/json' },
   })
 })

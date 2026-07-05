@@ -1,6 +1,6 @@
 import { useTheme } from '../theme/ThemeProvider'
 
-type LogoPart = 'full' | 'ana' | 'tailor'
+type LogoPart = 'full' | 'ana' | 'anaonly' | 'tailor'
 
 /** Logo oficial ANA by Tailor (troca cor conforme o tema). Pode exibir a marca
  *  completa ou apenas as partes "ANA" ou "by Tailor" (mesma arte, so recortada). */
@@ -21,7 +21,14 @@ export function Logo({
   const { theme } = useTheme()
   const suffix = theme === 'dark' ? 'dark' : 'light'
   // *-light = texto preto (tema claro); *-dark = texto branco (tema escuro).
-  const base = part === 'ana' ? 'logo-ana' : part === 'tailor' ? 'logo-tailor' : 'logo'
+  const base =
+    part === 'ana'
+      ? 'logo-ana'
+      : part === 'anaonly'
+        ? 'logo-anaonly'
+        : part === 'tailor'
+          ? 'logo-tailor'
+          : 'logo'
   const src = `/${base}-${suffix}.png`
 
   const preset =

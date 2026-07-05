@@ -245,7 +245,18 @@ export const mockDb: Db = {
   },
 
   async listTrash(userId) {
-    const notes = read<Note[]>(K.notes, [])
+    let notes = read<Note[]>(K.notes, [])
+    // Exclui DEFINITIVAMENTE o que esta na lixeira ha mais de 7 dias (limpeza preguicosa no demo).
+    const cutoff = Date.now() - 7 * 86400000
+    const expired = notes.filter((n) => n.deleted_at && Date.parse(n.deleted_at) < cutoff)
+    if (expired.length) {
+      for (const n of expired) {
+        if (n.audio_url) deleteAudio(n.audio_url)
+      }
+      const expiredIds = new Set(expired.map((n) => n.id))
+      notes = notes.filter((n) => !expiredIds.has(n.id))
+      write(K.notes, notes)
+    }
     return notes
       .filter((n) => n.deleted_at && n.user_id === userId)
       .sort((a, b) => (b.deleted_at ?? '').localeCompare(a.deleted_at ?? ''))

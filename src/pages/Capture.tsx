@@ -27,7 +27,7 @@ import type { NoteSourceType } from '../lib/types'
 
 type Mode = 'record' | 'meeting' | 'upload' | 'video' | 'file' | 'link'
 
-const MAX_VIDEO_MB = 25
+const MAX_VIDEO_MB = 100
 
 const STEPS = ['Transcrevendo audio', 'Gerando resumo', 'Extraindo action items', 'Finalizando'] as const
 
@@ -289,7 +289,7 @@ export function Capture() {
         </button>
         <h1 className="font-display text-xl font-bold">
           {mode === 'record' && 'Gravar audio'}
-          {mode === 'meeting' && 'Gravar reuniao'}
+          {mode === 'meeting' && 'Gravar reunião'}
           {mode === 'upload' && 'Enviar audio'}
           {mode === 'video' && 'Enviar video'}
           {mode === 'file' && 'PDF, arquivo ou texto'}

@@ -7,7 +7,13 @@ import { useI18n } from '../lib/i18n'
 
 export function HelpAssistant({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t, lang } = useI18n()
-  const SUGGESTIONS = [t('help.s1'), t('help.s2'), t('help.s3'), t('help.s4')]
+  // Perguntas pre-criadas com resposta FIXA (nao gera IA a cada clique).
+  const SUGGESTIONS = [
+    { q: t('help.s1'), a: t('help.a1') },
+    { q: t('help.s2'), a: t('help.a2') },
+    { q: t('help.s3'), a: t('help.a3') },
+    { q: t('help.s4'), a: t('help.a4') },
+  ]
   const [messages, setMessages] = useState<{ role: 'user' | 'ana'; text: string }[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -16,6 +22,12 @@ export function HelpAssistant({ open, onClose }: { open: boolean; onClose: () =>
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages.length, loading])
+
+  /** Resposta instantanea (fixa) para as sugestoes pre-criadas. */
+  function askFixed(q: string, a: string) {
+    if (loading) return
+    setMessages((m) => [...m, { role: 'user', text: q }, { role: 'ana', text: a }])
+  }
 
   async function ask(q?: string) {
     const question = (q ?? input).trim()
@@ -45,11 +57,11 @@ export function HelpAssistant({ open, onClose }: { open: boolean; onClose: () =>
           <div className="space-y-2">
             {SUGGESTIONS.map((s) => (
               <button
-                key={s}
-                onClick={() => ask(s)}
+                key={s.q}
+                onClick={() => askFixed(s.q, s.a)}
                 className="w-full text-left text-sm bg-surface-elevated border border-surface-border rounded-xl px-3 py-2.5 hover:border-accent/40"
               >
-                {s}
+                {s.q}
               </button>
             ))}
           </div>

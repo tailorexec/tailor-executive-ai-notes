@@ -51,7 +51,9 @@ export function TrashPage() {
         </button>
         <div>
           <h1 className="font-display text-2xl font-bold">Lixeira</h1>
-          <p className="text-sm text-content-muted">Notas excluidas podem ser restauradas aqui.</p>
+          <p className="text-sm text-content-muted">
+            Restaure aqui. Itens na lixeira são excluídos definitivamente após 7 dias.
+          </p>
         </div>
       </header>
 

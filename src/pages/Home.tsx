@@ -113,8 +113,13 @@ export function Home() {
   return (
     <div className="px-5 pt-5 md:pt-6 safe-top md:h-[calc(100dvh-4rem)] md:flex md:flex-col md:overflow-hidden">
       <header className="mb-4 md:shrink-0">
-        {/* Logo ANA no topo, centralizada (apenas mobile; no desktop fica na sidebar) */}
-        <Logo part="ana" heightClass="h-[27px]" className="md:hidden w-full justify-center mb-3" />
+        {/* Mobile: logo ANA a esquerda + subtitulo "AI NOTES ADVISOR" a direita (mesma linha) */}
+        <div className="md:hidden flex items-center justify-between gap-3 mb-3">
+          <Logo part="anaonly" heightClass="h-6" />
+          <span className="text-accent text-[10px] font-semibold uppercase tracking-[0.25em] leading-none">
+            AI NOTES ADVISOR
+          </span>
+        </div>
         <div className="flex items-center justify-between">
           <h1 className="font-display text-2xl sm:text-3xl font-bold whitespace-nowrap">{t('home.title')}</h1>
           {/* No desktop, os controles vao para o canto superior direito da tela */}
