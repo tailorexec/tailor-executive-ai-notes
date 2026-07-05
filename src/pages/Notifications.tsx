@@ -27,7 +27,7 @@ export function NotificationsPage() {
   const items: { key: keyof NotifPrefs; label: string; desc: string; soon?: boolean }[] = [
     { key: 'shared', label: t('notif.sharedT'), desc: t('notif.sharedD') },
     { key: 'announcements', label: t('notif.annT'), desc: t('notif.annD') },
-    { key: 'calendar', label: t('notif.calT'), desc: t('notif.calD'), soon: true },
+    { key: 'calendar', label: t('notif.calT'), desc: t('notif.calD') },
   ]
 
   return (

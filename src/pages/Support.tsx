@@ -6,17 +6,19 @@ import { db } from '../lib/api'
 import type { SupportTicket, TicketTopic, Profile } from '../lib/types'
 import { fmtDateTime } from '../lib/format'
 import { Spinner } from '../components/ui'
+import { useT } from '../lib/i18n'
 
-const TOPICS: { v: TicketTopic; label: string }[] = [
-  { v: 'financeiro', label: 'Financeiro' },
-  { v: 'tecnico', label: 'Tecnico' },
-  { v: 'feedback', label: 'Feedback' },
-  { v: 'outros', label: 'Outros' },
+const TOPICS: { v: TicketTopic; key: string }[] = [
+  { v: 'financeiro', key: 'sup.t_fin' },
+  { v: 'tecnico', key: 'sup.t_tech' },
+  { v: 'feedback', key: 'sup.t_feedback' },
+  { v: 'outros', key: 'sup.t_other' },
 ]
 
 export function Support() {
   const { profile, isAdmin } = useAuth()
   const navigate = useNavigate()
+  const t = useT()
   const [topic, setTopic] = useState<TicketTopic>('tecnico')
   const [subject, setSubject] = useState('')
   const [message, setMessage] = useState('')
@@ -55,64 +57,64 @@ export function Support() {
           <ArrowLeft size={18} />
         </button>
         <div>
-          <h1 className="font-display text-2xl font-bold">Suporte</h1>
-          <p className="text-sm text-content-muted">Abra um chamado e nossa equipe responde.</p>
+          <h1 className="font-display text-2xl font-bold">{t('sup.title')}</h1>
+          <p className="text-sm text-content-muted">{t('sup.subtitle')}</p>
         </div>
       </header>
 
       <div className="card p-5 mb-6 max-w-xl">
-        <label className="label">Tema</label>
+        <label className="label">{t('sup.topic')}</label>
         <div className="flex flex-wrap gap-2 mb-4">
-          {TOPICS.map((t) => (
+          {TOPICS.map((top) => (
             <button
-              key={t.v}
-              onClick={() => setTopic(t.v)}
+              key={top.v}
+              onClick={() => setTopic(top.v)}
               className={`px-3.5 py-1.5 rounded-full text-sm border transition-colors ${
-                topic === t.v
+                topic === top.v
                   ? 'bg-brand-500 border-brand-500 text-white'
                   : 'bg-surface-elevated border-surface-border text-content-secondary'
               }`}
             >
-              {t.label}
+              {t(top.key)}
             </button>
           ))}
         </div>
 
-        <label className="label">Assunto (opcional)</label>
-        <input className="input mb-4" placeholder="Resumo do assunto" value={subject} onChange={(e) => setSubject(e.target.value)} />
+        <label className="label">{t('sup.subject')}</label>
+        <input className="input mb-4" placeholder={t('sup.subjectPh')} value={subject} onChange={(e) => setSubject(e.target.value)} />
 
-        <label className="label">Mensagem</label>
+        <label className="label">{t('sup.message')}</label>
         <textarea
           className="input min-h-[120px] resize-none mb-4"
-          placeholder="Descreva sua duvida, problema ou sugestao..."
+          placeholder={t('sup.messagePh')}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
         />
 
         <button className="btn-primary w-full" onClick={submit} disabled={sending || !message.trim()}>
           {sending ? <Spinner /> : sent ? <Check size={18} /> : <LifeBuoy size={18} />}
-          {sent ? 'Chamado enviado' : 'Enviar chamado'}
+          {sent ? t('sup.sent') : t('sup.send')}
         </button>
       </div>
 
-      <h2 className="font-display font-semibold mb-3">{isAdmin ? 'Chamados recebidos' : 'Meus chamados'}</h2>
+      <h2 className="font-display font-semibold mb-3">{isAdmin ? t('sup.received') : t('sup.mine')}</h2>
       {tickets === null ? (
         <div className="grid place-items-center py-8"><Spinner className="text-accent" /></div>
       ) : tickets.length === 0 ? (
-        <p className="text-sm text-content-muted">Nenhum chamado ainda.</p>
+        <p className="text-sm text-content-muted">{t('sup.empty')}</p>
       ) : (
         <ul className="space-y-3 max-w-xl">
-          {tickets.map((t) => (
-            <li key={t.id} className="card p-4">
+          {tickets.map((tk) => (
+            <li key={tk.id} className="card p-4">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-[10px] uppercase tracking-wide bg-accent/10 text-accent px-2 py-0.5 rounded-full">{t.topic}</span>
-                {t.subject && <span className="font-medium text-sm truncate">{t.subject}</span>}
-                <span className="text-xs text-content-muted ml-auto">{fmtDateTime(t.created_at)}</span>
+                <span className="text-[10px] uppercase tracking-wide bg-accent/10 text-accent px-2 py-0.5 rounded-full">{tk.topic}</span>
+                {tk.subject && <span className="font-medium text-sm truncate">{tk.subject}</span>}
+                <span className="text-xs text-content-muted ml-auto">{fmtDateTime(tk.created_at)}</span>
               </div>
-              <p className="text-sm text-content-secondary whitespace-pre-line">{t.message}</p>
-              {isAdmin && t.profile && (
+              <p className="text-sm text-content-secondary whitespace-pre-line">{tk.message}</p>
+              {isAdmin && tk.profile && (
                 <p className="text-xs text-content-muted mt-2">
-                  {t.profile.first_name} {t.profile.last_name} • {t.profile.email}
+                  {tk.profile.first_name} {tk.profile.last_name} • {tk.profile.email}
                 </p>
               )}
             </li>

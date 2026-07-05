@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Home, Phone, Settings as SettingsIcon, Sparkles, Mic, ListChecks, LayoutGrid } from 'lucide-react'
 import { AnaIcon } from '../components/AnaIcon'
@@ -7,6 +7,7 @@ import { Logo } from '../components/Logo'
 import { Avatar } from '../components/ui'
 import { AnnouncementBanner } from '../components/AnnouncementBanner'
 import { NewNoteSheet } from '../components/NewNoteSheet'
+import { startCalendarReminders } from '../lib/calendarReminders'
 import { useAppSettings } from '../app/SettingsProvider'
 import { Maintenance } from '../pages/Maintenance'
 import { HelpAssistant } from '../pages/HelpAssistant'
@@ -167,6 +168,9 @@ export function AppShell() {
   const { isAdmin } = useAuth()
   const { settings } = useAppSettings()
   const hideMobileNav = HIDE_MOBILE_NAV_ON.some((p) => location.pathname.startsWith(p))
+
+  // Lembretes de eventos do calendario (enquanto o app esta aberto).
+  useEffect(() => startCalendarReminders(), [])
 
   // Modo manutencao: bloqueia todos exceto admin.
   if (settings?.maintenance_enabled && !isAdmin) {

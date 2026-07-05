@@ -29,13 +29,21 @@ function pickMain(html: string): string {
 }
 
 function htmlToText(html: string): string {
-  let h = pickMain(html)
-  h = h
+  // Remove elementos estruturais de navegacao/rodape/barra lateral primeiro (menos ruido).
+  let h = html
     .replace(/<script[\s\S]*?<\/script>/gi, ' ')
     .replace(/<style[\s\S]*?<\/style>/gi, ' ')
     .replace(/<noscript[\s\S]*?<\/noscript>/gi, ' ')
     .replace(/<svg[\s\S]*?<\/svg>/gi, ' ')
+    .replace(/<nav[\s\S]*?<\/nav>/gi, ' ')
+    .replace(/<header[\s\S]*?<\/header>/gi, ' ')
+    .replace(/<footer[\s\S]*?<\/footer>/gi, ' ')
+    .replace(/<aside[\s\S]*?<\/aside>/gi, ' ')
+    .replace(/<form[\s\S]*?<\/form>/gi, ' ')
     .replace(/<!--[\s\S]*?-->/g, ' ')
+  // Prefere o bloco principal, se existir.
+  h = pickMain(h)
+  h = h
     .replace(/<(br|\/p|\/div|\/li|\/h[1-6]|\/tr)\s*\/?\s*>/gi, '\n')
     .replace(/<[^>]+>/g, ' ')
   h = decodeEntities(h)
