@@ -27,7 +27,7 @@ import type { NoteSourceType } from '../lib/types'
 
 type Mode = 'record' | 'meeting' | 'upload' | 'video' | 'file' | 'link'
 
-const MAX_VIDEO_MB = 100
+const MAX_VIDEO_MB = 25
 
 const STEPS = ['Transcrevendo audio', 'Gerando resumo', 'Extraindo action items', 'Finalizando'] as const
 
@@ -54,6 +54,8 @@ export function Capture() {
 
   const autoStoppedRef = useRef(false)
   const isAudioMode = mode === 'record' || mode === 'meeting'
+  // No web-mobile a captura do audio interno nao existe: mostramos so um aviso, sem formulario.
+  const meetingBlocked = mode === 'meeting' && !canCaptureSystemAudio()
 
   async function startRecord() {
     autoStoppedRef.current = false
@@ -289,7 +291,7 @@ export function Capture() {
         </button>
         <h1 className="font-display text-xl font-bold">
           {mode === 'record' && 'Gravar audio'}
-          {mode === 'meeting' && 'Gravar reunião'}
+          {mode === 'meeting' && 'Gravar Meet'}
           {mode === 'upload' && 'Enviar audio'}
           {mode === 'video' && 'Enviar video'}
           {mode === 'file' && 'PDF, arquivo ou texto'}
@@ -297,7 +299,7 @@ export function Capture() {
         </h1>
       </header>
 
-      {mode !== 'link' && (
+      {mode !== 'link' && !meetingBlocked && (
         <div className="mb-4">
           <label className="label">Título (opcional)</label>
           <input
@@ -309,7 +311,7 @@ export function Capture() {
         </div>
       )}
 
-      {(mode === 'record' || mode === 'meeting' || mode === 'upload') && (
+      {(mode === 'record' || mode === 'meeting' || mode === 'upload') && !meetingBlocked && (
         <div className="mb-4">
           <label className="label">{mode === 'upload' ? 'Tema do áudio (opcional)' : 'Tema (opcional)'}</label>
           <div className="flex flex-wrap gap-2 mb-2">
@@ -334,22 +336,26 @@ export function Capture() {
         </div>
       )}
 
-      <div className="mb-3">
-        <label className="label">Contexto (opcional)</label>
-        <input
-          className="input"
-          placeholder="Ex: cliente X, renovação de contrato"
-          value={context}
-          onChange={(e) => setContext(e.target.value)}
-        />
-      </div>
+      {!meetingBlocked && (
+        <div className="mb-3">
+          <label className="label">Contexto (opcional)</label>
+          <input
+            className="input"
+            placeholder="Ex: cliente X, renovação de contrato"
+            value={context}
+            onChange={(e) => setContext(e.target.value)}
+          />
+        </div>
+      )}
 
-      <p className="text-xs text-content-muted mb-6">
-        Todos os campos acima sao <span className="text-content-secondary font-medium">opcionais</span>. Se
-        nao preencher, a IA gera a transcricao e o resumo normalmente, sem contexto previo.
-      </p>
+      {!meetingBlocked && (
+        <p className="text-xs text-content-muted mb-6">
+          Todos os campos acima sao <span className="text-content-secondary font-medium">opcionais</span>. Se
+          nao preencher, a IA gera a transcricao e o resumo normalmente, sem contexto previo.
+        </p>
+      )}
 
-      {(mode === 'record' || mode === 'meeting' || mode === 'upload') && (
+      {(mode === 'record' || mode === 'meeting' || mode === 'upload') && !meetingBlocked && (
         <button
           type="button"
           onClick={() => setDiarize((v) => !v)}
@@ -381,15 +387,16 @@ export function Capture() {
             !canCaptureSystemAudio() ? (
               <div className="card p-6 text-center max-w-sm">
                 <MonitorSmartphone size={36} className="text-accent mx-auto mb-3" />
-                <h3 className="font-display font-semibold text-lg">Gravação completa só no app ou desktop</h3>
+                <h3 className="font-display font-semibold text-lg">Disponível no desktop ou no app</h3>
                 <p className="text-content-secondary mt-2 text-sm">
-                  A captura do <span className="text-content-primary font-medium">áudio interno da reunião</span>
-                  {' '}(a outra ponta, mesmo de fone) só funciona no <span className="text-content-primary font-medium">computador</span>
-                  {' '}(Chrome/Edge) ou no <span className="text-content-primary font-medium">app Android</span>.
-                  No navegador do celular, só dá para gravar pelo microfone (viva-voz).
+                  Gravar o <span className="text-content-primary font-medium">Meet</span> (e Zoom/Teams) captura o
+                  {' '}<span className="text-content-primary font-medium">áudio da reunião + seu microfone</span> juntos.
+                  O navegador do celular não permite capturar o áudio de uma aba, então isso só funciona no
+                  {' '}<span className="text-content-primary font-medium">computador</span> (Chrome/Edge) ou no
+                  {' '}<span className="text-content-primary font-medium">app Android</span>.
                 </p>
                 <button className="btn-outline mt-5 mx-auto" onClick={() => navigate('/capturar?mode=record')}>
-                  <Mic size={18} /> Gravar pelo microfone
+                  <Mic size={18} /> Gravar só pelo microfone
                 </button>
               </div>
             ) : (

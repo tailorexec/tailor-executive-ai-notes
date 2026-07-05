@@ -34,7 +34,7 @@ const pt: Dict = {
   'home.processing': 'processando',
   'ana.float': 'ANA, assistente com PhD: me pergunte algo!',
   'new.title': 'Nova nota',
-  'new.recordMeeting': 'Gravar reunião',
+  'new.recordMeeting': 'Gravar Meet',
   'new.recordMeetingHint': 'Áudio da reunião + seu microfone',
   'new.uploadAudio': 'Enviar áudio',
   'new.uploadAudioHint': 'Importe um arquivo de áudio',

@@ -86,6 +86,7 @@ export function Home() {
   }, [profile])
 
   const folderName = (id: string | null) => folderList.find((f) => f.id === id)?.name
+  const folderColor = (id: string | null) => folderList.find((f) => f.id === id)?.color ?? null
 
   const filtered = useMemo(() => {
     if (!notes) return []
@@ -115,7 +116,7 @@ export function Home() {
       <header className="mb-4 md:shrink-0">
         {/* Mobile: logo ANA a esquerda + subtitulo "AI NOTES ADVISOR" a direita (mesma linha) */}
         <div className="md:hidden flex items-center justify-between gap-3 mb-3">
-          <Logo part="anaonly" heightClass="h-6" />
+          <Logo part="anaonly" heightClass="h-[19px]" />
           <span className="text-accent text-[10px] font-semibold uppercase tracking-[0.25em] leading-none">
             AI NOTES ADVISOR
           </span>
@@ -252,19 +253,29 @@ export function Home() {
         )
       ) : (
         <ul className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mt-2">
-          {filtered.map((n) => (
+          {filtered.map((n) => {
+            const fc = folderColor(n.folder_id)
+            return (
             <li key={n.id}>
               <button
                 onClick={() => navigate(`/nota/${n.id}`)}
-                className="card w-full h-full text-left px-4 py-3.5 border-content-secondary/55 hover:border-accent/60 hover:shadow-hover transition-all"
+                style={fc ? { borderColor: fc } : undefined}
+                className={`card w-full h-full text-left px-4 py-3.5 hover:shadow-hover transition-all ${
+                  fc ? '' : 'border-content-secondary/55 hover:border-accent/60'
+                }`}
               >
-                {/* Topo: data + prioridade + icone de origem */}
+                {/* Topo: data + prioridade + icone de origem (na cor da pasta, se houver) */}
                 <div className="flex items-center justify-between gap-2 mb-2">
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="text-xs text-content-muted shrink-0">{fmtDate(n.created_at)}</span>
                     {n.priority && <PriorityBadge level={n.priority} />}
                   </div>
-                  <span className="grid place-items-center h-7 w-7 rounded-full bg-accent/10 text-accent shrink-0">
+                  <span
+                    className={`grid place-items-center h-7 w-7 rounded-full shrink-0 ${
+                      fc ? '' : 'bg-accent/10 text-accent'
+                    }`}
+                    style={fc ? { color: fc, background: `${fc}1a` } : undefined}
+                  >
                     {sourceIcon(n)}
                   </span>
                 </div>
@@ -284,7 +295,8 @@ export function Home() {
                 </p>
               </button>
             </li>
-          ))}
+            )
+          })}
         </ul>
       )}
       </div>
