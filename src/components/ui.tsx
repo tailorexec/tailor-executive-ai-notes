@@ -1,4 +1,4 @@
-import { Loader2, X } from 'lucide-react'
+import { Loader2, X, Flag } from 'lucide-react'
 import { useEffect, type ReactNode } from 'react'
 import { initials } from '../lib/format'
 import { useT } from '../lib/i18n'
@@ -8,28 +8,18 @@ export function Spinner({ size = 18, className = '' }: { size?: number; classNam
   return <Loader2 size={size} className={`animate-spin ${className}`} />
 }
 
-/** Selo de prioridade da nota (alta/media/baixa). */
+/** Bandeirinha de prioridade da nota: alta=vermelha, media=amarela, baixa=azul. */
 export function PriorityBadge({ level, className = '' }: { level: NotePriority; className?: string }) {
   const t = useT()
-  const map: Record<NotePriority, { key: string; cls: string; dot: string }> = {
-    alta: { key: 'prio.alta', cls: 'text-accent bg-accent/10 border-accent/25', dot: 'bg-accent' },
-    media: {
-      key: 'prio.media',
-      cls: 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/25',
-      dot: 'bg-amber-500',
-    },
-    baixa: {
-      key: 'prio.baixa',
-      cls: 'text-content-muted bg-surface-elevated border-surface-border',
-      dot: 'bg-content-muted',
-    },
+  const map: Record<NotePriority, { key: string; color: string }> = {
+    alta: { key: 'prio.alta', color: 'text-red-600 dark:text-red-500' },
+    media: { key: 'prio.media', color: 'text-yellow-500 dark:text-yellow-400' },
+    baixa: { key: 'prio.baixa', color: 'text-blue-500 dark:text-blue-400' },
   }
   const m = map[level]
   return (
-    <span
-      className={`inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 border ${m.cls} ${className}`}
-    >
-      <span className={`h-1.5 w-1.5 rounded-full ${m.dot}`} />
+    <span className={`inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide ${m.color} ${className}`}>
+      <Flag size={12} fill="currentColor" strokeWidth={1.5} />
       {t(m.key)}
     </span>
   )

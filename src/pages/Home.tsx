@@ -3,11 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import {
   Search,
   SearchX,
-  Upload,
-  FileText,
   Link2,
   Mic,
-  Headphones,
   NotebookPen,
   MessageSquare,
   ChevronRight,
@@ -16,7 +13,6 @@ import {
   Monitor,
   Video,
   StickyNote,
-  X,
   ListChecks,
   Folder as FolderIcon,
 } from 'lucide-react'
@@ -25,9 +21,10 @@ import { useAuth } from '../auth/AuthProvider'
 import { db } from '../lib/api'
 import type { Note, Folder } from '../lib/types'
 import { fmtDate, fmtDuration, fmtTime } from '../lib/format'
-import { Avatar, EmptyState, Sheet, Chip, NoteCardSkeleton, PriorityBadge } from '../components/ui'
+import { Avatar, EmptyState, Chip, NoteCardSkeleton, PriorityBadge } from '../components/ui'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { Logo } from '../components/Logo'
+import { NewNoteSheet } from '../components/NewNoteSheet'
 import { AskNotesSheet } from './AskNotesSheet'
 import { FolderSheet } from './FolderSheet'
 import { getNotifPrefs, notify } from '../lib/notifications'
@@ -61,7 +58,6 @@ export function Home() {
   const [newOpen, setNewOpen] = useState(false)
   const [askOpen, setAskOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
-  const [fabOpen, setFabOpen] = useState(false)
 
   useEffect(() => {
     if (!profile) return
@@ -113,10 +109,6 @@ export function Home() {
 
   const hasFilters = query.trim() !== '' || folderFilter !== 'all'
 
-  function startCapture(mode: string) {
-    setNewOpen(false)
-    navigate(`/capturar?mode=${mode}`)
-  }
 
   return (
     <div className="px-5 pt-5 md:pt-6 safe-top md:h-[calc(100dvh-4rem)] md:flex md:flex-col md:overflow-hidden">
@@ -259,7 +251,7 @@ export function Home() {
             <li key={n.id}>
               <button
                 onClick={() => navigate(`/nota/${n.id}`)}
-                className="card w-full h-full text-left px-4 py-3.5 border-content-muted/40 hover:border-accent/50 hover:shadow-hover transition-all"
+                className="card w-full h-full text-left px-4 py-3.5 border-content-secondary/55 hover:border-accent/60 hover:shadow-hover transition-all"
               >
                 {/* Topo: data + prioridade + icone de origem */}
                 <div className="flex items-center justify-between gap-2 mb-2">
@@ -292,58 +284,27 @@ export function Home() {
       )}
       </div>
 
-      {/* FAB unico: o icone da ANA abre "Nova nota" e "Perguntar a ANA" */}
-      {fabOpen && <div className="fixed inset-0 z-30" onClick={() => setFabOpen(false)} />}
-      <div className="fixed right-5 bottom-24 md:bottom-8 z-40 flex flex-col items-end gap-3">
-        {fabOpen && (
-          <>
-            <button
-              onClick={() => {
-                setNewOpen(true)
-                setFabOpen(false)
-              }}
-              className="flex items-center gap-2.5 animate-slide-up"
-            >
-              <span className="text-sm font-medium bg-surface-card border border-surface-border shadow-float rounded-full px-3.5 py-1.5">
-                {t('home.newNote')}
-              </span>
-              <span className="grid place-items-center h-12 w-12 rounded-full bg-surface-card border border-surface-border text-accent shadow-float shrink-0">
-                <NotebookPen size={20} />
-              </span>
-            </button>
-            <button
-              onClick={() => {
-                setHelpOpen(true)
-                setFabOpen(false)
-              }}
-              className="flex items-center gap-2.5 animate-slide-up"
-            >
-              <span className="text-sm font-medium bg-surface-card border border-surface-border shadow-float rounded-full px-3.5 py-1.5">
-                {t('sidebar.talkAna')}
-              </span>
-              <span className="grid place-items-center h-12 w-12 rounded-full bg-surface-card border border-surface-border text-accent shadow-float shrink-0">
-                <AnaIcon size={22} />
-              </span>
-            </button>
-          </>
-        )}
-        <button
-          onClick={() => setFabOpen((v) => !v)}
-          aria-label={fabOpen ? 'Fechar' : 'Ações'}
-          className="relative overflow-hidden grid place-items-center h-14 w-14 rounded-full bg-brand-500 hover:bg-brand-600 text-white shadow-float transition-colors"
-        >
-          {/* Reflexo estatico (brilho de vidro) */}
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-0 rounded-full"
-            style={{
-              background:
-                'linear-gradient(135deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.12) 28%, rgba(255,255,255,0) 52%)',
-            }}
-          />
-          <span className="relative">{fabOpen ? <X size={26} /> : <AnaIcon size={28} />}</span>
-        </button>
-      </div>
+      {/* FAB da ANA (so ela): abre o assistente. Reflexo estatico de vidro para destaque. */}
+      <button
+        onClick={() => setHelpOpen(true)}
+        aria-label={t('sidebar.talkAna')}
+        className="fixed right-5 bottom-24 md:bottom-8 z-40 overflow-hidden grid place-items-center h-16 w-16 rounded-full bg-brand-500 hover:bg-brand-600 text-white shadow-float ring-1 ring-white/25 transition-colors"
+      >
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 rounded-full"
+          style={{
+            background:
+              'linear-gradient(140deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.25) 20%, rgba(255,255,255,0.06) 40%, rgba(255,255,255,0) 56%)',
+          }}
+        />
+        <span
+          aria-hidden
+          className="pointer-events-none absolute -bottom-3 -right-3 h-12 w-12 rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.20), transparent 70%)' }}
+        />
+        <AnaIcon size={30} className="relative" />
+      </button>
 
       {askOpen && <AskNotesSheet open={askOpen} onClose={() => setAskOpen(false)} notes={notes ?? []} />}
       {helpOpen && <HelpAssistant open={helpOpen} onClose={() => setHelpOpen(false)} />}
@@ -358,42 +319,7 @@ export function Home() {
         />
       )}
 
-      <Sheet open={newOpen} onClose={() => setNewOpen(false)} title={t('new.title')}>
-        <div className="space-y-3">
-          <NewOption icon={<Headphones size={20} />} label={t('new.recordMeeting')} hint={t('new.recordMeetingHint')} onClick={() => startCapture('meeting')} />
-          <NewOption icon={<Upload size={20} />} label={t('new.uploadAudio')} hint={t('new.uploadAudioHint')} onClick={() => startCapture('upload')} />
-          <NewOption icon={<Video size={20} />} label={t('new.uploadVideo')} hint={t('new.uploadVideoHint')} onClick={() => startCapture('video')} />
-          <NewOption icon={<FileText size={20} />} label={t('new.file')} hint={t('new.fileHint')} onClick={() => startCapture('file')} />
-          <NewOption icon={<Link2 size={20} />} label={t('new.link')} hint={t('new.linkHint')} onClick={() => startCapture('link')} />
-        </div>
-      </Sheet>
+      {newOpen && <NewNoteSheet open={newOpen} onClose={() => setNewOpen(false)} />}
     </div>
-  )
-}
-
-function NewOption({
-  icon,
-  label,
-  hint,
-  onClick,
-}: {
-  icon: React.ReactNode
-  label: string
-  hint: string
-  onClick: () => void
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="w-full flex items-center gap-4 bg-surface-elevated border border-surface-border rounded-2xl px-4 py-3.5 text-left hover:border-accent/40 transition-colors"
-    >
-      <div className="grid place-items-center h-10 w-10 rounded-full bg-accent/10 text-accent shrink-0">
-        {icon}
-      </div>
-      <div>
-        <p className="font-medium">{label}</p>
-        <p className="text-sm text-content-muted">{hint}</p>
-      </div>
-    </button>
   )
 }

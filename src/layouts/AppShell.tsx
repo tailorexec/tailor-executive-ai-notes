@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Home, Phone, Settings as SettingsIcon, Sparkles, ShieldCheck, Mic, ListChecks } from 'lucide-react'
+import { Home, Phone, Settings as SettingsIcon, Sparkles, Mic, ListChecks, LayoutGrid } from 'lucide-react'
 import { AnaIcon } from '../components/AnaIcon'
 import { useAuth } from '../auth/AuthProvider'
 import { Logo } from '../components/Logo'
 import { Avatar } from '../components/ui'
 import { AnnouncementBanner } from '../components/AnnouncementBanner'
+import { NewNoteSheet } from '../components/NewNoteSheet'
 import { useAppSettings } from '../app/SettingsProvider'
 import { Maintenance } from '../pages/Maintenance'
 import { HelpAssistant } from '../pages/HelpAssistant'
@@ -24,7 +25,6 @@ const ITEMS: Item[] = [
   { to: '/', icon: <Home size={20} />, labelKey: 'nav.notes' },
   { to: '/tarefas', icon: <ListChecks size={20} />, labelKey: 'nav.tasks' },
   { to: '/discador', icon: <Phone size={20} />, labelKey: 'nav.dialer' },
-  { to: '/admin', icon: <ShieldCheck size={20} />, labelKey: 'nav.admin', adminOnly: true },
   { to: '/config', icon: <SettingsIcon size={20} />, labelKey: 'nav.config' },
 ]
 
@@ -34,6 +34,7 @@ function Sidebar() {
   const navigate = useNavigate()
   const t = useT()
   const [helpOpen, setHelpOpen] = useState(false)
+  const [newOpen, setNewOpen] = useState(false)
 
   return (
     <aside className="hidden md:flex fixed inset-y-0 left-0 w-64 flex-col border-r border-surface-border bg-surface-card z-40">
@@ -42,7 +43,7 @@ function Sidebar() {
       </div>
 
       <button
-        onClick={() => navigate('/capturar')}
+        onClick={() => setNewOpen(true)}
         className="btn-primary mx-4 mb-6 py-3 rounded-2xl shadow-float"
       >
         <Sparkles size={18} />
@@ -101,6 +102,7 @@ function Sidebar() {
       </div>
 
       {helpOpen && <HelpAssistant open={helpOpen} onClose={() => setHelpOpen(false)} />}
+      {newOpen && <NewNoteSheet open={newOpen} onClose={() => setNewOpen(false)} />}
     </aside>
   )
 }
@@ -124,9 +126,9 @@ function NavItem({ to, icon, label }: { to: string; icon: React.ReactNode; label
 }
 
 function BottomNav() {
-  const { isAdmin } = useAuth()
   const navigate = useNavigate()
   const t = useT()
+  const [newOpen, setNewOpen] = useState(false)
 
   return (
     <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 safe-bottom">
@@ -145,14 +147,17 @@ function BottomNav() {
             </button>
           </div>
 
-          {isAdmin ? (
-            <NavItem to="/admin" icon={<ShieldCheck size={20} />} label={t('nav.admin')} />
-          ) : (
-            <div className="flex-1" />
-          )}
+          <button
+            onClick={() => setNewOpen(true)}
+            className="flex flex-col items-center justify-center gap-1 flex-1 py-1.5 text-[11px] font-medium text-content-muted hover:text-content-secondary transition-colors"
+          >
+            <LayoutGrid size={20} />
+            <span>{t('nav.more')}</span>
+          </button>
           <NavItem to="/config" icon={<SettingsIcon size={20} />} label={t('nav.config')} />
         </div>
       </div>
+      {newOpen && <NewNoteSheet open={newOpen} onClose={() => setNewOpen(false)} />}
     </nav>
   )
 }

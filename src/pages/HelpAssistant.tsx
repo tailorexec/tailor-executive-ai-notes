@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { Send, Sparkles } from 'lucide-react'
+import { Send } from 'lucide-react'
 import { Sheet, Spinner } from '../components/ui'
+import { AnaIcon } from '../components/AnaIcon'
 import { askHelp } from '../lib/ai'
 
 const SUGGESTIONS = [
@@ -35,10 +36,12 @@ export function HelpAssistant({ open, onClose }: { open: boolean; onClose: () =>
   }
 
   return (
-    <Sheet open={open} onClose={onClose} title="ANA — Ajuda">
-      <div className="flex items-center gap-2 text-xs text-content-muted mb-3">
-        <Sparkles size={14} className="text-accent" />
-        Pergunte como usar o aplicativo. Só respondo sobre as funções da plataforma.
+    <Sheet open={open} onClose={onClose} title="ANA">
+      <div className="flex items-center gap-2 text-sm font-medium text-content-secondary mb-3">
+        <span className="grid place-items-center h-7 w-7 rounded-full bg-brand-500 text-white shrink-0">
+          <AnaIcon size={16} />
+        </span>
+        Sou a ANA, pergunte o que quiser.
       </div>
 
       <div className="max-h-72 overflow-y-auto space-y-2 mb-3 pr-1">
