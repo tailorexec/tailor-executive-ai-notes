@@ -26,7 +26,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     root.classList.toggle('dark', theme === 'dark')
     localStorage.setItem(KEY, theme)
     const meta = document.querySelector('meta[name="theme-color"]')
-    meta?.setAttribute('content', theme === 'dark' ? '#010101' : '#F5F4F2')
+    meta?.setAttribute('content', theme === 'dark' ? '#010101' : '#FFFFFF')
   }, [theme])
 
   const setTheme = (t: Theme) => setThemeState(t)

@@ -5,10 +5,10 @@
 /* ---- Theme tokens (light default, dark override) ---- */
 @layer base {
   :root {
-    --surface-bg: 243 241 236;      /* off-white (mais agradavel que branco puro) */
-    --surface-card: 255 255 255;    /* white cards */
-    --surface-elevated: 255 255 255;
-    --surface-border: 226 224 220;  /* soft border */
+    --surface-bg: 255 255 255;      /* branco puro */
+    --surface-card: 255 255 255;    /* cards brancos: destacam do fundo pela sombra (shadow-card) + borda */
+    --surface-elevated: 244 245 247;/* cinza bem claro: inputs, botoes secundarios, chips e icones */
+    --surface-border: 228 228 232;  /* borda sutil, um pouco mais definida sobre o branco */
 
     --content-primary: 10 10 11;    /* near-ink text */
     --content-secondary: 74 74 78;
