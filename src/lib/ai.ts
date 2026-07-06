@@ -133,15 +133,25 @@ export async function generateMindMap(transcript: string, meta: AiMeta = {}): Pr
   return r.mindmap
 }
 
+export type FeedbackAudience = 'cliente' | 'candidato' | 'colega' | 'outro'
+export type FeedbackTone = 'serio' | 'descontraido' | 'formal' | 'informal'
+
 export async function generateFeedback(
   transcript: string,
-  audience: 'cliente' | 'candidato',
+  opts: { audience: FeedbackAudience; customLabel?: string; tone: FeedbackTone },
 ): Promise<string> {
+  const { audience, customLabel, tone } = opts
   if (config.mockMode) {
     await delay(1000)
     return mockFeedback(transcript, audience)
   }
-  const r = await invoke<{ feedback: string }>('ai', { task: 'feedback', transcript, audience })
+  const r = await invoke<{ feedback: string }>('ai', {
+    task: 'feedback',
+    transcript,
+    audience,
+    customLabel: customLabel ?? '',
+    tone,
+  })
   return r.feedback
 }
 

@@ -33,7 +33,7 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         // Nao precachear os pesados de extracao de PDF/DOCX (carregam sob demanda).
-        globIgnores: ['**/pdf-*.js', '**/pdf.worker*', '**/mammoth-*.js'],
+        globIgnores: ['**/pdf-*.js', '**/pdf.worker*', '**/mammoth-*.js', '**/jspdf*.js', '**/html2canvas*.js'],
         navigateFallbackDenylist: [/^\/api/],
         // Atualiza o app imediatamente ao publicar (evita servir versao antiga em cache).
         clientsClaim: true,

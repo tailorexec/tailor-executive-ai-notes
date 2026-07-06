@@ -2,13 +2,26 @@ import { useState } from 'react'
 import { Sparkles, Copy, Check, Mail } from 'lucide-react'
 import { Sheet, Spinner } from '../components/ui'
 import { generateFeedback } from '../lib/ai'
+import type { FeedbackAudience, FeedbackTone } from '../lib/ai'
 import { db } from '../lib/api'
 import { useAuth } from '../auth/AuthProvider'
 import { useT } from '../lib/i18n'
 import { useToast } from '../components/Toast'
 import type { Note } from '../lib/types'
 
-type Audience = 'cliente' | 'candidato'
+const AUDIENCES: { v: FeedbackAudience; label: string }[] = [
+  { v: 'cliente', label: 'Cliente' },
+  { v: 'candidato', label: 'Candidato' },
+  { v: 'colega', label: 'Colega' },
+  { v: 'outro', label: 'Outro' },
+]
+
+const TONES: { v: FeedbackTone; label: string }[] = [
+  { v: 'serio', label: 'Sério' },
+  { v: 'descontraido', label: 'Descontraído/Animado' },
+  { v: 'formal', label: 'Formal' },
+  { v: 'informal', label: 'Informal' },
+]
 
 export function FeedbackSheet({
   note,
@@ -22,15 +35,25 @@ export function FeedbackSheet({
   const { profile } = useAuth()
   const t = useT()
   const toast = useToast()
-  const [audience, setAudience] = useState<Audience>('cliente')
+  const [audience, setAudience] = useState<FeedbackAudience>('cliente')
+  const [customAudience, setCustomAudience] = useState('')
+  const [tone, setTone] = useState<FeedbackTone>('serio')
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
 
   async function generate() {
+    if (audience === 'outro' && !customAudience.trim()) {
+      toast('Diga para quem é o feedback (campo "Outro").', 'error')
+      return
+    }
     setLoading(true)
     try {
-      const fb = await generateFeedback(note.transcript, audience)
+      const fb = await generateFeedback(note.transcript, {
+        audience,
+        customLabel: audience === 'outro' ? customAudience.trim() : undefined,
+        tone,
+      })
       setText(fb)
       if (profile) await db.logUsage(profile.id, 'ai_feedback', note.id)
     } catch {
@@ -57,18 +80,46 @@ export function FeedbackSheet({
     <Sheet open={open} onClose={onClose} title={t('fb.title')}>
       <p className="text-sm text-content-secondary mb-3">{t('fb.intro')}</p>
 
-      <div className="flex gap-2 mb-4">
-        {(['cliente', 'candidato'] as Audience[]).map((a) => (
+      <label className="label">Para quem</label>
+      <div className="grid grid-cols-2 gap-2 mb-2">
+        {AUDIENCES.map((a) => (
           <button
-            key={a}
-            onClick={() => setAudience(a)}
-            className={`flex-1 py-2.5 rounded-xl text-sm font-medium border capitalize transition-colors ${
-              audience === a
+            key={a.v}
+            onClick={() => setAudience(a.v)}
+            className={`py-2.5 rounded-xl text-sm font-medium border transition-colors ${
+              audience === a.v
                 ? 'bg-brand-500 border-brand-500 text-white'
                 : 'bg-surface-elevated border-surface-border text-content-secondary'
             }`}
           >
-            {t(a === 'cliente' ? 'fb.client' : 'fb.candidate')}
+            {a.label}
+          </button>
+        ))}
+      </div>
+      {audience === 'outro' && (
+        <input
+          className="input mb-4"
+          placeholder="Ex: fornecedor, parceiro..."
+          maxLength={20}
+          value={customAudience}
+          onChange={(e) => setCustomAudience(e.target.value)}
+        />
+      )}
+      {audience !== 'outro' && <div className="mb-4" />}
+
+      <label className="label">Tom</label>
+      <div className="grid grid-cols-2 gap-2 mb-5">
+        {TONES.map((to) => (
+          <button
+            key={to.v}
+            onClick={() => setTone(to.v)}
+            className={`py-2.5 rounded-xl text-sm font-medium border transition-colors ${
+              tone === to.v
+                ? 'bg-brand-500 border-brand-500 text-white'
+                : 'bg-surface-elevated border-surface-border text-content-secondary'
+            }`}
+          >
+            {to.label}
           </button>
         ))}
       </div>

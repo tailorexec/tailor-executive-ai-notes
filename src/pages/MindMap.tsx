@@ -103,7 +103,7 @@ export function MindMapPage() {
           <p className="text-content-muted text-sm mt-1">{t('note.mindmapHint')}</p>
         </div>
       ) : note.mindmap ? (
-        <MindMapView map={note.mindmap} />
+        <MindMapView map={note.mindmap} title={note.title} />
       ) : (
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <p className="text-content-secondary mb-4">{t('common.error')}</p>

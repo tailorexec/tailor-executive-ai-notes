@@ -172,14 +172,26 @@ Foque em: tom, perguntas feitas e sugeridas, ritmo/andamento, pontos fortes, mel
       )
       out = { mindmap: extractJson(text, { central: 'Reuniao', branches: [] }) }
     } else if (task === 'feedback') {
-      const audience = body.audience === 'candidato' ? 'candidato' : 'cliente'
-      const alvo =
-        audience === 'candidato'
-          ? 'um candidato de um processo seletivo (recrutamento executivo)'
-          : 'um cliente da empresa'
+      const audience = String(body.audience ?? 'cliente')
+      const customLabel = String(body.customLabel ?? '').slice(0, 20).trim()
+      const tone = String(body.tone ?? 'serio')
+      const alvoMap: Record<string, string> = {
+        cliente: 'um cliente da empresa',
+        candidato: 'um candidato de um processo seletivo (recrutamento executivo)',
+        colega: 'um colega de trabalho',
+        outro: customLabel || 'a pessoa',
+      }
+      const alvo = alvoMap[audience] ?? 'um cliente da empresa'
+      const toneMap: Record<string, string> = {
+        serio: 'em tom serio e profissional',
+        descontraido: 'em tom descontraido e animado, leve e positivo',
+        formal: 'em tom formal e cerimonioso',
+        informal: 'em tom informal e proximo, como uma conversa',
+      }
+      const tomInstr = toneMap[tone] ?? toneMap.serio
       const text = await claude(
         SONNET,
-        `Voce e um executivo escrevendo um feedback profissional, cordial e objetivo para ${alvo}, em portugues do Brasil. Baseie-se apenas nos dados da reuniao; nao invente fatos. Formato de mensagem pronta para enviar (saudacao, pontos principais, proximos passos, encerramento).` + GUARD,
+        `Voce e um executivo escrevendo um feedback profissional, cordial e objetivo para ${alvo}, ${tomInstr}, em portugues do Brasil. Baseie-se apenas nos dados da reuniao; nao invente fatos. Formato de mensagem pronta para enviar (saudacao, pontos principais, proximos passos, encerramento).` + GUARD,
         `Escreva o feedback com base nos dados a seguir.\n\n${wrap(transcript)}`,
         1500,
       )

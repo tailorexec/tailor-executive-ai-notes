@@ -144,7 +144,7 @@ export function mockMindMap(transcript: string) {
   }
 }
 
-export function mockFeedback(transcript: string, audience: 'cliente' | 'candidato'): string {
+export function mockFeedback(transcript: string, audience: string): string {
   const s = sentences(transcript)
   const pts = pick(s, 3).map((x) => `- ${x.replace(/[.!?]+$/, '')}.`).join('\n')
   const saud = audience === 'candidato' ? 'Ola,' : 'Prezado(a),'
