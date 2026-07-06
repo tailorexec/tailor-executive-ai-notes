@@ -11,12 +11,13 @@ import {
   MessageSquare,
   Phone,
   Plus,
+  Mail,
 } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
 import { useT } from '../lib/i18n'
 import { Logo } from '../components/Logo'
 import { ThemeToggle } from '../components/ThemeToggle'
-import { Spinner } from '../components/ui'
+import { Spinner, Sheet } from '../components/ui'
 import { config } from '../lib/config'
 
 const FEATURES = [
@@ -100,6 +101,7 @@ export function Login() {
   const [show, setShow] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [loginOpen, setLoginOpen] = useState(false)
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -119,135 +121,149 @@ export function Login() {
   const t = useT()
 
   return (
-    <div className="min-h-screen lg:h-screen flex flex-col safe-top lg:overflow-hidden">
+    <div className="min-h-screen flex flex-col safe-top">
       {/* Video de fundo no desktop (claro e escuro); no mobile usa o fundo tecnologico */}
       {isDesktop ? <VideoBackground /> : <TechBackground />}
 
-      <header className="flex items-start justify-between px-6 pt-6 md:pt-4 md:shrink-0">
-        <Logo size="md" heightClass="h-11 md:h-12" className="mt-1" />
+      <header className="flex items-center justify-end px-6 pt-6 md:pt-4 md:shrink-0">
         <ThemeToggle />
       </header>
 
-      <main className="flex-1 min-h-0 flex flex-col items-center lg:justify-center px-6 py-10 md:py-4 lg:py-5 w-full max-w-6xl mx-auto">
+      <main className="flex-1 flex flex-col items-center px-6 py-8 md:py-6 w-full max-w-4xl mx-auto">
+        {/* Logo centralizada, perto do titulo */}
+        <Logo size="md" heightClass="h-[53px] md:h-[58px]" className="mb-5" />
+
         {/* Hero */}
         <div className="text-center max-w-2xl">
-          <h1 className="font-display text-4xl sm:text-5xl md:text-3xl lg:text-4xl font-bold leading-tight dark:[text-shadow:0_2px_14px_rgba(0,0,0,0.55)]">
+          <h1 className="font-display text-4xl sm:text-5xl md:text-4xl font-bold leading-tight dark:[text-shadow:0_2px_14px_rgba(0,0,0,0.55)]">
             {t('login.heroTitle')}
           </h1>
-          <p className="text-content-secondary mt-4 md:mt-2 text-lg md:text-sm lg:text-base dark:[text-shadow:0_1px_10px_rgba(0,0,0,0.5)]">
+          <p className="text-content-secondary mt-4 md:mt-3 text-lg md:text-base dark:[text-shadow:0_1px_10px_rgba(0,0,0,0.5)]">
             {t('login.heroSub')}
           </p>
         </div>
 
-        {/* Conteudo: funcionalidades + login */}
-        <div className="grid lg:grid-cols-2 gap-8 md:gap-5 lg:gap-8 lg:items-stretch w-full max-w-4xl mx-auto mt-10 md:mt-6">
-          {/* Funcionalidades */}
-          <div className="order-2 lg:order-1">
-            <h2 className="font-display text-lg md:text-base font-semibold mb-4 md:mb-3">{t('login.whatItDoes')}</h2>
-            <div className="grid sm:grid-cols-2 gap-3 md:gap-2">
-              {FEATURES.map((f) => (
-                <div key={f.k} className="card p-4 md:p-3 flex gap-3 md:gap-2">
-                  <div className="grid place-items-center h-9 w-9 md:h-8 md:w-8 rounded-xl bg-accent/10 text-accent shrink-0">
-                    {f.icon}
-                  </div>
-                  <div>
-                    <p className="font-medium text-sm">{t(`login.${f.k}t`)}</p>
-                    <p className="text-content-muted text-xs mt-0.5 leading-relaxed md:leading-snug">{t(`login.${f.k}d`)}</p>
-                  </div>
+        {/* Card: Entrar com e-mail (abre o popup de login) */}
+        <button
+          onClick={() => setLoginOpen(true)}
+          className="card w-full max-w-sm mx-auto mt-8 p-4 flex items-center justify-center gap-3 shadow-float hover:shadow-hover transition-shadow"
+        >
+          <span className="grid place-items-center h-9 w-9 rounded-xl bg-accent/10 text-accent shrink-0">
+            <Mail size={18} />
+          </span>
+          <span className="font-semibold">{t('login.signinEmail')}</span>
+        </button>
+
+        <p className="text-center text-content-secondary mt-4">
+          {t('login.noAccount')}{' '}
+          <Link to="/cadastro" className="text-accent font-medium hover:underline">
+            {t('login.createAccount')}
+          </Link>
+        </p>
+
+        {/* O que a plataforma faz — centralizado */}
+        <div className="w-full max-w-3xl mx-auto mt-12 text-center">
+          <h2 className="font-display text-lg md:text-xl font-semibold mb-5">{t('login.whatItDoes')}</h2>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {FEATURES.map((f) => (
+              <div key={f.k} className="card p-4 flex gap-3 text-left">
+                <div className="grid place-items-center h-9 w-9 rounded-xl bg-accent/10 text-accent shrink-0">
+                  {f.icon}
                 </div>
-              ))}
-              <div className="card p-4 md:p-3 flex items-center gap-3 md:gap-2 border-dashed">
-                <div className="grid place-items-center h-9 w-9 md:h-8 md:w-8 rounded-xl bg-accent/10 text-accent shrink-0">
-                  <Plus size={18} />
+                <div>
+                  <p className="font-medium text-sm">{t(`login.${f.k}t`)}</p>
+                  <p className="text-content-muted text-xs mt-0.5 leading-relaxed">{t(`login.${f.k}d`)}</p>
                 </div>
-                <p className="font-medium text-sm">{t('login.more')}</p>
               </div>
-            </div>
-          </div>
-
-          {/* Login */}
-          <div className="order-1 lg:order-2 w-full max-w-md mx-auto h-full">
-            <div className="card p-6 sm:p-8 md:p-6 shadow-float h-full flex flex-col justify-center">
-              <h2 className="font-display text-2xl font-bold">{t('login.signin')}</h2>
-              <p className="text-content-secondary mt-1 mb-6 md:mb-4">{t('login.signinSub')}</p>
-
-              {config.mockMode && (
-                <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
-                  <p className="font-medium">Modo demonstração ativo.</p>
-                  <p className="mt-1">
-                    Este ambiente não está usando o Supabase real. Para entrar com a conta corporativa,
-                    defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no Vercel ou no ambiente de deploy.
-                  </p>
-                </div>
-              )}
-
-              <form onSubmit={onSubmit} className="space-y-4">
-                <div>
-                  <label className="label" htmlFor="email">{t('login.email')}</label>
-                  <input
-                    id="email"
-                    type="email"
-                    autoComplete="email"
-                    className="input"
-                    placeholder={`nome@${config.allowedDomain}`}
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="label" htmlFor="password">{t('login.password')}</label>
-                  <div className="relative">
-                    <input
-                      id="password"
-                      type={show ? 'text' : 'password'}
-                      autoComplete="current-password"
-                      className="input pr-12"
-                      placeholder={t('login.yourPassword')}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShow((s) => !s)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-content-muted hover:text-content-primary"
-                      aria-label={show ? 'Ocultar senha' : 'Mostrar senha'}
-                    >
-                      {show ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                  </div>
-                </div>
-
-                {error && (
-                  <div className="text-sm text-accent bg-accent/10 border border-accent/20 rounded-xl px-4 py-3">
-                    {error}
-                  </div>
-                )}
-
-                <button type="submit" className="btn-primary w-full py-3" disabled={loading}>
-                  {loading ? <Spinner /> : t('login.signin')}
-                </button>
-              </form>
-
-              <p className="text-center text-content-secondary mt-6">
-                {t('login.noAccount')}{' '}
-                <Link to="/cadastro" className="text-accent font-medium hover:underline">
-                  {t('login.createAccount')}
-                </Link>
-              </p>
-
-              {config.mockMode && (
-                <div className="mt-6 text-xs text-content-muted bg-surface-elevated border border-surface-border rounded-xl p-4">
-                  <p className="font-medium text-content-secondary mb-1">Modo demonstração (sem backend)</p>
-                  <p>Admin: {config.adminEmail} / Tailor@007</p>
-                </div>
-              )}
+            ))}
+            <div className="card p-4 flex items-center gap-3 border-dashed">
+              <div className="grid place-items-center h-9 w-9 rounded-xl bg-accent/10 text-accent shrink-0">
+                <Plus size={18} />
+              </div>
+              <p className="font-medium text-sm text-left">{t('login.more')}</p>
             </div>
           </div>
         </div>
       </main>
+
+      {/* Popup de login */}
+      <Sheet open={loginOpen} onClose={() => setLoginOpen(false)} title={t('login.signin')}>
+        <p className="text-content-secondary -mt-2 mb-5">{t('login.signinSub')}</p>
+
+        {config.mockMode && (
+          <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
+            <p className="font-medium">Modo demonstração ativo.</p>
+            <p className="mt-1">
+              Este ambiente não está usando o Supabase real. Para entrar com a conta corporativa,
+              defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no Vercel ou no ambiente de deploy.
+            </p>
+          </div>
+        )}
+
+        <form onSubmit={onSubmit} className="space-y-4">
+          <div>
+            <label className="label" htmlFor="email">{t('login.email')}</label>
+            <input
+              id="email"
+              type="email"
+              autoComplete="email"
+              className="input"
+              placeholder={`nome@${config.allowedDomain}`}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+
+          <div>
+            <label className="label" htmlFor="password">{t('login.password')}</label>
+            <div className="relative">
+              <input
+                id="password"
+                type={show ? 'text' : 'password'}
+                autoComplete="current-password"
+                className="input pr-12"
+                placeholder={t('login.yourPassword')}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShow((s) => !s)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-content-muted hover:text-content-primary"
+                aria-label={show ? 'Ocultar senha' : 'Mostrar senha'}
+              >
+                {show ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </div>
+
+          {error && (
+            <div className="text-sm text-accent bg-accent/10 border border-accent/20 rounded-xl px-4 py-3">
+              {error}
+            </div>
+          )}
+
+          <button type="submit" className="btn-primary w-full py-3" disabled={loading}>
+            {loading ? <Spinner /> : t('login.signin')}
+          </button>
+        </form>
+
+        <p className="text-center text-content-secondary mt-6">
+          {t('login.noAccount')}{' '}
+          <Link to="/cadastro" className="text-accent font-medium hover:underline">
+            {t('login.createAccount')}
+          </Link>
+        </p>
+
+        {config.mockMode && (
+          <div className="mt-6 text-xs text-content-muted bg-surface-elevated border border-surface-border rounded-xl p-4">
+            <p className="font-medium text-content-secondary mb-1">Modo demonstração (sem backend)</p>
+            <p>Admin: {config.adminEmail} / Tailor@007</p>
+          </div>
+        )}
+      </Sheet>
 
       <footer className="text-center py-6 md:py-3 text-sm text-content-muted md:shrink-0">
         A N A Technology by{' '}
