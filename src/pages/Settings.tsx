@@ -258,7 +258,7 @@ export function Settings() {
 
       <div className="flex flex-col items-center gap-2 pb-4 text-content-muted">
         <Logo size="lg" />
-        <p className="text-xs">ANA by Tailor • v0.2.6</p>
+        <p className="text-xs">ANA by Tailor • v0.2.7</p>
       </div>
     </div>
   )

@@ -122,10 +122,7 @@ export function Home() {
               AI NOTES ADVISOR
             </span>
           </div>
-          <div className="flex items-center gap-1.5 text-content-muted pt-0.5">
-            <span className="text-[11px] font-medium">by</span>
-            <Logo part="tailor" heightClass="h-[15px]" />
-          </div>
+          <Logo part="tailor" heightClass="h-7" className="pt-0.5" />
         </div>
         <div className="flex items-center justify-between">
           <h1 className="font-display text-2xl sm:text-3xl font-bold whitespace-nowrap">{t('home.title')}</h1>
