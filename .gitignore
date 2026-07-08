@@ -15,3 +15,6 @@ supabase/.temp
 
 .vercel
 .env*
+
+# APK baixado do workflow (nao versionar binario)
+apk-out/
