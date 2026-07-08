@@ -112,7 +112,7 @@ export function Home() {
 
 
   return (
-    <div className="px-5 pt-5 md:pt-6 safe-top md:h-[calc(100dvh-4rem)] md:flex md:flex-col md:overflow-hidden">
+    <div className="px-5 safe-top md:h-[calc(100dvh-4rem)] md:flex md:flex-col md:overflow-hidden">
       <header className="mb-4 md:shrink-0">
         {/* Mobile: logo ANA + "AI NOTES ADVISOR" embaixo (a esquerda); "by [Tailor]" no canto superior direito */}
         <div className="md:hidden flex items-start justify-between gap-3 mb-3">

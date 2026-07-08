@@ -280,7 +280,7 @@ export function Capture() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col px-5 pt-6 safe-top">
+    <div className="min-h-screen flex flex-col px-5 safe-top safe-bottom-2">
       <header className="flex items-center gap-3 mb-6">
         <button
           onClick={() => navigate(-1)}

@@ -132,9 +132,9 @@ function BottomNav() {
   const [newOpen, setNewOpen] = useState(false)
 
   return (
-    <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 safe-bottom">
-      <div className="mx-auto max-w-2xl px-4 pb-3">
-        <div className="relative flex items-center bg-surface-card/95 backdrop-blur border border-surface-border rounded-3xl shadow-float h-16 px-2">
+    <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 safe-bottom bg-surface-card/95 backdrop-blur border-t border-surface-border">
+      <div className="mx-auto max-w-2xl">
+        <div className="relative flex items-center h-16 px-2">
           <NavItem to="/" icon={<Home size={20} />} label={t('nav.notes')} />
           <NavItem to="/discador" icon={<Phone size={20} />} label={t('nav.dialer')} />
 
@@ -181,7 +181,7 @@ export function AppShell() {
     <div className="min-h-screen bg-surface-bg overflow-x-hidden">
       <Sidebar />
       <div className="md:pl-64">
-        <main className={`mx-auto w-full max-w-6xl overflow-x-hidden ${hideMobileNav ? '' : 'pb-28 md:pb-10'}`}>
+        <main className={`mx-auto w-full max-w-6xl overflow-x-hidden ${hideMobileNav ? '' : 'pb-nav'}`}>
           {!hideMobileNav && (
             <div className="px-5 pt-4">
               <AnnouncementBanner />

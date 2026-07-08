@@ -117,7 +117,7 @@ export function Settings() {
   }
 
   return (
-    <div className="px-5 pt-6 safe-top">
+    <div className="px-5 safe-top">
       <header className="flex items-center justify-between mb-6">
         <h1 className="font-display text-3xl font-bold">{t('settings.title')}</h1>
       </header>
@@ -258,7 +258,7 @@ export function Settings() {
 
       <div className="flex flex-col items-center gap-2 pb-4 text-content-muted">
         <Logo size="lg" />
-        <p className="text-xs">ANA by Tailor • v0.3.2</p>
+        <p className="text-xs">ANA by Tailor • v0.3.3</p>
       </div>
     </div>
   )

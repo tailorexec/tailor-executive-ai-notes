@@ -256,7 +256,7 @@ export function NoteDetail() {
 
   return (
     <div className="min-h-screen flex flex-col overflow-x-hidden">
-      <header className="sticky top-0 z-20 bg-surface-bg/90 backdrop-blur px-5 pt-6 pb-3 safe-top">
+      <header className="sticky top-0 z-20 bg-surface-bg/90 backdrop-blur px-5 pb-3 safe-top">
         <div className="flex items-center justify-between mb-3">
           <button
             onClick={() => navigate('/')}

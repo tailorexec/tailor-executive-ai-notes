@@ -40,7 +40,7 @@ export function TrashPage() {
   }
 
   return (
-    <div className="px-5 pt-6 safe-top">
+    <div className="px-5 safe-top">
       <header className="flex items-center gap-3 mb-6">
         <button
           onClick={() => navigate('/config')}

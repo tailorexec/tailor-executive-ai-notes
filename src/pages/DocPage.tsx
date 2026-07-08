@@ -6,7 +6,7 @@ import type { ReactNode } from 'react'
 export function DocPage({ title, children }: { title: string; children: ReactNode }) {
   const navigate = useNavigate()
   return (
-    <div className="px-5 pt-6 safe-top pb-16">
+    <div className="px-5 safe-top pb-16">
       <header className="flex items-center gap-3 mb-6">
         <button
           onClick={() => navigate('/config')}

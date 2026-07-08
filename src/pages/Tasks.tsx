@@ -75,7 +75,7 @@ export function TasksPage() {
   }
 
   return (
-    <div className="px-5 pt-6 safe-top">
+    <div className="px-5 safe-top">
       <header className="mb-4">
         <h1 className="font-display text-3xl font-bold flex items-center gap-2.5">
           <ListChecks size={26} className="text-accent" /> {t('tasks.title')}

@@ -116,11 +116,11 @@ export function Dialer() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col px-5 pt-6 safe-top">
-      <header className="flex items-center gap-3 mb-4">
+    <div className="h-[100dvh] overflow-hidden flex flex-col px-5 safe-top safe-bottom-2">
+      <header className="flex items-center gap-3 mb-3 shrink-0">
         <button
           onClick={() => navigate(-1)}
-          className="grid place-items-center h-10 w-10 rounded-full bg-surface-elevated border border-surface-border"
+          className="grid place-items-center h-10 w-10 rounded-full bg-surface-elevated border border-surface-border shrink-0"
           aria-label="Voltar"
         >
           <ArrowLeft size={18} />
@@ -129,7 +129,7 @@ export function Dialer() {
       </header>
 
       {inCall ? (
-        <div className="flex-1 flex flex-col items-center justify-center pb-20">
+        <div className="flex-1 min-h-0 flex flex-col items-center justify-center">
           <div className="relative mb-6">
             <div
               className="absolute inset-0 rounded-full bg-accent/25"
@@ -141,14 +141,14 @@ export function Dialer() {
           </div>
           <p className="font-display text-2xl font-bold">{number}</p>
           <p className="text-content-muted mt-1 mb-1">{t('dialer.recording')}</p>
-          <p className="font-mono text-lg tabular-nums mb-10">{fmtClock(recorder.seconds)}</p>
+          <p className="font-mono text-lg tabular-nums mb-8">{fmtClock(recorder.seconds)}</p>
           <button onClick={endCall} className="btn bg-brand-500 hover:bg-brand-600 text-white h-16 w-16 rounded-full p-0" aria-label="Encerrar">
             <Square size={26} />
           </button>
         </div>
       ) : (
-        <div className="flex-1 flex flex-col">
-          <div className="text-center py-6">
+        <div className="flex-1 min-h-0 flex flex-col">
+          <div className="text-center py-2 shrink-0">
             <input
               className="w-full bg-transparent text-center font-display text-3xl font-bold outline-none tracking-wide"
               placeholder={t('dialer.number')}
@@ -158,13 +158,14 @@ export function Dialer() {
             />
           </div>
 
+          {/* Historico absorve a sobra e rola por dentro: a pagina nunca rola */}
           {history.length > 0 && (
-            <div className="max-w-sm mx-auto w-full mb-4">
-              <div className="flex items-center justify-between mb-1 px-1">
+            <div className="max-w-sm mx-auto w-full mb-2 flex-1 min-h-0 flex flex-col">
+              <div className="flex items-center justify-between mb-1 px-1 shrink-0">
                 <p className="text-xs uppercase tracking-wide text-content-muted">{t('dialer.history')}</p>
                 <button className="text-xs text-accent" onClick={() => saveHistory([])}>{t('dialer.clear')}</button>
               </div>
-              <div className="space-y-1 max-h-40 overflow-y-auto">
+              <div className="space-y-1 overflow-y-auto flex-1 min-h-0">
                 {history.map((h, i) => (
                   <div key={i} className="flex items-center gap-2 rounded-xl bg-surface-elevated border border-surface-border px-3 py-2">
                     <button onClick={() => setNumber(h.number)} className="flex items-center gap-2 flex-1 min-w-0 text-left">
@@ -181,34 +182,34 @@ export function Dialer() {
             </div>
           )}
 
-          <div className="grid grid-cols-3 gap-4 max-w-xs mx-auto w-full mt-auto">
+          <div className="grid grid-cols-3 gap-3 max-w-xs mx-auto w-full mt-auto shrink-0">
             {KEYS.map((k) => (
               <button
                 key={k}
                 onClick={() => press(k)}
-                className="h-16 rounded-full bg-surface-elevated border border-surface-border font-display text-2xl font-semibold hover:border-accent/40 transition-colors"
+                className="h-14 rounded-full bg-surface-elevated border border-surface-border font-display text-2xl font-semibold hover:border-accent/40 transition-colors"
               >
                 {k}
               </button>
             ))}
           </div>
 
-          <div className="flex items-center justify-center gap-6 my-8">
-            <div className="w-16" />
+          <div className="flex items-center justify-center gap-6 mt-4 mb-1 shrink-0">
+            <div className="w-14" />
             <button
               onClick={requestCall}
               disabled={!number.trim()}
-              className="btn bg-green-600 hover:bg-green-700 text-white h-16 w-16 rounded-full p-0 disabled:opacity-40"
+              className="btn bg-green-600 hover:bg-green-700 text-white h-14 w-14 rounded-full p-0 disabled:opacity-40"
               aria-label="Ligar e gravar"
             >
-              <Phone size={26} />
+              <Phone size={24} />
             </button>
             <button
               onClick={backspace}
-              className="grid place-items-center h-16 w-16 text-content-muted hover:text-content-primary"
+              className="grid place-items-center h-14 w-14 text-content-muted hover:text-content-primary"
               aria-label="Apagar"
             >
-              <Delete size={24} />
+              <Delete size={22} />
             </button>
           </div>
         </div>

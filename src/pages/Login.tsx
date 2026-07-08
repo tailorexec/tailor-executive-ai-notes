@@ -121,15 +121,16 @@ export function Login() {
   const t = useT()
 
   return (
-    <div className="min-h-screen flex flex-col safe-top">
+    <div className="min-h-[100dvh] flex flex-col safe-top">
       {/* Video de fundo no desktop (claro e escuro); no mobile usa o fundo tecnologico */}
       {isDesktop ? <VideoBackground /> : <TechBackground />}
 
-      <header className="flex items-center justify-end px-6 pt-6 md:pt-4 md:shrink-0">
+      <header className="flex items-center justify-end px-6 md:shrink-0">
         <ThemeToggle />
       </header>
 
-      <main className="flex-1 flex flex-col items-center px-6 py-8 md:py-6 w-full max-w-4xl mx-auto">
+      {/* min-h (nao h) + justify-center: centraliza quando cabe e nao corta o topo quando nao cabe */}
+      <main className="flex-1 flex flex-col items-center justify-center px-6 py-8 md:py-6 w-full max-w-4xl mx-auto">
         {/* Logo centralizada, perto do titulo */}
         <Logo size="md" heightClass="h-[53px] md:h-[58px]" className="mb-5" />
 
@@ -265,7 +266,7 @@ export function Login() {
         )}
       </Sheet>
 
-      <footer className="text-center py-6 md:py-3 text-sm text-content-muted md:shrink-0">
+      <footer className="text-center py-6 md:py-3 text-sm text-content-muted md:shrink-0 safe-bottom">
         A N A Technology by{' '}
         <a
           href="https://tailorexec.com.br"

@@ -31,7 +31,7 @@ export function NotificationsPage() {
   ]
 
   return (
-    <div className="px-5 pt-6 safe-top">
+    <div className="px-5 safe-top">
       <header className="flex items-center gap-3 mb-6">
         <button onClick={() => navigate('/config')} className="grid place-items-center h-10 w-10 rounded-full bg-surface-elevated border border-surface-border" aria-label="Voltar">
           <ArrowLeft size={18} />
