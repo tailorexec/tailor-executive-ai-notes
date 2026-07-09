@@ -9,6 +9,7 @@ import { currentDevice } from '../lib/device'
 import { isSilentAudio } from '../lib/audioLevel'
 import { fmtClock, fmtTime } from '../lib/format'
 import { Sheet, Spinner } from '../components/ui'
+import { RecordingNotice } from '../components/ConsentSheet'
 import { useT } from '../lib/i18n'
 
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#']
@@ -145,6 +146,7 @@ export function Dialer() {
           <button onClick={endCall} className="btn bg-brand-500 hover:bg-brand-600 text-white h-16 w-16 rounded-full p-0" aria-label="Encerrar">
             <Square size={26} />
           </button>
+          <RecordingNotice />
         </div>
       ) : (
         <div className="flex-1 min-h-0 flex flex-col">

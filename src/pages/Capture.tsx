@@ -22,6 +22,8 @@ import { isSilentAudio } from '../lib/audioLevel'
 import { currentDevice } from '../lib/device'
 import { fmtClock, fmtDuration } from '../lib/format'
 import { Spinner } from '../components/ui'
+import { ConsentSheet, RecordingNotice } from '../components/ConsentSheet'
+import { hasRecordingConsent, setRecordingConsent } from '../lib/consent'
 import { TEMPLATES } from '../lib/templates'
 import type { NoteSourceType } from '../lib/types'
 
@@ -56,6 +58,28 @@ export function Capture() {
   const isAudioMode = mode === 'record' || mode === 'meeting'
   // No web-mobile a captura do audio interno nao existe: mostramos so um aviso, sem formulario.
   const meetingBlocked = mode === 'meeting' && !canCaptureSystemAudio()
+
+  // Aviso de gravacao: exibido uma vez por usuario, antes da primeira gravacao.
+  const [consentOpen, setConsentOpen] = useState(false)
+  const pendingStartRef = useRef<null | (() => Promise<void>)>(null)
+
+  /** Garante o aceite do aviso antes de iniciar qualquer captura de audio. */
+  function withConsent(start: () => Promise<void>) {
+    if (hasRecordingConsent(profile?.id)) {
+      void start()
+      return
+    }
+    pendingStartRef.current = start
+    setConsentOpen(true)
+  }
+
+  function acceptConsent() {
+    setRecordingConsent(profile?.id)
+    setConsentOpen(false)
+    const start = pendingStartRef.current
+    pendingStartRef.current = null
+    if (start) void start()
+  }
 
   async function startRecord() {
     autoStoppedRef.current = false
@@ -414,7 +438,7 @@ export function Capture() {
                 <p className="text-xs text-content-muted mt-3">
                   Gravamos o áudio da reunião + seu microfone juntos. Nada de vídeo é enviado.
                 </p>
-                <button className="btn-primary w-full mt-5" onClick={startMeeting}>
+                <button className="btn-primary w-full mt-5" onClick={() => withConsent(startMeeting)}>
                   <Headphones size={18} /> Iniciar gravacao da reuniao
                 </button>
               </div>
@@ -428,14 +452,14 @@ export function Capture() {
               <p className="text-content-secondary mt-2 text-sm">
                 Preencha titulo, tema e contexto acima (opcionais) e inicie quando quiser.
               </p>
-              <button className="btn-primary w-full mt-5" onClick={startRecord}>
+              <button className="btn-primary w-full mt-5" onClick={() => withConsent(startRecord)}>
                 <Mic size={18} /> Iniciar gravacao
               </button>
             </div>
           ) : recorder.error ? (
             <div className="text-center max-w-sm">
               <p className="text-accent mb-4">{recorder.error}</p>
-              <button className="btn-primary mx-auto" onClick={mode === 'meeting' ? startMeeting : startRecord}>
+              <button className="btn-primary mx-auto" onClick={() => withConsent(mode === 'meeting' ? startMeeting : startRecord)}>
                 Tentar novamente
               </button>
             </div>
@@ -491,6 +515,7 @@ export function Capture() {
                   ? 'Mantenha a aba da reuniao aberta. Encerrar aqui ou "Parar compartilhamento" finaliza a gravacao.'
                   : 'Dica: em reunioes por telefone, use o viva-voz para captar melhor as duas vozes.'}
               </p>
+              <RecordingNotice />
             </>
           )}
         </div>
@@ -577,6 +602,15 @@ export function Capture() {
           </p>
         </div>
       )}
+
+      <ConsentSheet
+        open={consentOpen}
+        onAccept={acceptConsent}
+        onClose={() => {
+          pendingStartRef.current = null
+          setConsentOpen(false)
+        }}
+      />
     </div>
   )
 }
