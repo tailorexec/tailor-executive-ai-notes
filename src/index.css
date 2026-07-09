@@ -20,18 +20,22 @@
   }
 
   .dark {
-    /* Fundo cinza escuro (nao mais preto). Elevacao = mais CLARO, para os
-       elementos se destacarem do fundo. */
-    --surface-bg: 38 38 38;         /* #262626 */
-    --surface-card: 47 47 50;       /* #2F2F32 */
-    --surface-elevated: 60 60 64;   /* #3C3C40 */
-    --surface-border: 78 78 83;     /* #4E4E53 */
+    /* Fundo cinza escuro (nao mais preto). Elevacao = mais CLARO: cards, menu,
+       busca e botoes ficam bem acima do fundo, mantendo o texto branco. */
+    --surface-bg: 38 38 38;         /* #262626 pagina */
+    --surface-card: 62 62 66;       /* #3E3E42 cards, menu */
+    --surface-elevated: 78 78 84;   /* #4E4E54 botoes, inputs, busca */
+    --surface-border: 99 99 106;    /* #63636A */
 
+    /* Texto clareado: nas superficies mais claras o cinza antigo perdia contraste. */
     --content-primary: 245 245 245;
-    --content-secondary: 190 190 192;
-    --content-muted: 150 149 147;
+    --content-secondary: 209 209 211;
+    --content-muted: 196 196 198;   /* #C4C4C6 -> 4.7:1 ate no input */
 
-    --accent: 241 12 39;           /* no escuro usa o vermelho vivo p/ contraste */
+    /* Com as superficies mais claras, o vermelho vivo (#F10C27) caiu para 1.9:1 nos
+       botoes/inputs. Este tom passa em card (4.4:1) e elevated (3.4:1).
+       Preenchimentos solidos continuam no vermelho da marca (bg-brand-500). */
+    --accent: 255 129 137;         /* #FF8189 */
 
     color-scheme: dark;
   }
