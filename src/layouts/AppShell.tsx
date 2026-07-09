@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Home, Phone, Settings as SettingsIcon, Sparkles, Mic, ListChecks, CalendarDays } from 'lucide-react'
+import { Home, Phone, Settings as SettingsIcon, Sparkles, Mic, ListChecks, CalendarDays, LogOut } from 'lucide-react'
 import { AnaIcon } from '../components/AnaIcon'
 import { useAuth } from '../auth/AuthProvider'
 import { Logo } from '../components/Logo'
@@ -23,17 +23,17 @@ interface Item {
   adminOnly?: boolean
 }
 
+/** Menu da sidebar (desktop). "Config" nao entra aqui: virou a engrenagem no rodape. */
 const ITEMS: Item[] = [
   { to: '/', icon: <Home size={20} />, labelKey: 'nav.notes' },
   { to: '/tarefas', icon: <ListChecks size={20} />, labelKey: 'nav.tasks' },
   { to: '/agenda', icon: <CalendarDays size={20} />, labelKey: 'nav.agenda' },
   { to: '/discador', icon: <Phone size={20} />, labelKey: 'nav.dialer' },
-  { to: '/config', icon: <SettingsIcon size={20} />, labelKey: 'nav.config' },
 ]
 
 /* ---------- Desktop sidebar (SaaS layout) ---------- */
 function Sidebar() {
-  const { isAdmin, profile } = useAuth()
+  const { isAdmin, profile, signOut } = useAuth()
   const navigate = useNavigate()
   const t = useT()
   const [helpOpen, setHelpOpen] = useState(false)
@@ -97,8 +97,8 @@ function Sidebar() {
         <Logo part="tailor" heightClass="h-[18px]" className="opacity-80" />
       </div>
 
-      <div className="p-3 border-t border-surface-border">
-        <button onClick={() => navigate('/config')} className="flex items-center gap-3 w-full min-w-0 text-left">
+      <div className="p-3 border-t border-surface-border flex items-center gap-2">
+        <button onClick={() => navigate('/config')} className="flex items-center gap-3 flex-1 min-w-0 text-left">
           {profile && <Avatar first={profile.first_name} last={profile.last_name} size={36} url={profile.avatar_url} />}
           <div className="min-w-0">
             <p className="text-sm font-medium truncate">
@@ -106,6 +106,23 @@ function Sidebar() {
             </p>
             <p className="text-xs text-content-muted truncate">{profile?.email}</p>
           </div>
+        </button>
+
+        <button
+          onClick={() => navigate('/config')}
+          aria-label={t('nav.config')}
+          title={t('nav.config')}
+          className="grid place-items-center h-9 w-9 rounded-xl text-content-secondary hover:bg-surface-elevated hover:text-content-primary transition-colors shrink-0"
+        >
+          <SettingsIcon size={18} />
+        </button>
+        <button
+          onClick={signOut}
+          aria-label={t('settings.logout')}
+          title={t('settings.logout')}
+          className="grid place-items-center h-9 w-9 rounded-xl text-content-secondary hover:bg-accent/10 hover:text-accent transition-colors shrink-0"
+        >
+          <LogOut size={18} />
         </button>
       </div>
 

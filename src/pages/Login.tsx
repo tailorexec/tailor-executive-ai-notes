@@ -93,8 +93,9 @@ export function Login() {
       <Backdrop />
 
       <header className="flex items-center justify-between gap-4 px-6 md:px-10 pb-6 shrink-0">
-        <Logo part="ana" heightClass="h-9 md:h-11" />
-        <Logo part="tailor" heightClass="h-5 md:h-6" />
+        {/* A tela e sempre escura, independente do tema do usuario: arte branca fixa. */}
+        <Logo part="ana" heightClass="h-9 md:h-11" variant="dark" />
+        <Logo part="tailor" heightClass="h-5 md:h-6" variant="dark" />
       </header>
 
       <main className="flex-1 w-full max-w-6xl mx-auto px-6 md:px-10 pb-10">

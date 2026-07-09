@@ -8,6 +8,7 @@ import {
   NotebookPen,
   MessageSquare,
   ChevronRight,
+  ChevronDown,
   ArrowDownUp,
   Smartphone,
   Monitor,
@@ -208,13 +209,14 @@ export function Home() {
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as 'recent' | 'oldest' | 'longest')}
-              className="bg-transparent focus:outline-none cursor-pointer"
+              className="appearance-none border-0 bg-transparent pr-1 focus:outline-none cursor-pointer"
               aria-label="Ordenar notas"
             >
               <option value="recent">{t('home.sortRecent')}</option>
               <option value="oldest">{t('home.sortOldest')}</option>
               <option value="longest">{t('home.sortLongest')}</option>
             </select>
+            <ChevronDown size={14} className="text-content-muted -ml-0.5 pointer-events-none" />
           </div>
         </div>
       )}

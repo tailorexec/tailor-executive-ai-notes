@@ -9,7 +9,7 @@ export function Logo({
   size = 'md',
   part = 'full',
   heightClass,
-  onLightSurface = false,
+  variant = 'auto',
 }: {
   className?: string
   /** mantido por compatibilidade; nao usado (a logo ja traz o subtitulo) */
@@ -18,12 +18,13 @@ export function Logo({
   part?: LogoPart
   /** sobrescreve a altura padrao do tamanho (ex.: 'h-11 md:h-12') */
   heightClass?: string
-  /** A arte e escolhida pelo TEMA. Mas no modo escuro as superficies (cards, sidebar)
-   *  sao CLARAS — ali a arte branca sumiria. Force a versao de texto escuro. */
-  onLightSurface?: boolean
+  /** Por padrao a arte segue o TEMA do app. Use quando o fundo nao segue o tema —
+   *  ex.: a tela de login e sempre escura, entao pede a arte 'dark' (texto branco).
+   *  'light' = arte de texto escuro | 'dark' = arte de texto branco. */
+  variant?: 'auto' | 'light' | 'dark'
 }) {
   const { theme } = useTheme()
-  const suffix = !onLightSurface && theme === 'dark' ? 'dark' : 'light'
+  const suffix = variant === 'auto' ? (theme === 'dark' ? 'dark' : 'light') : variant
   // *-light = texto preto (tema claro); *-dark = texto branco (tema escuro).
   const base =
     part === 'ana'
