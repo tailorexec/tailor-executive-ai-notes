@@ -151,11 +151,26 @@
   .btn-danger {
     @apply btn border border-brand-400 text-brand-400 hover:bg-brand-400 hover:text-white px-4 py-2.5;
   }
-  /* CTA neutro (ex.: conectar Google Calendar): contorno, sem preenchimento.
-     O icone dentro dele usa text-accent (vermelho). */
+  /* Conectar Google Calendar. Referencias: contorno no mobile, vermelho solido no desktop.
+     O icone dentro dele usa text-accent no mobile e herda o branco no desktop. */
   .btn-neutral {
     @apply btn px-4 py-2.5 bg-transparent text-content-primary
            border border-surface-border hover:bg-surface-elevated;
+  }
+  @media (min-width: 768px) {
+    .btn-neutral {
+      background-color: rgb(var(--brand-solid));
+      border-color: rgb(var(--brand-solid));
+      color: #fff;
+    }
+    .btn-neutral:hover {
+      background-color: rgb(var(--brand-solid));
+      opacity: 0.9;
+    }
+    /* o icone vermelho ficaria ilegivel sobre o vermelho solido */
+    .btn-neutral .text-accent {
+      color: #fff;
+    }
   }
 
   /* Card em destaque ("conversar com todas as reunioes").
@@ -179,6 +194,18 @@
       transparent 75%
     );
     box-shadow: -8px 0 26px -10px rgb(var(--brand-solid) / 0.55);
+  }
+
+  /* Card de nota. No MOBILE tem faixa colorida a esquerda (cor da pasta ou vermelho).
+     No DESKTOP a referencia mostra a borda uniforme, sem faixa. */
+  .note-card {
+    border-left: 3px solid var(--stripe, rgb(var(--brand-solid)));
+  }
+  @media (min-width: 768px) {
+    .note-card {
+      border-left-width: 1px;
+      border-left-color: rgb(var(--surface-border));
+    }
   }
 
   /* Botao do microfone: gradiente radial + brilho vermelho ao redor. */

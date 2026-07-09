@@ -89,23 +89,35 @@ export function UpcomingEvents() {
 
   return (
     <div className="card p-4 mb-4">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="flex items-center gap-2 font-display font-semibold">
-          <CalendarDays size={18} className="text-accent" /> {t('events.title')}
-        </h3>
-        {!needsAuth && (
+      {!needsAuth && (
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="flex items-center gap-2 font-display font-semibold">
+            <CalendarDays size={18} className="text-accent" /> {t('events.title')}
+          </h3>
           <button onClick={refresh} className="text-content-muted hover:text-content-primary" aria-label="Atualizar">
             {loading ? <Spinner size={14} /> : <RefreshCw size={14} />}
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {needsAuth ? (
         <>
-          <button className="btn-neutral w-full" onClick={connect} disabled={loading}>
-            {loading ? <Spinner /> : <CalendarDays size={18} className="text-accent" />}
-            {t('events.connect')}
-          </button>
+          {/* Desktop: chip + textos a esquerda, botao a direita. Mobile: empilhado. */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div className="flex items-start gap-3 min-w-0">
+              <span className="grid place-items-center h-10 w-10 rounded-xl bg-accent/10 text-accent shrink-0">
+                <CalendarDays size={20} />
+              </span>
+              <div className="min-w-0">
+                <p className="font-display font-semibold">{t('events.title')}</p>
+                <p className="text-sm text-content-muted">{t('events.connectSub')}</p>
+              </div>
+            </div>
+            <button className="btn-neutral w-full md:w-auto shrink-0" onClick={connect} disabled={loading}>
+              {loading ? <Spinner /> : <CalendarDays size={18} className="text-accent" />}
+              {t('events.connect')}
+            </button>
+          </div>
           {error && (
             <p className="mt-2 alert-error text-xs leading-snug">
               {error}

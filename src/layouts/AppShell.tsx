@@ -42,8 +42,7 @@ function Sidebar() {
   return (
     <aside className="hidden md:flex fixed inset-y-0 left-0 w-64 flex-col border-r border-surface-border bg-surface-card z-40">
       <div className="px-4 pt-7 pb-6 flex justify-center">
-        {/* A sidebar e uma superficie CLARA nos dois temas: a arte branca sumiria aqui. */}
-        <Logo part="ana" heightClass="h-12" />
+        <Logo part="ana" heightClass="h-10" />
       </div>
 
       <button
@@ -62,10 +61,10 @@ function Sidebar() {
             to={i.to}
             end
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-colors ${
+              `flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-colors border ${
                 isActive
-                  ? 'bg-brand-solid text-white'
-                  : 'text-content-secondary hover:bg-surface-elevated hover:text-content-primary'
+                  ? 'bg-accent/10 border-accent/25 text-accent'
+                  : 'border-transparent text-content-secondary hover:bg-surface-elevated hover:text-content-primary'
               }`
             }
           >
@@ -91,6 +90,11 @@ function Sidebar() {
             {t('sidebar.anaSub')}
           </span>
         </button>
+      </div>
+
+      {/* Marca Tailor: faltava no desktop. Fica discreta acima do bloco do usuario. */}
+      <div className="px-4 pb-3 flex justify-center">
+        <Logo part="tailor" heightClass="h-[18px]" className="opacity-80" />
       </div>
 
       <div className="p-3 border-t border-surface-border">

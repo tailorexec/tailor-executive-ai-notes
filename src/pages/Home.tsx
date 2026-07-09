@@ -264,11 +264,11 @@ export function Home() {
             const fc = folderColor(n.folder_id)
             return (
             <li key={n.id}>
-              {/* Faixa colorida a esquerda: cor da pasta, ou o vermelho da marca. */}
+              {/* Faixa colorida a esquerda (so no mobile): cor da pasta, ou o vermelho da marca. */}
               <button
                 onClick={() => navigate(`/nota/${n.id}`)}
-                style={{ borderLeftColor: fc ?? 'rgb(var(--brand-solid))' }}
-                className="card w-full h-full text-left px-4 py-3.5 border-l-[3px] hover:shadow-hover transition-all"
+                style={fc ? ({ '--stripe': fc } as React.CSSProperties) : undefined}
+                className="note-card card w-full h-full text-left px-4 py-3.5 hover:shadow-hover transition-all"
               >
                 {/* Topo: data + prioridade + icone de origem (na cor da pasta, se houver) */}
                 <div className="flex items-center justify-between gap-2 mb-2">
@@ -277,8 +277,8 @@ export function Home() {
                     {n.priority && <PriorityBadge level={n.priority} />}
                   </div>
                   <span
-                    className={`grid place-items-center h-7 w-7 rounded-full shrink-0 ${
-                      fc ? '' : 'bg-surface-elevated text-content-secondary'
+                    className={`grid place-items-center h-8 w-8 rounded-xl shrink-0 ${
+                      fc ? '' : 'bg-accent/10 text-accent'
                     }`}
                     style={fc ? { color: fc, background: `${fc}1a` } : undefined}
                   >
