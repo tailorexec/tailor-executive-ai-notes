@@ -20,10 +20,12 @@
   }
 
   .dark {
-    --surface-bg: 1 1 1;            /* ink */
-    --surface-card: 20 20 22;
-    --surface-elevated: 30 30 33;
-    --surface-border: 42 42 46;
+    /* Fundo cinza escuro (nao mais preto). Elevacao = mais CLARO, para os
+       elementos se destacarem do fundo. */
+    --surface-bg: 38 38 38;         /* #262626 */
+    --surface-card: 47 47 50;       /* #2F2F32 */
+    --surface-elevated: 60 60 64;   /* #3C3C40 */
+    --surface-border: 78 78 83;     /* #4E4E53 */
 
     --content-primary: 245 245 245;
     --content-secondary: 190 190 192;
