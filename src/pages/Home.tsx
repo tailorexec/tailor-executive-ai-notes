@@ -189,7 +189,8 @@ export function Home() {
               <FolderIcon size={18} />
             </button>
             <ThemeToggle />
-            <button onClick={() => navigate('/config')} aria-label="Perfil">
+            {/* No desktop o perfil ja esta na sidebar (foto do usuario). Aqui e so mobile. */}
+            <button onClick={() => navigate('/config')} aria-label="Perfil" className="md:hidden">
               {profile && <Avatar first={profile.first_name} last={profile.last_name} url={profile.avatar_url} />}
             </button>
           </div>
@@ -374,12 +375,11 @@ export function Home() {
       )}
       </div>
 
-      {/* FAB da ANA: cinza claro, bonequinha vermelha e borda vermelha.
-          No escuro a borda usa o vermelho vivo, que e o que a separa do fundo preto. */}
+      {/* FAB da ANA (MOBILE): no desktop a ANA fica no shell, global e com balao. */}
       <button
         onClick={() => setHelpOpen(true)}
         aria-label={t('sidebar.talkAna')}
-        className="fixed right-5 fab-above-nav z-50 grid place-items-center h-16 w-16 rounded-full shadow-float
+        className="md:hidden fixed right-5 fab-above-nav z-50 grid place-items-center h-16 w-16 rounded-full shadow-float
                    bg-surface-elevated text-accent border-2 border-brand-solid
                    transition-opacity hover:opacity-90"
       >

@@ -36,7 +36,6 @@ function Sidebar({ onCollapse }: { onCollapse: () => void }) {
   const { isAdmin, profile, signOut } = useAuth()
   const navigate = useNavigate()
   const t = useT()
-  const [helpOpen, setHelpOpen] = useState(false)
   const [newOpen, setNewOpen] = useState(false)
 
   return (
@@ -83,24 +82,6 @@ function Sidebar({ onCollapse }: { onCollapse: () => void }) {
         ))}
       </nav>
 
-      {/* Card ANA: assistente de ajuda */}
-      <div className="px-3 mb-3">
-        <button
-          onClick={() => setHelpOpen(true)}
-          className="w-full text-left rounded-2xl border border-accent/25 bg-accent/5 hover:bg-accent/10 hover:border-accent/40 transition-colors px-3.5 py-3"
-        >
-          <span className="flex items-center gap-2 mb-1">
-            <span className="grid place-items-center h-7 w-7 rounded-lg bg-brand-solid text-white shrink-0">
-              <AnaIcon size={15} />
-            </span>
-            <span className="text-sm font-semibold">{t('sidebar.talkAna')}</span>
-          </span>
-          <span className="block text-xs text-content-muted leading-snug">
-            {t('sidebar.anaSub')}
-          </span>
-        </button>
-      </div>
-
       {/* "Powered by" a esquerda, logo Tailor colada na direita, alinhadas pela base. */}
       <div className="px-4 pb-3 flex items-end justify-between gap-2">
         <span className="text-[11px] text-content-muted leading-none pb-0.5">Powered by</span>
@@ -136,7 +117,6 @@ function Sidebar({ onCollapse }: { onCollapse: () => void }) {
         </button>
       </div>
 
-      {helpOpen && <HelpAssistant open={helpOpen} onClose={() => setHelpOpen(false)} />}
       {newOpen && <NewNoteSheet open={newOpen} onClose={() => setNewOpen(false)} />}
     </aside>
   )
@@ -209,6 +189,8 @@ export function AppShell() {
   const { isAdmin } = useAuth()
   const { settings } = useAppSettings()
   const hideMobileNav = HIDE_MOBILE_NAV_ON.some((p) => location.pathname.startsWith(p))
+
+  const [helpOpen, setHelpOpen] = useState(false)
 
   // Sidebar recolhida (so no desktop). A escolha persiste entre sessoes.
   const [collapsed, setCollapsed] = useState(() => {
@@ -293,6 +275,21 @@ export function AppShell() {
         </main>
       </div>
       {!hideMobileNav && <BottomNav />}
+
+      {/* ANA global (DESKTOP): botao + balao "Falar com a ANA" ao lado. */}
+      <div className="hidden md:flex fixed right-6 bottom-6 z-50 items-center gap-3">
+        <span className="rounded-xl bg-surface-card border border-surface-border shadow-float px-3 py-1.5 text-sm font-medium text-content-secondary">
+          {t('sidebar.talkAna')}
+        </span>
+        <button
+          onClick={() => setHelpOpen(true)}
+          aria-label={t('sidebar.talkAna')}
+          className="grid place-items-center h-14 w-14 rounded-full shadow-float bg-surface-elevated text-accent border-2 border-brand-solid transition-opacity hover:opacity-90"
+        >
+          <AnaIcon size={26} />
+        </button>
+      </div>
+      {helpOpen && <HelpAssistant open={helpOpen} onClose={() => setHelpOpen(false)} />}
     </div>
   )
 }
