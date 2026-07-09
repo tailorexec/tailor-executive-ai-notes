@@ -308,14 +308,14 @@ export function Home() {
       )}
       </div>
 
-      {/* FAB da ANA: cinza com a bonequinha vermelha. No escuro, cinza mais fechado
-          (para o vermelho vivo ter contraste) + borda, para nao sumir no preto. */}
+      {/* FAB da ANA: cinza claro, bonequinha vermelha e borda vermelha.
+          No escuro a borda usa o vermelho vivo, que e o que a separa do fundo preto. */}
       <button
         onClick={() => setHelpOpen(true)}
         aria-label={t('sidebar.talkAna')}
-        className="fixed right-5 fab-above-nav z-50 grid place-items-center h-16 w-16 rounded-full shadow-float border transition-opacity hover:opacity-90
-                   bg-[#E6E6E8] border-black/10 text-brand-500
-                   dark:bg-[#2E2E33] dark:border-[#7A7A82] dark:text-brand-400"
+        className="fixed right-5 fab-above-nav z-50 grid place-items-center h-16 w-16 rounded-full shadow-float
+                   bg-[#E6E6E8] text-brand-500 border-2 border-brand-500 dark:border-brand-400
+                   transition-opacity hover:opacity-90"
       >
         <AnaIcon size={30} />
       </button>

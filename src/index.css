@@ -20,26 +20,43 @@
   }
 
   .dark {
-    /* Fundo preto (ink). Os cards claros se separam dele pela luminosidade. */
+    /* Pagina preta; superficies (cards, menu, busca, botoes) em cinza CLARO.
+       Espelha o modo claro: card mais claro, elevated (inputs/botoes) um pouco mais cinza. */
     --surface-bg: 1 1 1;            /* #010101 pagina */
-    /* Cinza de referencia do card "conversar com todas" (#4E4E54) clareado 20%,
-       aplicado a TUDO: cards, menu, busca, botoes. */
-    --surface-card: 94 94 101;      /* #5E5E65 */
-    --surface-elevated: 94 94 101;  /* #5E5E65 */
-    --surface-border: 122 122 130;  /* #7A7A82 */
+    --surface-card: 233 233 237;    /* #E9E9ED */
+    --surface-elevated: 220 220 224;/* #DCDCE0 */
+    --surface-border: 184 184 190;  /* #B8B8BE */
 
-    /* Texto clareado: nas superficies mais claras o cinza antigo perdia contraste. */
+    /* Estes valores valem para o texto que fica direto sobre a PAGINA PRETA.
+       Dentro das superficies claras eles sao invertidos (regra abaixo). */
     --content-primary: 250 250 250;
     --content-secondary: 224 224 226;
     --content-muted: 212 212 214;   /* #D4D4D6 */
 
     /* Vermelho VIVO da identidade. Sobre a pagina (#262626) da 3.5:1 — ok para
-       icone/texto grande. Sobre os cards claros ele NAO tem contraste (1.5:1), entao
-       dentro de card o vermelho e usado como PREENCHIMENTO (bg-brand-500 + texto branco),
-       nunca como cor de texto/icone. */
+       icone/texto grande. */
     --accent: 241 12 39;           /* #F10C27 */
 
     color-scheme: dark;
+  }
+
+  /* No escuro as superficies sao CLARAS: dentro delas o conteudo inverte para preto.
+     Redefinir as variaveis aqui faz `text-content-primary`, `text-accent`, etc.
+     resolverem para os tons escuros — sem tocar em nenhum componente.
+
+     Usamos [class~="..."] (token exato) de proposito: `hover:bg-surface-elevated`
+     NAO pode entrar, porque esses elementos tem fundo transparente sobre a pagina preta. */
+  .dark .card,
+  .dark .input,
+  .dark .btn-ghost,
+  .dark .btn-neutral,
+  .dark [class~='bg-surface-card'],
+  .dark [class~='bg-surface-card/95'],
+  .dark [class~='bg-surface-elevated'] {
+    --content-primary: 10 10 11;
+    --content-secondary: 60 60 64;
+    --content-muted: 92 92 98;     /* #5C5C62 -> 4.9:1 ate no input */
+    --accent: 148 16 16;           /* vermelho da marca: 6.5:1 sobre o cinza claro */
   }
 
   * {
@@ -148,16 +165,11 @@
   .btn-danger {
     @apply btn border border-brand-400 text-brand-400 hover:bg-brand-400 hover:text-white px-4 py-2.5;
   }
-  /* CTA neutro: cinza com texto branco. Usado onde o vermelho poluiria a tela
-     (ex.: conectar Google Calendar). No escuro ganha borda para nao "colar" no preto. */
+  /* CTA neutro (ex.: conectar Google Calendar): mesma superficie do card
+     "conversar com todas as reunioes", com texto e icone escuros. */
   .btn-neutral {
-    @apply btn px-4 py-2.5 text-white border hover:opacity-90;
-    background-color: #5c5c60;
-    border-color: #5c5c60;
-  }
-  .dark .btn-neutral {
-    background-color: rgb(var(--surface-elevated));
-    border-color: rgb(var(--surface-border));
+    @apply btn px-4 py-2.5 bg-surface-elevated text-content-primary
+           border border-surface-border hover:opacity-90;
   }
 
   /* Bloco de erro. O texto NAO usa text-accent: sobre os cards claros do modo escuro
