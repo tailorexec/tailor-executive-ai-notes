@@ -144,7 +144,7 @@ export function Settings() {
       <div className="card p-5 flex items-center gap-4 mb-6">
         <button onClick={() => fileRef.current?.click()} className="relative shrink-0" aria-label="Trocar foto">
           <Avatar first={profile.first_name} last={profile.last_name} size={56} url={profile.avatar_url} />
-          <span className="absolute -bottom-1 -right-1 grid place-items-center h-6 w-6 rounded-full bg-brand-500 text-white border-2 border-surface-card">
+          <span className="absolute -bottom-1 -right-1 grid place-items-center h-6 w-6 rounded-full bg-brand-solid text-white border-2 border-surface-card">
             {uploading ? <Spinner size={12} /> : <Camera size={12} />}
           </span>
         </button>
@@ -199,7 +199,7 @@ export function Settings() {
           right={
             <span
               className={`h-6 w-11 rounded-full transition-colors relative ${
-                theme === 'dark' ? 'bg-brand-500' : 'bg-surface-border'
+                theme === 'dark' ? 'bg-brand-solid' : 'bg-surface-border'
               }`}
             >
               <span
@@ -240,7 +240,7 @@ export function Settings() {
               }}
               className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-colors ${
                 lang === l.code
-                  ? 'border-brand-500 bg-accent/10'
+                  ? 'border-brand-solid bg-accent/10'
                   : 'border-surface-border bg-surface-elevated hover:border-accent/40'
               }`}
             >
@@ -315,7 +315,7 @@ export function Settings() {
 
       <div className="flex flex-col items-center gap-2 pb-4 text-content-muted">
         <Logo size="lg" />
-        <p className="text-xs">ANA by Tailor • v0.5.1</p>
+        <p className="text-xs">ANA by Tailor • v0.6.0</p>
       </div>
     </div>
   )

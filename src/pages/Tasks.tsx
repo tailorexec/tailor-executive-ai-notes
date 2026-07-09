@@ -119,7 +119,7 @@ export function TasksPage() {
                   disabled={busy === item.id}
                   aria-label="ok"
                   className={`mt-0.5 h-5 w-5 rounded-md border grid place-items-center shrink-0 transition-colors ${
-                    item.done ? 'bg-brand-500 border-brand-500 text-white' : 'border-surface-border hover:border-accent'
+                    item.done ? 'bg-brand-solid border-brand-solid text-white' : 'border-surface-border hover:border-accent'
                   }`}
                 >
                   {item.done && <Check size={13} />}

@@ -307,7 +307,7 @@ export function NoteDetail() {
                               onClick={() => setPriority(note.priority === p ? null : p)}
                               className={`text-[11px] font-medium rounded-full px-2.5 py-1 border transition-colors ${
                                 note.priority === p
-                                  ? 'bg-brand-500 text-white border-accent/30'
+                                  ? 'bg-brand-solid text-white border-accent/30'
                                   : 'bg-surface-elevated text-content-secondary border-surface-border hover:border-accent/40'
                               }`}
                             >
@@ -318,7 +318,7 @@ export function NoteDetail() {
                             onClick={() => setPriority(null)}
                             className={`text-[11px] font-medium rounded-full px-2.5 py-1 border transition-colors ${
                               !note.priority
-                                ? 'bg-brand-500 text-white border-accent/30'
+                                ? 'bg-brand-solid text-white border-accent/30'
                                 : 'bg-surface-elevated text-content-secondary border-surface-border hover:border-accent/40'
                             }`}
                           >
@@ -353,7 +353,7 @@ export function NoteDetail() {
         <div className="flex flex-wrap items-center gap-2 mt-2">
           {note.priority && <PriorityBadge level={note.priority} className="px-2.5 py-1 text-[11px]" />}
           {note.template && note.template !== 'geral' && (
-            <span className="text-[11px] font-medium uppercase tracking-wide bg-brand-500 text-white border border-brand-600 rounded-full px-2.5 py-1">
+            <span className="text-[11px] font-medium uppercase tracking-wide bg-brand-solid text-white border border-brand-600 rounded-full px-2.5 py-1">
               {templateLabel(note.template)}
             </span>
           )}
@@ -387,7 +387,7 @@ export function NoteDetail() {
               className="w-full flex items-center gap-3 card px-4 py-2.5 text-left"
             >
               <span
-                className={`h-6 w-11 rounded-full relative shrink-0 transition-colors ${note.keep_audio ? 'bg-brand-500' : 'bg-surface-border'}`}
+                className={`h-6 w-11 rounded-full relative shrink-0 transition-colors ${note.keep_audio ? 'bg-brand-solid' : 'bg-surface-border'}`}
               >
                 <span
                   className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${note.keep_audio ? 'translate-x-5' : 'translate-x-0.5'}`}
@@ -457,7 +457,7 @@ export function NoteDetail() {
               onClick={() => setTab(t.key)}
               className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-medium whitespace-nowrap border transition-colors ${
                 tab === t.key
-                  ? 'bg-brand-500 border-brand-500 text-white'
+                  ? 'bg-brand-solid border-brand-solid text-white'
                   : 'bg-surface-elevated border-surface-border text-content-secondary'
               }`}
             >
@@ -486,7 +486,7 @@ export function NoteDetail() {
                         >
                           <span
                             className={`mt-0.5 h-5 w-5 rounded-md border grid place-items-center shrink-0 ${
-                              a.done ? 'bg-brand-500 border-brand-500 text-white' : 'border-surface-border'
+                              a.done ? 'bg-brand-solid border-brand-solid text-white' : 'border-surface-border'
                             }`}
                           >
                             {a.done && <ListChecks size={12} />}
@@ -571,7 +571,7 @@ export function NoteDetail() {
                   key={m.id}
                   className={`max-w-[85%] px-3.5 py-2 rounded-2xl text-sm break-words whitespace-pre-line ${
                     m.role === 'user'
-                      ? 'ml-auto bg-brand-500 text-white'
+                      ? 'ml-auto bg-brand-solid text-white'
                       : 'mr-auto bg-surface-elevated text-content-primary'
                   }`}
                 >
@@ -722,7 +722,7 @@ function ProseBlock({ text, empty, mono }: { text: string; empty?: string; mono?
         if (t.startsWith('- '))
           return (
             <div key={i} className="flex gap-2">
-              <span className="text-accent mt-1.5 h-1.5 w-1.5 rounded-full bg-brand-500 shrink-0" />
+              <span className="text-accent mt-1.5 h-1.5 w-1.5 rounded-full bg-brand-solid shrink-0" />
               <span>{t.slice(2)}</span>
             </div>
           )
@@ -737,7 +737,7 @@ function AnalysisView({ analysis, t }: { analysis: NonNullable<Note['analysis']>
     <div className="space-y-5">
       {typeof analysis.overallScore === 'number' && (
         <div className="card p-5 flex items-center gap-4">
-          <div className="grid place-items-center h-16 w-16 rounded-full bg-brand-500 text-white font-display font-bold text-xl">
+          <div className="grid place-items-center h-16 w-16 rounded-full bg-brand-solid text-white font-display font-bold text-xl">
             {analysis.overallScore}
           </div>
           <div>

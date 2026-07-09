@@ -43,7 +43,7 @@ function NewOption({
       onClick={onClick}
       className="w-full flex items-center gap-4 bg-surface-elevated border border-surface-border rounded-2xl px-4 py-3.5 text-left hover:border-accent/40 transition-colors"
     >
-      <div className="grid place-items-center h-10 w-10 rounded-full bg-brand-500 text-white shrink-0">{icon}</div>
+      <div className="grid place-items-center h-10 w-10 rounded-full bg-brand-solid text-white shrink-0">{icon}</div>
       <div>
         <p className="font-medium">{label}</p>
         <p className="text-sm text-content-muted">{hint}</p>

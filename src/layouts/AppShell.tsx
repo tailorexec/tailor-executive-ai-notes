@@ -43,7 +43,7 @@ function Sidebar() {
     <aside className="hidden md:flex fixed inset-y-0 left-0 w-64 flex-col border-r border-surface-border bg-surface-card z-40">
       <div className="px-4 pt-7 pb-6 flex justify-center">
         {/* A sidebar e uma superficie CLARA nos dois temas: a arte branca sumiria aqui. */}
-        <Logo part="ana" heightClass="h-12" onLightSurface />
+        <Logo part="ana" heightClass="h-12" />
       </div>
 
       <button
@@ -64,7 +64,7 @@ function Sidebar() {
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-colors ${
                 isActive
-                  ? 'bg-brand-500 text-white'
+                  ? 'bg-brand-solid text-white'
                   : 'text-content-secondary hover:bg-surface-elevated hover:text-content-primary'
               }`
             }
@@ -82,7 +82,7 @@ function Sidebar() {
           className="w-full text-left rounded-2xl border border-accent/25 bg-accent/5 hover:bg-accent/10 hover:border-accent/40 transition-colors px-3.5 py-3"
         >
           <span className="flex items-center gap-2 mb-1">
-            <span className="grid place-items-center h-7 w-7 rounded-lg bg-brand-500 text-white shrink-0">
+            <span className="grid place-items-center h-7 w-7 rounded-lg bg-brand-solid text-white shrink-0">
               <AnaIcon size={15} />
             </span>
             <span className="text-sm font-semibold">{t('sidebar.talkAna')}</span>
@@ -118,13 +118,22 @@ function NavItem({ to, icon, label }: { to: string; icon: React.ReactNode; label
       to={to}
       end
       className={({ isActive }) =>
-        `flex flex-col items-center justify-center gap-1 flex-1 py-1.5 text-[11px] font-medium transition-colors ${
+        `relative flex flex-col items-center justify-center gap-1 flex-1 py-1.5 text-[11px] font-medium transition-colors ${
           isActive ? 'text-accent' : 'text-content-muted hover:text-content-secondary'
         }`
       }
     >
-      {icon}
-      <span>{label}</span>
+      {({ isActive }) => (
+        <>
+          {icon}
+          <span>{label}</span>
+          {/* Ponto vermelho sob o item ativo (referencia de design) */}
+          <span
+            aria-hidden
+            className={`absolute -bottom-0.5 h-1 w-1 rounded-full bg-accent ${isActive ? 'opacity-100' : 'opacity-0'}`}
+          />
+        </>
+      )}
     </NavLink>
   )
 }
@@ -145,7 +154,7 @@ function BottomNav() {
             <button
               onClick={() => setNewOpen(true)}
               aria-label={t('new.title')}
-              className="grid place-items-center h-14 w-14 -mt-8 rounded-full bg-brand-500 hover:bg-brand-600 text-white shadow-float ring-[3px] ring-surface-card transition-colors"
+              className="mic-fab grid place-items-center h-14 w-14 -mt-8 rounded-full text-white transition-[filter]"
             >
               <Mic size={24} />
             </button>

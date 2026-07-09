@@ -85,7 +85,7 @@ export function AdminSettings() {
             <Megaphone size={18} className="text-accent" /> Faixa de avisos
           </h3>
           {s.announcement_enabled && (
-            <span className="text-[10px] uppercase tracking-wide bg-green-500/15 text-green-700 px-2 py-0.5 rounded-full">
+            <span className="text-[10px] uppercase tracking-wide bg-green-500/15 text-green-600 dark:text-green-400 px-2 py-0.5 rounded-full">
               ativo
             </span>
           )}
@@ -99,7 +99,7 @@ export function AdminSettings() {
               onClick={() => set({ announcement_type: t.v })}
               className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
                 s.announcement_type === t.v
-                  ? 'bg-brand-500 border-brand-500 text-white'
+                  ? 'bg-brand-solid border-brand-solid text-white'
                   : 'bg-surface-elevated border-surface-border text-content-secondary'
               }`}
             >
@@ -158,7 +158,7 @@ export function AdminSettings() {
             <Wrench size={18} className="text-accent" /> Modo manutencao
           </h3>
           {s.maintenance_enabled && (
-            <span className="text-[10px] uppercase tracking-wide bg-brand-500 text-white px-2 py-0.5 rounded-full">
+            <span className="text-[10px] uppercase tracking-wide bg-brand-solid text-white px-2 py-0.5 rounded-full">
               ativo
             </span>
           )}

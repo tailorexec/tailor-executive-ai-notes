@@ -12,9 +12,9 @@ export function Spinner({ size = 18, className = '' }: { size?: number; classNam
 export function PriorityBadge({ level, className = '' }: { level: NotePriority; className?: string }) {
   const t = useT()
   const map: Record<NotePriority, { key: string; color: string }> = {
-    alta: { key: 'prio.alta', color: 'text-red-600' },
-    media: { key: 'prio.media', color: 'text-amber-700' },
-    baixa: { key: 'prio.baixa', color: 'text-blue-600' },
+    alta: { key: 'prio.alta', color: 'text-red-600 dark:text-red-500' },
+    media: { key: 'prio.media', color: 'text-yellow-500 dark:text-yellow-400' },
+    baixa: { key: 'prio.baixa', color: 'text-blue-500 dark:text-blue-400' },
   }
   const m = map[level]
   return (
@@ -48,7 +48,7 @@ export function Avatar({
   }
   return (
     <div
-      className="grid place-items-center rounded-full bg-brand-500 text-white font-semibold shrink-0"
+      className="grid place-items-center rounded-full bg-brand-solid text-white font-semibold shrink-0"
       style={{ width: size, height: size, fontSize: size * 0.38 }}
     >
       {initials(first, last)}
@@ -138,7 +138,7 @@ export function Sheet({
 /** Selo para funcoes ainda nao disponiveis no web-mobile. */
 export function SoonBadge({ children = 'EM BREVE NO APP' }: { children?: string }) {
   return (
-    <span className="text-[10px] font-semibold uppercase tracking-wide bg-brand-500 text-white border border-brand-600 rounded-full px-2 py-0.5 whitespace-nowrap">
+    <span className="text-[10px] font-semibold uppercase tracking-wide bg-brand-solid text-white border border-brand-600 rounded-full px-2 py-0.5 whitespace-nowrap">
       {children}
     </span>
   )
@@ -230,7 +230,7 @@ export function Chip({
       onClick={onClick}
       className={`px-3.5 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors border ${
         active
-          ? 'bg-brand-500 border-brand-500 text-white'
+          ? 'bg-brand-solid border-brand-solid text-white'
           : 'bg-surface-elevated border-surface-border text-content-secondary hover:text-content-primary'
       }`}
     >

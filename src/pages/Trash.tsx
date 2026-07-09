@@ -90,7 +90,7 @@ export function TrashPage() {
               <button
                 onClick={() => setPurgeTarget(n)}
                 disabled={busy === n.id}
-                className="grid place-items-center h-9 w-9 rounded-xl text-content-secondary hover:bg-brand-500 hover:text-white"
+                className="grid place-items-center h-9 w-9 rounded-xl text-content-secondary hover:bg-brand-solid hover:text-white"
                 aria-label="Excluir definitivamente"
               >
                 <Trash2 size={18} />

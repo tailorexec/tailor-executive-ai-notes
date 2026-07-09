@@ -106,7 +106,7 @@ export function Register() {
             <input
               id="email"
               type="email"
-              className={`input ${!emailOk ? 'border-brand-500 focus:ring-brand-500/40' : ''}`}
+              className={`input ${!emailOk ? 'border-brand-solid focus:ring-brand-500/40' : ''}`}
               placeholder={`nome@${config.allowedDomain}`}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -170,7 +170,7 @@ export function Register() {
               <input
                 id="confirm"
                 type={show ? 'text' : 'password'}
-                className={`input pr-12 ${!passwordsMatch ? 'border-brand-500 focus:ring-brand-500/40' : ''}`}
+                className={`input pr-12 ${!passwordsMatch ? 'border-brand-solid focus:ring-brand-500/40' : ''}`}
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 required

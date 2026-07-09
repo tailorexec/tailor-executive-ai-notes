@@ -365,7 +365,7 @@ export function Capture() {
       <div className="min-h-screen flex flex-col items-center justify-center px-8 text-center safe-top">
         <div className="relative mb-8">
           <div className="absolute inset-0 rounded-full bg-accent/30 animate-pulse-ring" />
-          <div className="grid place-items-center h-20 w-20 rounded-full bg-brand-500 text-white relative">
+          <div className="grid place-items-center h-20 w-20 rounded-full bg-brand-solid text-white relative">
             <Spinner size={28} />
           </div>
         </div>
@@ -377,7 +377,7 @@ export function Capture() {
           {STEPS.map((_, i) => (
             <span
               key={i}
-              className={`h-1.5 w-8 rounded-full ${i <= step ? 'bg-brand-500' : 'bg-surface-border'}`}
+              className={`h-1.5 w-8 rounded-full ${i <= step ? 'bg-brand-solid' : 'bg-surface-border'}`}
             />
           ))}
         </div>
@@ -428,7 +428,7 @@ export function Capture() {
                 onClick={() => setTemplate(t.id)}
                 className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
                   template === t.id
-                    ? 'bg-brand-500 border-brand-500 text-white'
+                    ? 'bg-brand-solid border-brand-solid text-white'
                     : 'bg-surface-elevated border-surface-border text-content-secondary'
                 }`}
               >
@@ -468,7 +468,7 @@ export function Capture() {
           className="w-full flex items-center gap-3 card px-4 py-3 mb-6 text-left"
         >
           <span
-            className={`h-6 w-11 rounded-full transition-colors relative shrink-0 ${diarize ? 'bg-brand-500' : 'bg-surface-border'}`}
+            className={`h-6 w-11 rounded-full transition-colors relative shrink-0 ${diarize ? 'bg-brand-solid' : 'bg-surface-border'}`}
           >
             <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${diarize ? 'translate-x-5' : 'translate-x-0.5'}`} />
           </span>
@@ -527,7 +527,7 @@ export function Capture() {
             )
           ) : mode === 'record' && recState === 'idle' && !recorder.error ? (
             <div className="card p-6 text-center max-w-sm">
-              <div className="grid place-items-center h-16 w-16 rounded-full bg-brand-500 text-white mx-auto mb-4">
+              <div className="grid place-items-center h-16 w-16 rounded-full bg-brand-solid text-white mx-auto mb-4">
                 <Mic size={30} />
               </div>
               <h3 className="font-display font-semibold text-lg">Pronto para gravar</h3>
@@ -557,7 +557,7 @@ export function Capture() {
                   className="absolute inset-0 rounded-full bg-accent/25"
                   style={{ transform: `scale(${1 + recLevel * 0.8})`, transition: 'transform 80ms' }}
                 />
-                <div className="grid place-items-center h-28 w-28 rounded-full bg-brand-500 text-white relative">
+                <div className="grid place-items-center h-28 w-28 rounded-full bg-brand-solid text-white relative">
                   {mode === 'meeting' ? <Headphones size={40} /> : <Mic size={40} />}
                 </div>
               </div>

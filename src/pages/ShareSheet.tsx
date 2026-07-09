@@ -113,7 +113,7 @@ export function ShareSheet({
                 onClick={() => togglePartner(p.id)}
                 disabled={savingShare}
                 className={`w-full flex items-center gap-3 rounded-2xl px-3 py-2.5 border text-left transition-colors ${
-                  active ? 'border-brand-500 bg-accent/5' : 'border-surface-border bg-surface-elevated'
+                  active ? 'border-brand-solid bg-accent/5' : 'border-surface-border bg-surface-elevated'
                 }`}
               >
                 <Avatar first={p.first_name} last={p.last_name} size={36} />
@@ -125,7 +125,7 @@ export function ShareSheet({
                 </div>
                 <span
                   className={`h-6 w-6 rounded-full grid place-items-center border shrink-0 ${
-                    active ? 'bg-brand-500 border-brand-500 text-white' : 'border-surface-border'
+                    active ? 'bg-brand-solid border-brand-solid text-white' : 'border-surface-border'
                   }`}
                 >
                   {active && <Check size={14} />}

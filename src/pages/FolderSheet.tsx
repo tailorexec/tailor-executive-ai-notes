@@ -126,7 +126,7 @@ export function FolderSheet({
             onClose()
           }}
           className={`w-full flex items-center gap-3 rounded-xl px-3 py-2.5 mb-2 border text-left ${
-            !selectedId ? 'border-brand-500 bg-accent/5' : 'border-surface-border bg-surface-elevated'
+            !selectedId ? 'border-brand-solid bg-accent/5' : 'border-surface-border bg-surface-elevated'
           }`}
         >
           <FolderIcon size={18} className="text-content-muted" /> {t('folder.none')}
@@ -153,7 +153,7 @@ export function FolderSheet({
               <div
                 key={f.id}
                 className={`flex items-center gap-3 rounded-xl px-3 py-2.5 border ${
-                  mode === 'assign' && selectedId === f.id ? 'border-brand-500 bg-accent/5' : 'border-surface-border bg-surface-elevated'
+                  mode === 'assign' && selectedId === f.id ? 'border-brand-solid bg-accent/5' : 'border-surface-border bg-surface-elevated'
                 }`}
               >
                 <button

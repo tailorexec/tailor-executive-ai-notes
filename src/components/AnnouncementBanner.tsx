@@ -10,7 +10,7 @@ const STYLES: Record<AnnouncementType, { cls: string; icon: React.ReactNode }> =
   info: { cls: 'bg-surface-elevated border-surface-border text-content-primary', icon: <Info size={18} /> },
   warning: { cls: 'bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400', icon: <AlertTriangle size={18} /> },
   maintenance: { cls: 'bg-accent/15 border-accent/40 text-content-primary', icon: <Wrench size={18} /> },
-  promo: { cls: 'bg-brand-500 border-brand-600 text-white', icon: <Megaphone size={18} /> },
+  promo: { cls: 'bg-brand-solid border-brand-600 text-white', icon: <Megaphone size={18} /> },
 }
 
 export function AnnouncementBanner() {

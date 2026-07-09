@@ -71,7 +71,7 @@ export function Support() {
               onClick={() => setTopic(top.v)}
               className={`px-3.5 py-1.5 rounded-full text-sm border transition-colors ${
                 topic === top.v
-                  ? 'bg-brand-500 border-brand-500 text-white'
+                  ? 'bg-brand-solid border-brand-solid text-white'
                   : 'bg-surface-elevated border-surface-border text-content-secondary'
               }`}
             >
@@ -107,7 +107,7 @@ export function Support() {
           {tickets.map((tk) => (
             <li key={tk.id} className="card p-4">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-[10px] uppercase tracking-wide bg-brand-500 text-white px-2 py-0.5 rounded-full">{tk.topic}</span>
+                <span className="text-[10px] uppercase tracking-wide bg-brand-solid text-white px-2 py-0.5 rounded-full">{tk.topic}</span>
                 {tk.subject && <span className="font-medium text-sm truncate">{tk.subject}</span>}
                 <span className="text-xs text-content-muted ml-auto">{fmtDateTime(tk.created_at)}</span>
               </div>

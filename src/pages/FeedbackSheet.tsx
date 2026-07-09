@@ -88,7 +88,7 @@ export function FeedbackSheet({
             onClick={() => setAudience(a.v)}
             className={`py-2.5 rounded-xl text-sm font-medium border transition-colors ${
               audience === a.v
-                ? 'bg-brand-500 border-brand-500 text-white'
+                ? 'bg-brand-solid border-brand-solid text-white'
                 : 'bg-surface-elevated border-surface-border text-content-secondary'
             }`}
           >
@@ -115,7 +115,7 @@ export function FeedbackSheet({
             onClick={() => setTone(to.v)}
             className={`py-2.5 rounded-xl text-sm font-medium border transition-colors ${
               tone === to.v
-                ? 'bg-brand-500 border-brand-500 text-white'
+                ? 'bg-brand-solid border-brand-solid text-white'
                 : 'bg-surface-elevated border-surface-border text-content-secondary'
             }`}
           >

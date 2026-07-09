@@ -37,8 +37,11 @@ export default {
           secondary: 'rgb(var(--content-secondary) / <alpha-value>)',
           muted: 'rgb(var(--content-muted) / <alpha-value>)',
         },
-        // Vermelho de destaque que adapta ao tema (texto/icone/tint). Fills solidos usam brand-500.
+        // Vermelho de destaque que adapta ao tema (texto/icone/tint).
         accent: 'rgb(var(--accent) / <alpha-value>)',
+        // Vermelho de PREENCHIMENTO solido que adapta ao tema: oxblood no claro,
+        // vermelho vivo no escuro (o oxblood some no fundo preto).
+        'brand-solid': 'rgb(var(--brand-solid) / <alpha-value>)',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],

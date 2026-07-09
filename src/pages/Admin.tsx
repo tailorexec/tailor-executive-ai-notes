@@ -175,7 +175,7 @@ export function Admin() {
                           <p className="font-medium truncate flex items-center gap-2">
                             {r.profile.first_name} {r.profile.last_name}
                             {r.profile.role === 'admin' && (
-                              <span className="text-[10px] uppercase bg-brand-500 text-white px-1.5 py-0.5 rounded">
+                              <span className="text-[10px] uppercase bg-brand-solid text-white px-1.5 py-0.5 rounded">
                                 admin
                               </span>
                             )}
@@ -202,7 +202,7 @@ export function Admin() {
                         <button
                           onClick={() => deleteUser(r.profile)}
                           disabled={r.profile.id === me?.id}
-                          className="grid place-items-center h-8 w-8 rounded-lg text-content-secondary hover:bg-brand-500 hover:text-white disabled:opacity-30"
+                          className="grid place-items-center h-8 w-8 rounded-lg text-content-secondary hover:bg-brand-solid hover:text-white disabled:opacity-30"
                           aria-label="Excluir"
                         >
                           <Trash2 size={16} />
@@ -225,7 +225,7 @@ export function Admin() {
                     <p className="font-medium truncate flex items-center gap-2">
                       {r.profile.first_name} {r.profile.last_name}
                       {r.profile.role === 'admin' && (
-                        <span className="text-[10px] uppercase bg-brand-500 text-white px-1.5 py-0.5 rounded">
+                        <span className="text-[10px] uppercase bg-brand-solid text-white px-1.5 py-0.5 rounded">
                           admin
                         </span>
                       )}
@@ -277,7 +277,7 @@ export function Admin() {
                 {tickets.map((tk) => (
                   <li key={tk.id} className="card p-4">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className="text-[10px] uppercase tracking-wide bg-brand-500 text-white px-2 py-0.5 rounded-full">{tk.topic}</span>
+                      <span className="text-[10px] uppercase tracking-wide bg-brand-solid text-white px-2 py-0.5 rounded-full">{tk.topic}</span>
                       {tk.subject && <span className="font-medium text-sm truncate">{tk.subject}</span>}
                       <span className="text-xs text-content-muted ml-auto">{fmtDateTime(tk.created_at)}</span>
                     </div>

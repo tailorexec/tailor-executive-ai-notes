@@ -136,14 +136,14 @@ export function Dialer() {
               className="absolute inset-0 rounded-full bg-accent/25"
               style={{ transform: `scale(${1 + recorder.level * 0.8})`, transition: 'transform 80ms' }}
             />
-            <div className="grid place-items-center h-24 w-24 rounded-full bg-brand-500 text-white relative">
+            <div className="grid place-items-center h-24 w-24 rounded-full bg-brand-solid text-white relative">
               <Mic size={36} />
             </div>
           </div>
           <p className="font-display text-2xl font-bold">{number}</p>
           <p className="text-content-muted mt-1 mb-1">{t('dialer.recording')}</p>
           <p className="font-mono text-lg tabular-nums mb-8">{fmtClock(recorder.seconds)}</p>
-          <button onClick={endCall} className="btn bg-brand-500 hover:bg-brand-600 text-white h-16 w-16 rounded-full p-0" aria-label="Encerrar">
+          <button onClick={endCall} className="btn bg-brand-solid hover:opacity-90 text-white h-16 w-16 rounded-full p-0" aria-label="Encerrar">
             <Square size={26} />
           </button>
           <RecordingNotice />

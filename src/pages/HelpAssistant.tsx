@@ -50,7 +50,7 @@ export function HelpAssistant({ open, onClose }: { open: boolean; onClose: () =>
   return (
     <Sheet open={open} onClose={onClose} title="ANA">
       <div className="flex items-center gap-2 text-sm font-medium text-content-secondary mb-3">
-        <span className="grid place-items-center h-7 w-7 rounded-full bg-brand-500 text-white shrink-0">
+        <span className="grid place-items-center h-7 w-7 rounded-full bg-brand-solid text-white shrink-0">
           <AnaIcon size={16} />
         </span>
         {t('help.greeting')}
@@ -74,7 +74,7 @@ export function HelpAssistant({ open, onClose }: { open: boolean; onClose: () =>
           <div
             key={i}
             className={`max-w-[88%] px-3.5 py-2 rounded-2xl text-sm whitespace-pre-line ${
-              m.role === 'user' ? 'ml-auto bg-brand-500 text-white' : 'mr-auto bg-surface-elevated text-content-primary'
+              m.role === 'user' ? 'ml-auto bg-brand-solid text-white' : 'mr-auto bg-surface-elevated text-content-primary'
             }`}
           >
             {m.text}

@@ -91,7 +91,7 @@ export function UpcomingEvents() {
     <div className="card p-4 mb-4">
       <div className="flex items-center justify-between mb-2">
         <h3 className="flex items-center gap-2 font-display font-semibold">
-          <CalendarDays size={18} className="text-content-secondary" /> {t('events.title')}
+          <CalendarDays size={18} className="text-accent" /> {t('events.title')}
         </h3>
         {!needsAuth && (
           <button onClick={refresh} className="text-content-muted hover:text-content-primary" aria-label="Atualizar">
@@ -103,7 +103,7 @@ export function UpcomingEvents() {
       {needsAuth ? (
         <>
           <button className="btn-neutral w-full" onClick={connect} disabled={loading}>
-            {loading ? <Spinner /> : <CalendarDays size={18} />}
+            {loading ? <Spinner /> : <CalendarDays size={18} className="text-accent" />}
             {t('events.connect')}
           </button>
           {error && (
@@ -132,7 +132,7 @@ export function UpcomingEvents() {
             <ul className="space-y-2 mb-3">
               {events.slice(0, 3).map((e) => (
                 <li key={e.id} className="flex items-center gap-3">
-                  <div className="h-9 w-1 rounded-full bg-brand-500 shrink-0" />
+                  <div className="h-9 w-1 rounded-full bg-brand-solid shrink-0" />
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-sm truncate">{e.title}</p>
                     <p className="text-xs text-content-muted">
@@ -181,7 +181,7 @@ export function UpcomingEvents() {
               {events.map((e) => (
                 <li key={e.id} className="card p-4">
                   <div className="flex gap-3">
-                    <div className="grid place-items-center h-10 w-10 rounded-xl bg-brand-500 text-white shrink-0">
+                    <div className="grid place-items-center h-10 w-10 rounded-xl bg-brand-solid text-white shrink-0">
                       <CalendarDays size={18} />
                     </div>
                     <div className="min-w-0 flex-1">

@@ -156,9 +156,9 @@ export function Home() {
 
       <button
         onClick={() => setAskOpen(true)}
-        className="md:shrink-0 w-full flex items-center gap-3 bg-surface-elevated border border-surface-border rounded-2xl px-4 py-2.5 mb-3 text-left hover:border-accent/40 transition-colors"
+        className="card-featured md:shrink-0 w-full flex items-center gap-3 bg-surface-card border border-surface-border rounded-2xl px-4 py-2.5 mb-3 text-left transition-colors"
       >
-        <span className="grid place-items-center h-9 w-9 rounded-xl bg-brand-500 text-white shrink-0">
+        <span className="grid place-items-center h-9 w-9 rounded-xl bg-brand-solid text-white shrink-0">
           <MessageSquare size={18} />
         </span>
         <span className="flex-1 min-w-0">
@@ -204,7 +204,7 @@ export function Home() {
             {filtered.length} {filtered.length === 1 ? t('home.noteOne') : t('home.noteMany')}
           </span>
           <div className="flex items-center gap-1.5 text-xs text-content-secondary">
-            <ArrowDownUp size={14} />
+            <ArrowDownUp size={14} className="text-accent" />
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as 'recent' | 'oldest' | 'longest')}
@@ -264,12 +264,11 @@ export function Home() {
             const fc = folderColor(n.folder_id)
             return (
             <li key={n.id}>
+              {/* Faixa colorida a esquerda: cor da pasta, ou o vermelho da marca. */}
               <button
                 onClick={() => navigate(`/nota/${n.id}`)}
-                style={fc ? { borderColor: fc } : undefined}
-                className={`card w-full h-full text-left px-4 py-3.5 hover:shadow-hover transition-all ${
-                  fc ? '' : 'border-content-secondary/55 hover:border-accent/60'
-                }`}
+                style={{ borderLeftColor: fc ?? 'rgb(var(--brand-solid))' }}
+                className="card w-full h-full text-left px-4 py-3.5 border-l-[3px] hover:shadow-hover transition-all"
               >
                 {/* Topo: data + prioridade + icone de origem (na cor da pasta, se houver) */}
                 <div className="flex items-center justify-between gap-2 mb-2">
@@ -279,7 +278,7 @@ export function Home() {
                   </div>
                   <span
                     className={`grid place-items-center h-7 w-7 rounded-full shrink-0 ${
-                      fc ? '' : 'bg-surface-border/50 text-content-primary'
+                      fc ? '' : 'bg-surface-elevated text-content-secondary'
                     }`}
                     style={fc ? { color: fc, background: `${fc}1a` } : undefined}
                   >
@@ -289,7 +288,7 @@ export function Home() {
                 <div className="flex items-center gap-2">
                   <h3 className="font-semibold truncate">{n.title}</h3>
                   {n.status === 'processing' && (
-                    <span className="text-[10px] uppercase tracking-wide bg-brand-500 text-white px-1.5 py-0.5 rounded shrink-0">
+                    <span className="text-[10px] uppercase tracking-wide bg-brand-solid text-white px-1.5 py-0.5 rounded shrink-0">
                       {t('home.processing')}
                     </span>
                   )}
@@ -314,7 +313,7 @@ export function Home() {
         onClick={() => setHelpOpen(true)}
         aria-label={t('sidebar.talkAna')}
         className="fixed right-5 fab-above-nav z-50 grid place-items-center h-16 w-16 rounded-full shadow-float
-                   bg-[#E6E6E8] text-brand-500 border-2 border-brand-500 dark:border-brand-400
+                   bg-surface-elevated text-accent border-2 border-brand-solid
                    transition-opacity hover:opacity-90"
       >
         <AnaIcon size={30} />

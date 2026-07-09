@@ -149,7 +149,7 @@ export function Login() {
           onClick={() => setLoginOpen(true)}
           className="card w-full max-w-sm mx-auto mt-8 p-4 flex items-center justify-center gap-3 shadow-float hover:shadow-hover transition-shadow"
         >
-          <span className="grid place-items-center h-9 w-9 rounded-xl bg-brand-500 text-white shrink-0">
+          <span className="grid place-items-center h-9 w-9 rounded-xl bg-brand-solid text-white shrink-0">
             <Mail size={18} />
           </span>
           <span className="font-semibold">{t('login.signinEmail')}</span>
@@ -168,7 +168,7 @@ export function Login() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {FEATURES.map((f) => (
               <div key={f.k} className="card p-4 flex gap-3 text-left">
-                <div className="grid place-items-center h-9 w-9 rounded-xl bg-brand-500 text-white shrink-0">
+                <div className="grid place-items-center h-9 w-9 rounded-xl bg-brand-solid text-white shrink-0">
                   {f.icon}
                 </div>
                 <div>
@@ -178,7 +178,7 @@ export function Login() {
               </div>
             ))}
             <div className="card p-4 flex items-center gap-3 border-dashed">
-              <div className="grid place-items-center h-9 w-9 rounded-xl bg-brand-500 text-white shrink-0">
+              <div className="grid place-items-center h-9 w-9 rounded-xl bg-brand-solid text-white shrink-0">
                 <Plus size={18} />
               </div>
               <p className="font-medium text-sm text-left">{t('login.more')}</p>
@@ -192,7 +192,7 @@ export function Login() {
         <p className="text-content-secondary -mt-2 mb-5">{t('login.signinSub')}</p>
 
         {config.mockMode && (
-          <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-800">
+          <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
             <p className="font-medium">Modo demonstração ativo.</p>
             <p className="mt-1">
               Este ambiente não está usando o Supabase real. Para entrar com a conta corporativa,
