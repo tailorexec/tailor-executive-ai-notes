@@ -124,7 +124,7 @@ export function UpcomingEvents({ mode = 'card' }: { mode?: 'card' | 'page' }) {
               <p className="text-sm text-content-muted">{t('events.connectSub')}</p>
             </div>
           </div>
-          <button className="btn-neutral w-full md:w-auto" onClick={connect} disabled={loading}>
+          <button className="btn-neutral w-full md:w-auto text-sm px-3.5 py-2" onClick={connect} disabled={loading}>
             {loading ? <Spinner /> : <CalendarDays size={18} className="text-accent" />}
             {t('events.connect')}
           </button>
@@ -234,7 +234,7 @@ export function UpcomingEvents({ mode = 'card' }: { mode?: 'card' | 'page' }) {
                 <p className="text-sm text-content-muted">{t('events.connectSub')}</p>
               </div>
             </div>
-            <button className="btn-neutral w-full md:w-auto shrink-0" onClick={connect} disabled={loading}>
+            <button className="btn-neutral w-full md:w-auto shrink-0 text-sm px-3.5 py-2" onClick={connect} disabled={loading}>
               {loading ? <Spinner /> : <CalendarDays size={18} className="text-accent" />}
               {t('events.connect')}
             </button>

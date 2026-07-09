@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Home, Phone, Settings as SettingsIcon, Sparkles, Mic, ListChecks, CalendarDays, LogOut } from 'lucide-react'
+import { Home, Phone, Settings as SettingsIcon, Sparkles, Mic, ListChecks, CalendarDays, LogOut, PanelLeft, PanelLeftClose } from 'lucide-react'
 import { AnaIcon } from '../components/AnaIcon'
 import { useAuth } from '../auth/AuthProvider'
 import { Logo } from '../components/Logo'
@@ -32,7 +32,7 @@ const ITEMS: Item[] = [
 ]
 
 /* ---------- Desktop sidebar (SaaS layout) ---------- */
-function Sidebar() {
+function Sidebar({ onCollapse }: { onCollapse: () => void }) {
   const { isAdmin, profile, signOut } = useAuth()
   const navigate = useNavigate()
   const t = useT()
@@ -41,15 +41,24 @@ function Sidebar() {
 
   return (
     <aside className="hidden md:flex fixed inset-y-0 left-0 w-64 flex-col border-r border-surface-border bg-surface-card z-40">
+      <button
+        onClick={onCollapse}
+        aria-label={t('sidebar.hide')}
+        title={t('sidebar.hide')}
+        className="absolute top-3 right-3 grid place-items-center h-8 w-8 rounded-lg text-content-muted hover:bg-surface-elevated hover:text-content-primary transition-colors"
+      >
+        <PanelLeftClose size={18} />
+      </button>
+
       <div className="px-4 pt-7 pb-6 flex justify-center">
         <Logo part="ana" heightClass="h-10" />
       </div>
 
       <button
         onClick={() => setNewOpen(true)}
-        className="btn-primary mx-4 mb-6 py-3 rounded-2xl shadow-float"
+        className="btn-primary mx-4 mb-6 py-2.5 text-sm rounded-xl shadow-float"
       >
-        <Sparkles size={18} />
+        <Sparkles size={17} />
         {t('sidebar.smartRec')}
       </button>
 
@@ -92,9 +101,10 @@ function Sidebar() {
         </button>
       </div>
 
-      {/* Marca Tailor: faltava no desktop. Fica discreta acima do bloco do usuario. */}
-      <div className="px-4 pb-3 flex justify-center">
-        <Logo part="tailor" heightClass="h-[18px]" className="opacity-80" />
+      {/* "Powered by" a esquerda, logo Tailor colada na direita, alinhadas pela base. */}
+      <div className="px-4 pb-3 flex items-end justify-between gap-2">
+        <span className="text-[11px] text-content-muted leading-none pb-0.5">Powered by</span>
+        <Logo part="tailor" heightClass="h-[18px]" className="opacity-80 shrink-0" />
       </div>
 
       <div className="p-3 border-t border-surface-border flex items-center gap-2">
@@ -190,12 +200,35 @@ function BottomNav() {
   )
 }
 
+const SIDEBAR_KEY = 'tailor.sidebar'
+
 export function AppShell() {
   const location = useLocation()
   const navigate = useNavigate()
+  const t = useT()
   const { isAdmin } = useAuth()
   const { settings } = useAppSettings()
   const hideMobileNav = HIDE_MOBILE_NAV_ON.some((p) => location.pathname.startsWith(p))
+
+  // Sidebar recolhida (so no desktop). A escolha persiste entre sessoes.
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem(SIDEBAR_KEY) === 'collapsed'
+    } catch {
+      return false
+    }
+  })
+  function toggleSidebar() {
+    setCollapsed((v) => {
+      const next = !v
+      try {
+        localStorage.setItem(SIDEBAR_KEY, next ? 'collapsed' : 'open')
+      } catch {
+        /* ignore */
+      }
+      return next
+    })
+  }
 
   // Lembretes de eventos do calendario (enquanto o app esta aberto).
   useEffect(() => startCalendarReminders(), [])
@@ -234,8 +267,22 @@ export function AppShell() {
 
   return (
     <div className="min-h-screen bg-surface-bg overflow-x-hidden">
-      <Sidebar />
-      <div className="md:pl-64">
+      {!collapsed && <Sidebar onCollapse={toggleSidebar} />}
+
+      {/* Com a sidebar recolhida, o botao de reabrir fica no canto superior esquerdo. */}
+      {collapsed && (
+        <button
+          onClick={toggleSidebar}
+          aria-label={t('sidebar.show')}
+          title={t('sidebar.show')}
+          className="hidden md:grid fixed top-5 left-3 z-50 place-items-center h-9 w-9 rounded-xl bg-surface-card border border-surface-border text-content-secondary hover:text-content-primary transition-colors"
+        >
+          <PanelLeft size={18} />
+        </button>
+      )}
+
+      {/* Recolhida: o conteudo ocupa a pagina toda (so o respiro do botao de reabrir). */}
+      <div className={collapsed ? 'md:pl-14' : 'md:pl-64'}>
         <main className={`mx-auto w-full max-w-6xl overflow-x-hidden ${hideMobileNav ? '' : 'pb-nav'}`}>
           {!hideMobileNav && (
             <div className="px-5 pt-4">

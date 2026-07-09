@@ -8,7 +8,6 @@ import {
   NotebookPen,
   MessageSquare,
   ChevronRight,
-  ArrowDownUp,
   SlidersHorizontal,
   Check,
   Smartphone,
@@ -280,13 +279,9 @@ export function Home() {
 
       {notes && filtered.length > 0 && (
         <div className="flex items-center justify-between mb-2 px-1 md:shrink-0">
+          {/* A ordenacao vive no icone de filtro dentro da busca. */}
           <span className="text-xs text-content-muted">
             {filtered.length} {filtered.length === 1 ? t('home.noteOne') : t('home.noteMany')}
-          </span>
-          {/* A ordenacao vive no icone de filtro dentro da busca. */}
-          <span className="flex items-center gap-1.5 text-xs text-content-secondary">
-            <ArrowDownUp size={14} className="text-accent" />
-            {t(SORT_OPTIONS.find((o) => o.key === sort)!.labelKey)}
           </span>
         </div>
       )}
