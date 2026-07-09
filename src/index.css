@@ -22,7 +22,10 @@
   .dark {
     /* Fundo cinza escuro (nao mais preto). Elevacao = mais CLARO: cards, menu,
        busca e botoes ficam bem acima do fundo, mantendo o texto branco. */
-    --surface-bg: 38 38 38;         /* #262626 pagina */
+    /* O fundo precisa ser da MESMA familia dos cards. Os cards (#5E5E65) sao um cinza
+       levemente frio (B > R,G); um fundo neutro puro (#262626) desafinava com eles.
+       Este tom compartilha o matiz e reduz o salto de luminosidade ate o card. */
+    --surface-bg: 46 46 53;         /* #2E2E35 pagina */
     /* Cinza de referencia do card "conversar com todas" (#4E4E54) clareado 20%,
        aplicado a TUDO: cards, menu, busca, botoes. */
     --surface-card: 94 94 101;      /* #5E5E65 */
