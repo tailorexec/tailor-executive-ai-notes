@@ -8,6 +8,7 @@ import { Avatar } from '../components/ui'
 import { AnnouncementBanner } from '../components/AnnouncementBanner'
 import { NewNoteSheet } from '../components/NewNoteSheet'
 import { startCalendarReminders } from '../lib/calendarReminders'
+import { canReceiveSharedFiles, consumeSharedFile, onSharedFile, setPendingUpload } from '../lib/sharedFile'
 import { useAppSettings } from '../app/SettingsProvider'
 import { Maintenance } from '../pages/Maintenance'
 import { HelpAssistant } from '../pages/HelpAssistant'
@@ -160,12 +161,40 @@ function BottomNav() {
 
 export function AppShell() {
   const location = useLocation()
+  const navigate = useNavigate()
   const { isAdmin } = useAuth()
   const { settings } = useAppSettings()
   const hideMobileNav = HIDE_MOBILE_NAV_ON.some((p) => location.pathname.startsWith(p))
 
   // Lembretes de eventos do calendario (enquanto o app esta aberto).
   useEffect(() => startCalendarReminders(), [])
+
+  // Share target (APK Android): audio/video compartilhado de outro app cai aqui.
+  useEffect(() => {
+    if (!canReceiveSharedFiles()) return
+    let alive = true
+
+    async function check() {
+      const f = await consumeSharedFile()
+      if (f && alive) {
+        setPendingUpload(f)
+        navigate('/capturar?mode=upload&shared=1')
+      }
+    }
+
+    void check() // app aberto pelo compartilhamento
+    let removeListener: (() => void) | undefined
+    void onSharedFile(() => void check()).then((r) => {
+      if (alive) removeListener = r
+      else r()
+    })
+
+    return () => {
+      alive = false
+      removeListener?.()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Modo manutencao: bloqueia todos exceto admin.
   if (settings?.maintenance_enabled && !isAdmin) {

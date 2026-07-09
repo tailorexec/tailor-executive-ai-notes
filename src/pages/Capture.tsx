@@ -24,6 +24,7 @@ import { fmtClock, fmtDuration } from '../lib/format'
 import { Spinner } from '../components/ui'
 import { ConsentSheet, RecordingNotice } from '../components/ConsentSheet'
 import { hasRecordingConsent, setRecordingConsent } from '../lib/consent'
+import { takePendingUpload } from '../lib/sharedFile'
 import { TEMPLATES } from '../lib/templates'
 import type { NoteSourceType } from '../lib/types'
 
@@ -108,6 +109,25 @@ export function Capture() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recorder.ended])
+
+  // Arquivo vindo do menu "Compartilhar" do Android: processa direto, sem o usuario
+  // precisar escolher de novo. Nao mostra o aviso de gravacao (nos nao gravamos nada aqui).
+  const sharedHandledRef = useRef(false)
+  useEffect(() => {
+    if (params.get('shared') !== '1' || sharedHandledRef.current || !profile) return
+    const file = takePendingUpload()
+    if (!file) return
+    sharedHandledRef.current = true
+    const isVideo = file.type.startsWith('video/')
+    void finalize({
+      type: isVideo ? 'video' : 'upload',
+      audioBlob: file,
+      duration: 0,
+      fallbackTitle: file.name.replace(/\.[^.]+$/, '') || 'Audio compartilhado',
+      skipAudioStore: isVideo,
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile])
 
   async function finalize(opts: {
     type: NoteSourceType
