@@ -25,6 +25,7 @@ import { Spinner } from '../components/ui'
 import { ConsentSheet, RecordingNotice } from '../components/ConsentSheet'
 import { hasRecordingConsent, setRecordingConsent } from '../lib/consent'
 import { takePendingUpload } from '../lib/sharedFile'
+import { bgRecorder, canRecordInBackground } from '../lib/bgRecorder'
 import { TEMPLATES } from '../lib/templates'
 import type { NoteSourceType } from '../lib/types'
 
@@ -82,24 +83,67 @@ export function Capture() {
     if (start) void start()
   }
 
+  // No APK Android o modo microfone usa o gravador NATIVO: sobrevive a tela apagada.
+  // (Gravar Meet continua no navegador — depende do getDisplayMedia.)
+  const useNative = canRecordInBackground() && mode === 'record'
+  const [nState, setNState] = useState<'idle' | 'recording' | 'paused'>('idle')
+  const [nSecs, setNSecs] = useState(0)
+
+  useEffect(() => {
+    if (!useNative || nState === 'idle') return
+    const id = setInterval(() => {
+      bgRecorder
+        .status()
+        .then((s) => setNSecs(s.seconds))
+        .catch(() => {})
+    }, 1000)
+    return () => clearInterval(id)
+  }, [useNative, nState])
+
+  // Estado unificado (nativo ou navegador) usado pela UI.
+  const recState = useNative ? nState : recorder.state
+  const recSeconds = useNative ? nSecs : recorder.seconds
+  const recLevel = useNative ? 0 : recorder.level
+
   async function startRecord() {
     autoStoppedRef.current = false
+    if (useNative) {
+      await bgRecorder.start()
+      setNState('recording')
+      setNSecs(0)
+      return
+    }
     await recorder.start()
   }
 
-  // Encerra automaticamente ao atingir o limite de 2 horas.
+  async function togglePause() {
+    if (useNative) {
+      if (nState === 'recording') {
+        await bgRecorder.pause()
+        setNState('paused')
+      } else {
+        await bgRecorder.resume()
+        setNState('recording')
+      }
+      return
+    }
+    if (recorder.state === 'recording') recorder.pause()
+    else recorder.resume()
+  }
+
+  // Encerra automaticamente ao atingir o limite de 2 horas (nativo ou navegador).
   useEffect(() => {
     if (
       isAudioMode &&
-      recorder.state === 'recording' &&
-      recorder.seconds >= config.recordingMaxSeconds &&
+      recState === 'recording' &&
+      recSeconds >= config.recordingMaxSeconds &&
       !autoStoppedRef.current
     ) {
       autoStoppedRef.current = true
       onStopRecording()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recorder.seconds])
+  }, [recSeconds])
 
   // Reuniao: se o usuario parar o compartilhamento pelo navegador, finaliza.
   useEffect(() => {
@@ -200,8 +244,26 @@ export function Capture() {
   }
 
   async function onStopRecording() {
-    const res = await recorder.stop()
     const today = new Date().toLocaleDateString('pt-BR')
+
+    if (useNative) {
+      try {
+        const res = await bgRecorder.stop()
+        setNState('idle')
+        await finalize({
+          type: 'recording',
+          audioBlob: res.blob,
+          duration: res.durationSeconds,
+          fallbackTitle: `Gravacao ${today}`,
+        })
+      } catch {
+        setNState('idle')
+        setError('Nao foi possivel finalizar a gravacao. Tente novamente.')
+      }
+      return
+    }
+
+    const res = await recorder.stop()
     await finalize({
       type: 'recording',
       audioBlob: res.blob,
@@ -463,7 +525,7 @@ export function Capture() {
                 </button>
               </div>
             )
-          ) : mode === 'record' && recorder.state === 'idle' && !recorder.error ? (
+          ) : mode === 'record' && recState === 'idle' && !recorder.error ? (
             <div className="card p-6 text-center max-w-sm">
               <div className="grid place-items-center h-16 w-16 rounded-full bg-accent/10 text-accent mx-auto mb-4">
                 <Mic size={30} />
@@ -472,6 +534,11 @@ export function Capture() {
               <p className="text-content-secondary mt-2 text-sm">
                 Preencha titulo, tema e contexto acima (opcionais) e inicie quando quiser.
               </p>
+              {useNative && (
+                <p className="text-xs text-accent mt-2">
+                  A gravacao continua mesmo com a tela apagada.
+                </p>
+              )}
               <button className="btn-primary w-full mt-5" onClick={() => withConsent(startRecord)}>
                 <Mic size={18} /> Iniciar gravacao
               </button>
@@ -488,22 +555,22 @@ export function Capture() {
               <div className="relative mb-8">
                 <div
                   className="absolute inset-0 rounded-full bg-accent/25"
-                  style={{ transform: `scale(${1 + recorder.level * 0.8})`, transition: 'transform 80ms' }}
+                  style={{ transform: `scale(${1 + recLevel * 0.8})`, transition: 'transform 80ms' }}
                 />
                 <div className="grid place-items-center h-28 w-28 rounded-full bg-brand-500 text-white relative">
                   {mode === 'meeting' ? <Headphones size={40} /> : <Mic size={40} />}
                 </div>
               </div>
-              <p className="font-display text-4xl font-bold tabular-nums mb-2">{fmtClock(recorder.seconds)}</p>
+              <p className="font-display text-4xl font-bold tabular-nums mb-2">{fmtClock(recSeconds)}</p>
               <p className="text-content-muted mb-1">
-                {recorder.state === 'paused'
+                {recState === 'paused'
                   ? 'Pausado'
                   : mode === 'meeting'
                     ? 'Gravando reuniao (aba + microfone)...'
                     : 'Gravando...'}
               </p>
               {(() => {
-                const remaining = config.recordingMaxSeconds - recorder.seconds
+                const remaining = config.recordingMaxSeconds - recSeconds
                 const low = remaining <= 300
                 return (
                   <p className={`mb-9 text-sm ${low ? 'text-accent font-medium' : 'text-content-muted'}`}>
@@ -513,12 +580,12 @@ export function Capture() {
               })()}
 
               <div className="flex items-center gap-4">
-                {recorder.state === 'recording' ? (
-                  <button onClick={recorder.pause} className="btn-ghost h-14 w-14 rounded-full p-0">
+                {recState === 'recording' ? (
+                  <button onClick={togglePause} className="btn-ghost h-14 w-14 rounded-full p-0">
                     <Pause size={22} />
                   </button>
                 ) : (
-                  <button onClick={recorder.resume} className="btn-ghost h-14 w-14 rounded-full p-0">
+                  <button onClick={togglePause} className="btn-ghost h-14 w-14 rounded-full p-0">
                     <Play size={22} />
                   </button>
                 )}

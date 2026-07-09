@@ -10,8 +10,9 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        // Precisa ser registrado ANTES do super.onCreate (a bridge e criada la).
+        // Precisam ser registrados ANTES do super.onCreate (a bridge e criada la).
         registerPlugin(SharedFilePlugin.class);
+        registerPlugin(BgRecorderPlugin.class);
         super.onCreate(savedInstanceState);
         handleShare(getIntent());
     }

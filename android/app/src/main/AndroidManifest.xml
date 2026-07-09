@@ -38,6 +38,12 @@
 
         </activity>
 
+        <!-- Mantem o microfone ativo com a tela apagada (obrigatorio no Android 14+). -->
+        <service
+            android:name=".RecorderService"
+            android:foregroundServiceType="microphone"
+            android:exported="false" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -54,4 +60,9 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+
+    <!-- Gravacao com a tela apagada -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 </manifest>
