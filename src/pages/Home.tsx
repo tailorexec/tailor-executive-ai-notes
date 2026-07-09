@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Search,
@@ -8,8 +8,9 @@ import {
   NotebookPen,
   MessageSquare,
   ChevronRight,
-  ChevronDown,
   ArrowDownUp,
+  SlidersHorizontal,
+  Check,
   Smartphone,
   Monitor,
   Video,
@@ -45,6 +46,20 @@ function sourceIcon(n: Note): React.ReactNode {
   return <Mic size={18} /> // origem desconhecida (notas antigas)
 }
 
+type SortKey = 'recent' | 'longest' | 'shortest' | 'prioDesc' | 'prioAsc'
+
+const SORT_OPTIONS: { key: SortKey; labelKey: string }[] = [
+  { key: 'recent', labelKey: 'home.sortRecent' },
+  { key: 'longest', labelKey: 'home.sortLongest' },
+  { key: 'shortest', labelKey: 'home.sortShortest' },
+  { key: 'prioDesc', labelKey: 'home.sortPrioDesc' },
+  { key: 'prioAsc', labelKey: 'home.sortPrioAsc' },
+]
+
+/** alta > media > baixa. Notas SEM prioridade ficam sempre por ultimo. */
+const PRIO_RANK: Record<string, number> = { alta: 3, media: 2, baixa: 1 }
+const prioOf = (n: Note) => (n.priority ? PRIO_RANK[n.priority] ?? 0 : 0)
+
 export function Home() {
   const { profile } = useAuth()
   const navigate = useNavigate()
@@ -52,7 +67,9 @@ export function Home() {
   const toast = useToast()
   const [notes, setNotes] = useState<Note[] | null>(null)
   const [query, setQuery] = useState('')
-  const [sort, setSort] = useState<'recent' | 'oldest' | 'longest'>('recent')
+  const [sort, setSort] = useState<SortKey>('recent')
+  const [sortOpen, setSortOpen] = useState(false)
+  const sortRef = useRef<HTMLDivElement | null>(null)
   const [folderFilter, setFolderFilter] = useState<string>('all')
   const [folderList, setFolderList] = useState<Folder[]>([])
   const [folderOpen, setFolderOpen] = useState(false)
@@ -86,6 +103,23 @@ export function Home() {
     db.listFolders(profile.id).then(setFolderList).catch(() => {})
   }, [profile])
 
+  // Fecha o menu de ordenacao ao clicar fora ou apertar Esc.
+  useEffect(() => {
+    if (!sortOpen) return
+    function onDown(e: MouseEvent) {
+      if (sortRef.current && !sortRef.current.contains(e.target as Node)) setSortOpen(false)
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setSortOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [sortOpen])
+
   const folderName = (id: string | null) => folderList.find((f) => f.id === id)?.name
   const folderColor = (id: string | null) => folderList.find((f) => f.id === id)?.color ?? null
 
@@ -101,10 +135,18 @@ export function Home() {
         (n.summary ?? '').toLowerCase().includes(q)
       )
     })
+    const byRecent = (a: Note, b: Note) => Date.parse(b.created_at) - Date.parse(a.created_at)
     arr.sort((a, b) => {
-      if (sort === 'oldest') return Date.parse(a.created_at) - Date.parse(b.created_at)
-      if (sort === 'longest') return (b.duration_seconds ?? 0) - (a.duration_seconds ?? 0)
-      return Date.parse(b.created_at) - Date.parse(a.created_at)
+      if (sort === 'longest') return (b.duration_seconds ?? 0) - (a.duration_seconds ?? 0) || byRecent(a, b)
+      if (sort === 'shortest') return (a.duration_seconds ?? 0) - (b.duration_seconds ?? 0) || byRecent(a, b)
+      if (sort === 'prioDesc') return prioOf(b) - prioOf(a) || byRecent(a, b)
+      if (sort === 'prioAsc') {
+        // Sem prioridade (0) vai para o fim tambem na ordem crescente.
+        const ra = prioOf(a) || Infinity
+        const rb = prioOf(b) || Infinity
+        return ra - rb || byRecent(a, b)
+      }
+      return byRecent(a, b)
     })
     return arr
   }, [notes, query, folderFilter, sort])
@@ -173,14 +215,51 @@ export function Home() {
         <UpcomingEvents />
       </div>
 
-      <div className="relative mb-3 md:shrink-0">
+      {/* Busca + filtro de ordenacao (icone a direita, dentro do proprio card) */}
+      <div className="relative mb-3 md:shrink-0" ref={sortRef}>
         <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-content-muted" />
         <input
-          className="input pl-11"
+          className="input pl-11 pr-12"
           placeholder={t('home.search')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
+        <button
+          onClick={() => setSortOpen((v) => !v)}
+          aria-label={t('home.sortBy')}
+          aria-expanded={sortOpen}
+          title={t('home.sortBy')}
+          className={`absolute right-2 top-1/2 -translate-y-1/2 grid place-items-center h-9 w-9 rounded-lg transition-colors ${
+            sortOpen || sort !== 'recent'
+              ? 'text-accent bg-accent/10'
+              : 'text-content-muted hover:text-content-primary'
+          }`}
+        >
+          <SlidersHorizontal size={18} />
+        </button>
+
+        {sortOpen && (
+          <div className="absolute right-0 top-full mt-2 z-30 w-64 card p-1.5 shadow-float">
+            <p className="px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-content-muted">
+              {t('home.sortBy')}
+            </p>
+            {SORT_OPTIONS.map((o) => (
+              <button
+                key={o.key}
+                onClick={() => {
+                  setSort(o.key)
+                  setSortOpen(false)
+                }}
+                className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg text-sm text-left transition-colors ${
+                  sort === o.key ? 'text-accent bg-accent/10' : 'text-content-secondary hover:bg-surface-elevated'
+                }`}
+              >
+                {t(o.labelKey)}
+                {sort === o.key && <Check size={16} className="shrink-0" />}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {folderList.length > 0 && (
@@ -204,20 +283,11 @@ export function Home() {
           <span className="text-xs text-content-muted">
             {filtered.length} {filtered.length === 1 ? t('home.noteOne') : t('home.noteMany')}
           </span>
-          <div className="flex items-center gap-1.5 text-xs text-content-secondary">
+          {/* A ordenacao vive no icone de filtro dentro da busca. */}
+          <span className="flex items-center gap-1.5 text-xs text-content-secondary">
             <ArrowDownUp size={14} className="text-accent" />
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value as 'recent' | 'oldest' | 'longest')}
-              className="appearance-none border-0 bg-transparent pr-1 focus:outline-none cursor-pointer"
-              aria-label="Ordenar notas"
-            >
-              <option value="recent">{t('home.sortRecent')}</option>
-              <option value="oldest">{t('home.sortOldest')}</option>
-              <option value="longest">{t('home.sortLongest')}</option>
-            </select>
-            <ChevronDown size={14} className="text-content-muted -ml-0.5 pointer-events-none" />
-          </div>
+            {t(SORT_OPTIONS.find((o) => o.key === sort)!.labelKey)}
+          </span>
         </div>
       )}
 
