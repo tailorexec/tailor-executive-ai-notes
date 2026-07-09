@@ -192,7 +192,7 @@ export function Login() {
         <p className="text-content-secondary -mt-2 mb-5">{t('login.signinSub')}</p>
 
         {config.mockMode && (
-          <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
+          <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-800">
             <p className="font-medium">Modo demonstração ativo.</p>
             <p className="mt-1">
               Este ambiente não está usando o Supabase real. Para entrar com a conta corporativa,

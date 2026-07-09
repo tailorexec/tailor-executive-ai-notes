@@ -23,9 +23,9 @@
     /* Pagina preta; superficies (cards, menu, busca, botoes) em cinza CLARO.
        Espelha o modo claro: card mais claro, elevated (inputs/botoes) um pouco mais cinza. */
     --surface-bg: 1 1 1;            /* #010101 pagina */
-    --surface-card: 233 233 237;    /* #E9E9ED */
-    --surface-elevated: 220 220 224;/* #DCDCE0 */
-    --surface-border: 184 184 190;  /* #B8B8BE */
+    --surface-card: 214 214 219;    /* #D6D6DB */
+    --surface-elevated: 199 199 205;/* #C7C7CD */
+    --surface-border: 166 166 174;  /* #A6A6AE */
 
     /* Estes valores valem para o texto que fica direto sobre a PAGINA PRETA.
        Dentro das superficies claras eles sao invertidos (regra abaixo). */
@@ -55,8 +55,8 @@
   .dark [class~='bg-surface-elevated'] {
     --content-primary: 10 10 11;
     --content-secondary: 60 60 64;
-    --content-muted: 92 92 98;     /* #5C5C62 -> 4.9:1 ate no input */
-    --accent: 148 16 16;           /* vermelho da marca: 6.5:1 sobre o cinza claro */
+    --content-muted: 74 74 80;     /* #4A4A50 -> 5.2:1 ate no input */
+    --accent: 148 16 16;           /* vermelho da marca: 5.3:1 sobre o cinza claro */
   }
 
   * {

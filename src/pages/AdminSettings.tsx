@@ -85,7 +85,7 @@ export function AdminSettings() {
             <Megaphone size={18} className="text-accent" /> Faixa de avisos
           </h3>
           {s.announcement_enabled && (
-            <span className="text-[10px] uppercase tracking-wide bg-green-500/15 text-green-600 dark:text-green-400 px-2 py-0.5 rounded-full">
+            <span className="text-[10px] uppercase tracking-wide bg-green-500/15 text-green-700 px-2 py-0.5 rounded-full">
               ativo
             </span>
           )}

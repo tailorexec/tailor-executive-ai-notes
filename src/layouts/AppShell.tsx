@@ -42,7 +42,8 @@ function Sidebar() {
   return (
     <aside className="hidden md:flex fixed inset-y-0 left-0 w-64 flex-col border-r border-surface-border bg-surface-card z-40">
       <div className="px-4 pt-7 pb-6 flex justify-center">
-        <Logo part="ana" heightClass="h-12" />
+        {/* A sidebar e uma superficie CLARA nos dois temas: a arte branca sumiria aqui. */}
+        <Logo part="ana" heightClass="h-12" onLightSurface />
       </div>
 
       <button
@@ -144,7 +145,7 @@ function BottomNav() {
             <button
               onClick={() => setNewOpen(true)}
               aria-label={t('new.title')}
-              className="grid place-items-center h-14 w-14 -mt-8 rounded-full bg-brand-500 hover:bg-brand-600 text-white shadow-float ring-2 ring-white transition-colors"
+              className="grid place-items-center h-14 w-14 -mt-8 rounded-full bg-brand-500 hover:bg-brand-600 text-white shadow-float ring-[3px] ring-surface-card transition-colors"
             >
               <Mic size={24} />
             </button>

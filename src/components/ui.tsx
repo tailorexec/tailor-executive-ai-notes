@@ -12,9 +12,9 @@ export function Spinner({ size = 18, className = '' }: { size?: number; classNam
 export function PriorityBadge({ level, className = '' }: { level: NotePriority; className?: string }) {
   const t = useT()
   const map: Record<NotePriority, { key: string; color: string }> = {
-    alta: { key: 'prio.alta', color: 'text-red-600 dark:text-red-500' },
-    media: { key: 'prio.media', color: 'text-yellow-500 dark:text-yellow-400' },
-    baixa: { key: 'prio.baixa', color: 'text-blue-500 dark:text-blue-400' },
+    alta: { key: 'prio.alta', color: 'text-red-600' },
+    media: { key: 'prio.media', color: 'text-amber-700' },
+    baixa: { key: 'prio.baixa', color: 'text-blue-600' },
   }
   const m = map[level]
   return (

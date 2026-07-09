@@ -9,6 +9,7 @@ export function Logo({
   size = 'md',
   part = 'full',
   heightClass,
+  onLightSurface = false,
 }: {
   className?: string
   /** mantido por compatibilidade; nao usado (a logo ja traz o subtitulo) */
@@ -17,9 +18,12 @@ export function Logo({
   part?: LogoPart
   /** sobrescreve a altura padrao do tamanho (ex.: 'h-11 md:h-12') */
   heightClass?: string
+  /** A arte e escolhida pelo TEMA. Mas no modo escuro as superficies (cards, sidebar)
+   *  sao CLARAS — ali a arte branca sumiria. Force a versao de texto escuro. */
+  onLightSurface?: boolean
 }) {
   const { theme } = useTheme()
-  const suffix = theme === 'dark' ? 'dark' : 'light'
+  const suffix = !onLightSurface && theme === 'dark' ? 'dark' : 'light'
   // *-light = texto preto (tema claro); *-dark = texto branco (tema escuro).
   const base =
     part === 'ana'
