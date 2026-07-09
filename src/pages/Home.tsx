@@ -118,7 +118,7 @@ export function Home() {
         <div className="md:hidden flex items-start justify-between gap-3 mb-3">
           <div>
             <Logo part="anaonly" heightClass="h-[19px]" />
-            <span className="block text-accent text-[9px] font-semibold uppercase tracking-[0.22em] leading-none mt-1">
+            <span className="block text-brand-400 text-[9px] font-semibold uppercase tracking-[0.22em] leading-none mt-1">
               AI NOTES ADVISOR
             </span>
           </div>
@@ -275,7 +275,7 @@ export function Home() {
                   </div>
                   <span
                     className={`grid place-items-center h-7 w-7 rounded-full shrink-0 ${
-                      fc ? '' : 'bg-accent/10 text-accent'
+                      fc ? '' : 'bg-surface-bg text-content-secondary'
                     }`}
                     style={fc ? { color: fc, background: `${fc}1a` } : undefined}
                   >
@@ -285,7 +285,7 @@ export function Home() {
                 <div className="flex items-center gap-2">
                   <h3 className="font-semibold truncate">{n.title}</h3>
                   {n.status === 'processing' && (
-                    <span className="text-[10px] uppercase tracking-wide text-accent bg-accent/10 px-1.5 py-0.5 rounded shrink-0">
+                    <span className="text-[10px] uppercase tracking-wide bg-brand-500 text-white px-1.5 py-0.5 rounded shrink-0">
                       {t('home.processing')}
                     </span>
                   )}
@@ -304,26 +304,13 @@ export function Home() {
       )}
       </div>
 
-      {/* FAB da ANA (so ela): abre o assistente. Reflexo estatico de vidro para destaque. */}
+      {/* FAB da ANA: neutro (tinta no claro, quase branco no escuro). Sem vermelho. */}
       <button
         onClick={() => setHelpOpen(true)}
         aria-label={t('sidebar.talkAna')}
-        className="fixed right-5 fab-above-nav z-50 overflow-hidden grid place-items-center h-16 w-16 rounded-full bg-brand-500 hover:bg-brand-600 text-white shadow-float ring-1 ring-white/25 transition-colors"
+        className="fixed right-5 fab-above-nav z-50 grid place-items-center h-16 w-16 rounded-full bg-content-primary text-surface-bg shadow-float ring-1 ring-black/10 dark:ring-white/20 transition-opacity hover:opacity-90"
       >
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-0 rounded-full"
-          style={{
-            background:
-              'linear-gradient(140deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.25) 20%, rgba(255,255,255,0.06) 40%, rgba(255,255,255,0) 56%)',
-          }}
-        />
-        <span
-          aria-hidden
-          className="pointer-events-none absolute -bottom-3 -right-3 h-12 w-12 rounded-full"
-          style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.20), transparent 70%)' }}
-        />
-        <AnaIcon size={30} className="relative" />
+        <AnaIcon size={30} />
       </button>
 
       {askOpen && <AskNotesSheet open={askOpen} onClose={() => setAskOpen(false)} notes={notes ?? []} />}

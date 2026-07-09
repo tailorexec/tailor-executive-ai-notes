@@ -149,7 +149,7 @@ export function Login() {
           onClick={() => setLoginOpen(true)}
           className="card w-full max-w-sm mx-auto mt-8 p-4 flex items-center justify-center gap-3 shadow-float hover:shadow-hover transition-shadow"
         >
-          <span className="grid place-items-center h-9 w-9 rounded-xl bg-accent/10 text-accent shrink-0">
+          <span className="grid place-items-center h-9 w-9 rounded-xl bg-brand-500 text-white shrink-0">
             <Mail size={18} />
           </span>
           <span className="font-semibold">{t('login.signinEmail')}</span>
@@ -168,7 +168,7 @@ export function Login() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {FEATURES.map((f) => (
               <div key={f.k} className="card p-4 flex gap-3 text-left">
-                <div className="grid place-items-center h-9 w-9 rounded-xl bg-accent/10 text-accent shrink-0">
+                <div className="grid place-items-center h-9 w-9 rounded-xl bg-brand-500 text-white shrink-0">
                   {f.icon}
                 </div>
                 <div>
@@ -178,7 +178,7 @@ export function Login() {
               </div>
             ))}
             <div className="card p-4 flex items-center gap-3 border-dashed">
-              <div className="grid place-items-center h-9 w-9 rounded-xl bg-accent/10 text-accent shrink-0">
+              <div className="grid place-items-center h-9 w-9 rounded-xl bg-brand-500 text-white shrink-0">
                 <Plus size={18} />
               </div>
               <p className="font-medium text-sm text-left">{t('login.more')}</p>
@@ -241,7 +241,7 @@ export function Login() {
           </div>
 
           {error && (
-            <div className="text-sm text-accent bg-accent/10 border border-accent/20 rounded-xl px-4 py-3">
+            <div className="alert-error">
               {error}
             </div>
           )}

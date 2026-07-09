@@ -482,7 +482,7 @@ export function Capture() {
       )}
 
       {error && (
-        <div className="text-sm text-accent bg-accent/10 border border-accent/20 rounded-xl px-4 py-3 mb-4">
+        <div className="alert-error mb-4">
           {error}
         </div>
       )}
@@ -527,7 +527,7 @@ export function Capture() {
             )
           ) : mode === 'record' && recState === 'idle' && !recorder.error ? (
             <div className="card p-6 text-center max-w-sm">
-              <div className="grid place-items-center h-16 w-16 rounded-full bg-accent/10 text-accent mx-auto mb-4">
+              <div className="grid place-items-center h-16 w-16 rounded-full bg-brand-500 text-white mx-auto mb-4">
                 <Mic size={30} />
               </div>
               <h3 className="font-display font-semibold text-lg">Pronto para gravar</h3>

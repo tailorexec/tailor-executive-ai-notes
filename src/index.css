@@ -23,19 +23,22 @@
     /* Fundo cinza escuro (nao mais preto). Elevacao = mais CLARO: cards, menu,
        busca e botoes ficam bem acima do fundo, mantendo o texto branco. */
     --surface-bg: 38 38 38;         /* #262626 pagina */
-    --surface-card: 62 62 66;       /* #3E3E42 cards, menu */
-    --surface-elevated: 78 78 84;   /* #4E4E54 botoes, inputs, busca */
-    --surface-border: 99 99 106;    /* #63636A */
+    /* Cinza de referencia do card "conversar com todas" (#4E4E54) clareado 20%,
+       aplicado a TUDO: cards, menu, busca, botoes. */
+    --surface-card: 94 94 101;      /* #5E5E65 */
+    --surface-elevated: 94 94 101;  /* #5E5E65 */
+    --surface-border: 122 122 130;  /* #7A7A82 */
 
     /* Texto clareado: nas superficies mais claras o cinza antigo perdia contraste. */
-    --content-primary: 245 245 245;
-    --content-secondary: 209 209 211;
-    --content-muted: 196 196 198;   /* #C4C4C6 -> 4.7:1 ate no input */
+    --content-primary: 250 250 250;
+    --content-secondary: 224 224 226;
+    --content-muted: 212 212 214;   /* #D4D4D6 */
 
-    /* Com as superficies mais claras, o vermelho vivo (#F10C27) caiu para 1.9:1 nos
-       botoes/inputs. Este tom passa em card (4.4:1) e elevated (3.4:1).
-       Preenchimentos solidos continuam no vermelho da marca (bg-brand-500). */
-    --accent: 255 129 137;         /* #FF8189 */
+    /* Vermelho VIVO da identidade. Sobre a pagina (#262626) da 3.5:1 — ok para
+       icone/texto grande. Sobre os cards claros ele NAO tem contraste (1.5:1), entao
+       dentro de card o vermelho e usado como PREENCHIMENTO (bg-brand-500 + texto branco),
+       nunca como cor de texto/icone. */
+    --accent: 241 12 39;           /* #F10C27 */
 
     color-scheme: dark;
   }
@@ -145,6 +148,17 @@
   /* Destrutivo: contorno vermelho que preenche no hover — distinto do primario solido */
   .btn-danger {
     @apply btn border border-brand-400 text-brand-400 hover:bg-brand-400 hover:text-white px-4 py-2.5;
+  }
+  /* CTA neutro (monocromatico da identidade): tinta no claro, quase branco no escuro.
+     Usado onde o vermelho poluiria a tela (ex.: conectar Google Calendar). */
+  .btn-neutral {
+    @apply btn bg-content-primary text-surface-bg hover:opacity-90 px-4 py-2.5;
+  }
+
+  /* Bloco de erro. O texto NAO usa text-accent: sobre os cards claros do modo escuro
+     o vermelho da identidade tem so 1.5:1. O vermelho fica no tint e na borda. */
+  .alert-error {
+    @apply text-sm text-content-primary bg-accent/15 border border-accent/40 rounded-xl px-4 py-3;
   }
 
   .input {

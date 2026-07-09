@@ -307,7 +307,7 @@ export function NoteDetail() {
                               onClick={() => setPriority(note.priority === p ? null : p)}
                               className={`text-[11px] font-medium rounded-full px-2.5 py-1 border transition-colors ${
                                 note.priority === p
-                                  ? 'bg-accent/10 text-accent border-accent/30'
+                                  ? 'bg-brand-500 text-white border-accent/30'
                                   : 'bg-surface-elevated text-content-secondary border-surface-border hover:border-accent/40'
                               }`}
                             >
@@ -318,7 +318,7 @@ export function NoteDetail() {
                             onClick={() => setPriority(null)}
                             className={`text-[11px] font-medium rounded-full px-2.5 py-1 border transition-colors ${
                               !note.priority
-                                ? 'bg-accent/10 text-accent border-accent/30'
+                                ? 'bg-brand-500 text-white border-accent/30'
                                 : 'bg-surface-elevated text-content-secondary border-surface-border hover:border-accent/40'
                             }`}
                           >
@@ -353,7 +353,7 @@ export function NoteDetail() {
         <div className="flex flex-wrap items-center gap-2 mt-2">
           {note.priority && <PriorityBadge level={note.priority} className="px-2.5 py-1 text-[11px]" />}
           {note.template && note.template !== 'geral' && (
-            <span className="text-[11px] font-medium uppercase tracking-wide text-accent bg-accent/10 border border-accent/20 rounded-full px-2.5 py-1">
+            <span className="text-[11px] font-medium uppercase tracking-wide bg-brand-500 text-white border border-brand-600 rounded-full px-2.5 py-1">
               {templateLabel(note.template)}
             </span>
           )}
@@ -737,7 +737,7 @@ function AnalysisView({ analysis, t }: { analysis: NonNullable<Note['analysis']>
     <div className="space-y-5">
       {typeof analysis.overallScore === 'number' && (
         <div className="card p-5 flex items-center gap-4">
-          <div className="grid place-items-center h-16 w-16 rounded-full bg-accent/10 text-accent font-display font-bold text-xl">
+          <div className="grid place-items-center h-16 w-16 rounded-full bg-brand-500 text-white font-display font-bold text-xl">
             {analysis.overallScore}
           </div>
           <div>

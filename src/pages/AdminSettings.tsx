@@ -158,7 +158,7 @@ export function AdminSettings() {
             <Wrench size={18} className="text-accent" /> Modo manutencao
           </h3>
           {s.maintenance_enabled && (
-            <span className="text-[10px] uppercase tracking-wide bg-accent/15 text-accent px-2 py-0.5 rounded-full">
+            <span className="text-[10px] uppercase tracking-wide bg-brand-500 text-white px-2 py-0.5 rounded-full">
               ativo
             </span>
           )}
@@ -186,7 +186,7 @@ export function AdminSettings() {
           </button>
         ) : (
           <>
-            <div className="text-xs text-accent bg-accent/10 border border-accent/20 rounded-xl px-3 py-2 mb-3">
+            <div className="alert-error text-xs mb-3">
               Ao publicar, o app fica bloqueado para todos (voce, admin, continua com acesso).
             </div>
             <button className="btn-primary w-full" onClick={() => saveMaintenance(true)} disabled={savingMaint}>

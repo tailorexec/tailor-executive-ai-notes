@@ -63,7 +63,7 @@ function Sidebar() {
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-colors ${
                 isActive
-                  ? 'bg-accent/10 text-accent'
+                  ? 'bg-brand-500 text-white'
                   : 'text-content-secondary hover:bg-surface-elevated hover:text-content-primary'
               }`
             }
@@ -144,7 +144,7 @@ function BottomNav() {
             <button
               onClick={() => setNewOpen(true)}
               aria-label={t('new.title')}
-              className="grid place-items-center h-14 w-14 -mt-8 rounded-full bg-brand-500 hover:bg-brand-600 text-white shadow-float ring-4 ring-surface-card transition-colors"
+              className="grid place-items-center h-14 w-14 -mt-8 rounded-full bg-brand-500 hover:bg-brand-600 text-white shadow-float ring-2 ring-white transition-colors"
             >
               <Mic size={24} />
             </button>

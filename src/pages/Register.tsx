@@ -183,7 +183,7 @@ export function Register() {
           </div>
 
           {error && (
-            <div className="text-sm text-accent bg-accent/10 border border-accent/20 rounded-xl px-4 py-3">
+            <div className="alert-error">
               {error}
             </div>
           )}

@@ -8,7 +8,7 @@ export function Agenda() {
   return (
     <div className="px-5 safe-top">
       <header className="flex items-center gap-3 mb-6">
-        <span className="grid place-items-center h-10 w-10 rounded-full bg-accent/10 text-accent shrink-0">
+        <span className="grid place-items-center h-10 w-10 rounded-full bg-brand-500 text-white shrink-0">
           <CalendarDays size={20} />
         </span>
         <div>

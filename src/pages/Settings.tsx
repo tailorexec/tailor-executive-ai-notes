@@ -300,7 +300,7 @@ export function Settings() {
           autoCapitalize="characters"
         />
         {delError && (
-          <div className="text-sm text-accent bg-accent/10 border border-accent/20 rounded-xl px-4 py-3 mb-3">
+          <div className="alert-error mb-3">
             {delError}
           </div>
         )}
@@ -315,7 +315,7 @@ export function Settings() {
 
       <div className="flex flex-col items-center gap-2 pb-4 text-content-muted">
         <Logo size="lg" />
-        <p className="text-xs">ANA by Tailor • v0.4.5</p>
+        <p className="text-xs">ANA by Tailor • v0.4.6</p>
       </div>
     </div>
   )

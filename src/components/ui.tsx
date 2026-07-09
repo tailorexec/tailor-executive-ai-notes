@@ -48,7 +48,7 @@ export function Avatar({
   }
   return (
     <div
-      className="grid place-items-center rounded-full bg-accent/15 text-accent font-semibold shrink-0"
+      className="grid place-items-center rounded-full bg-brand-500 text-white font-semibold shrink-0"
       style={{ width: size, height: size, fontSize: size * 0.38 }}
     >
       {initials(first, last)}
@@ -138,7 +138,7 @@ export function Sheet({
 /** Selo para funcoes ainda nao disponiveis no web-mobile. */
 export function SoonBadge({ children = 'EM BREVE NO APP' }: { children?: string }) {
   return (
-    <span className="text-[10px] font-semibold uppercase tracking-wide text-accent bg-accent/10 border border-accent/20 rounded-full px-2 py-0.5 whitespace-nowrap">
+    <span className="text-[10px] font-semibold uppercase tracking-wide bg-brand-500 text-white border border-brand-600 rounded-full px-2 py-0.5 whitespace-nowrap">
       {children}
     </span>
   )
