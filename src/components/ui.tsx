@@ -96,11 +96,29 @@ export function Sheet({
     return () => document.removeEventListener('keydown', onKey)
   }, [open, onClose])
 
+  // Trava o scroll do body enquanto a folha esta aberta. Sem isto, no iOS a pagina
+  // de tras rola por baixo do overlay e a folha parece "travada".
+  useEffect(() => {
+    if (!open) return
+    const y = window.scrollY
+    const b = document.body
+    const prev = { position: b.style.position, top: b.style.top, width: b.style.width }
+    b.style.position = 'fixed'
+    b.style.top = `-${y}px`
+    b.style.width = '100%'
+    return () => {
+      b.style.position = prev.position
+      b.style.top = prev.top
+      b.style.width = prev.width
+      window.scrollTo(0, y)
+    }
+  }, [open])
+
   if (!open) return null
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/50 animate-fade-in" onClick={onClose} />
-      <div className="relative w-full sm:max-w-md bg-surface-card border border-surface-border rounded-t-3xl sm:rounded-3xl shadow-float animate-slide-up safe-bottom">
+      <div className="relative w-full sm:max-w-md max-h-[90dvh] overflow-y-auto overscroll-contain bg-surface-card border border-surface-border rounded-t-3xl sm:rounded-3xl shadow-float animate-slide-up safe-bottom">
         <div className="flex items-center justify-between px-5 pt-5 pb-2">
           <h2 className="font-display font-semibold text-lg">{title}</h2>
           <button

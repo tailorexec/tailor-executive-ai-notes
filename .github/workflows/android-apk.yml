@@ -11,6 +11,11 @@ on:
         options:
           - release
           - debug
+      aab:
+        description: "Gerar tambem o .aab (obrigatorio para publicar na Google Play)"
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   build:
@@ -73,6 +78,17 @@ jobs:
           cd android
           ./gradlew assembleRelease --no-daemon
 
+      - name: Build signed AAB (Google Play)
+        if: inputs.build_type == 'release' && inputs.aab
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/ana-release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          cd android
+          ./gradlew bundleRelease --no-daemon
+
       - name: Verify signature
         if: inputs.build_type == 'release'
         run: |
@@ -89,4 +105,12 @@ jobs:
         with:
           name: ana-app-${{ inputs.build_type }}
           path: android/app/build/outputs/apk/${{ inputs.build_type }}/app-${{ inputs.build_type }}.apk
+          if-no-files-found: error
+
+      - name: Upload AAB
+        if: inputs.build_type == 'release' && inputs.aab
+        uses: actions/upload-artifact@v4
+        with:
+          name: ana-app-bundle
+          path: android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error

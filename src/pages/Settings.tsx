@@ -17,7 +17,9 @@ import {
   Download,
   Languages,
   Check,
+  UserX,
 } from 'lucide-react'
+import { deleteMyAccount } from '../lib/account'
 import { useAuth } from '../auth/AuthProvider'
 import { useTheme } from '../theme/ThemeProvider'
 import { Avatar, Sheet, Spinner } from '../components/ui'
@@ -68,8 +70,25 @@ export function Settings() {
   const [uploading, setUploading] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [langOpen, setLangOpen] = useState(false)
+  const [delOpen, setDelOpen] = useState(false)
+  const [delText, setDelText] = useState('')
+  const [deleting, setDeleting] = useState(false)
+  const [delError, setDelError] = useState<string | null>(null)
   const { lang, setLang, t } = useI18n()
   const fileRef = useRef<HTMLInputElement | null>(null)
+
+  async function deleteAccount() {
+    setDeleting(true)
+    setDelError(null)
+    try {
+      await deleteMyAccount()
+      await signOut()
+      navigate('/login', { replace: true })
+    } catch (e) {
+      setDelError(e instanceof Error ? e.message : t('common.error'))
+      setDeleting(false)
+    }
+  }
 
   if (!profile) return null
 
@@ -252,13 +271,51 @@ export function Settings() {
         <Row icon={<FileLock2 size={20} />} label={t('settings.privacy')} onClick={() => navigate('/privacidade')} />
       </div>
 
-      <div className="card mb-8">
+      <div className="card mb-4">
         <Row icon={<LogOut size={20} />} label={t('settings.logout')} danger onClick={signOut} right={<span />} />
       </div>
 
+      <div className="card mb-8">
+        <Row
+          icon={<UserX size={20} />}
+          label={t('settings.deleteAccount')}
+          danger
+          onClick={() => {
+            setDelText('')
+            setDelError(null)
+            setDelOpen(true)
+          }}
+          right={<span />}
+        />
+      </div>
+
+      <Sheet open={delOpen} onClose={() => setDelOpen(false)} title={t('settings.deleteAccount')}>
+        <p className="text-sm text-content-secondary mb-4">{t('settings.deleteAccountWarn')}</p>
+        <label className="label">{t('settings.deleteAccountConfirm')}</label>
+        <input
+          className="input mb-3"
+          value={delText}
+          onChange={(e) => setDelText(e.target.value)}
+          placeholder="EXCLUIR"
+          autoCapitalize="characters"
+        />
+        {delError && (
+          <div className="text-sm text-accent bg-accent/10 border border-accent/20 rounded-xl px-4 py-3 mb-3">
+            {delError}
+          </div>
+        )}
+        <button
+          className="btn-danger w-full"
+          disabled={delText.trim().toUpperCase() !== 'EXCLUIR' || deleting}
+          onClick={deleteAccount}
+        >
+          {deleting ? <Spinner /> : <UserX size={18} />} {t('settings.deleteAccount')}
+        </button>
+      </Sheet>
+
       <div className="flex flex-col items-center gap-2 pb-4 text-content-muted">
         <Logo size="lg" />
-        <p className="text-xs">ANA by Tailor • v0.3.3</p>
+        <p className="text-xs">ANA by Tailor • v0.4.0</p>
       </div>
     </div>
   )

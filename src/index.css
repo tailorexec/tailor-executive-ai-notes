@@ -56,6 +56,12 @@
     height: 100%;
   }
 
+  /* No PWA standalone do iOS a area segura de baixo pinta o fundo do <html>.
+     Sem isto aparece uma barra BRANCA sob a bottom nav. */
+  html {
+    background-color: rgb(var(--surface-bg));
+  }
+
   /* Trava o "puxar" para os lados/cima/baixo (pull-to-refresh e bounce) + arrasto horizontal.
      overflow-x apenas em html/body (nao no #root, p/ nao criar scroller aninhado). */
   html,
@@ -89,6 +95,16 @@
   /* Respiro extra acima do indicador de home (iPhone) */
   .safe-bottom-2 {
     padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem);
+  }
+  /* FAB da ANA: precisa ficar ACIMA da bottom nav (4rem) + area segura,
+     senao a nav cobre o botao e ele fica "travado" (taps caem na nav). */
+  .fab-above-nav {
+    bottom: calc(5.25rem + env(safe-area-inset-bottom));
+  }
+  @media (min-width: 768px) {
+    .fab-above-nav {
+      bottom: 2rem;
+    }
   }
   /* Espaco reservado para a bottom nav fixa + area segura inferior (mobile).
      No desktop nao ha bottom nav: volta ao respiro normal. */

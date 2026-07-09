@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Home, Phone, Settings as SettingsIcon, Sparkles, Mic, ListChecks, LayoutGrid } from 'lucide-react'
+import { Home, Phone, Settings as SettingsIcon, Sparkles, Mic, ListChecks, CalendarDays } from 'lucide-react'
 import { AnaIcon } from '../components/AnaIcon'
 import { useAuth } from '../auth/AuthProvider'
 import { Logo } from '../components/Logo'
@@ -25,6 +25,7 @@ interface Item {
 const ITEMS: Item[] = [
   { to: '/', icon: <Home size={20} />, labelKey: 'nav.notes' },
   { to: '/tarefas', icon: <ListChecks size={20} />, labelKey: 'nav.tasks' },
+  { to: '/agenda', icon: <CalendarDays size={20} />, labelKey: 'nav.agenda' },
   { to: '/discador', icon: <Phone size={20} />, labelKey: 'nav.dialer' },
   { to: '/config', icon: <SettingsIcon size={20} />, labelKey: 'nav.config' },
 ]
@@ -127,7 +128,6 @@ function NavItem({ to, icon, label }: { to: string; icon: React.ReactNode; label
 }
 
 function BottomNav() {
-  const navigate = useNavigate()
   const t = useT()
   const [newOpen, setNewOpen] = useState(false)
 
@@ -138,23 +138,18 @@ function BottomNav() {
           <NavItem to="/" icon={<Home size={20} />} label={t('nav.notes')} />
           <NavItem to="/discador" icon={<Phone size={20} />} label={t('nav.dialer')} />
 
+          {/* Microfone central: abre TODAS as formas de criar nota (inclusive Gravacao inteligente) */}
           <div className="flex-1 flex justify-center">
             <button
-              onClick={() => navigate('/capturar')}
-              aria-label="Gravar áudio"
+              onClick={() => setNewOpen(true)}
+              aria-label={t('new.title')}
               className="grid place-items-center h-14 w-14 -mt-8 rounded-full bg-brand-500 hover:bg-brand-600 text-white shadow-float ring-4 ring-surface-card transition-colors"
             >
               <Mic size={24} />
             </button>
           </div>
 
-          <button
-            onClick={() => setNewOpen(true)}
-            className="flex flex-col items-center justify-center gap-1 flex-1 py-1.5 text-[11px] font-medium text-content-muted hover:text-content-secondary transition-colors"
-          >
-            <LayoutGrid size={20} />
-            <span>{t('nav.more')}</span>
-          </button>
+          <NavItem to="/agenda" icon={<CalendarDays size={20} />} label={t('nav.agenda')} />
           <NavItem to="/config" icon={<SettingsIcon size={20} />} label={t('nav.config')} />
         </div>
       </div>

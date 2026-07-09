@@ -1,9 +1,9 @@
 import { useNavigate } from 'react-router-dom'
-import { Headphones, Upload, Video, FileText, Link2 } from 'lucide-react'
+import { Headphones, Upload, Video, FileText, Link2, Mic } from 'lucide-react'
 import { Sheet } from './ui'
 import { useT } from '../lib/i18n'
 
-/** Folha de "mais funções": modos de criar uma nota (reuniao, audio, video, arquivo, link). */
+/** Folha de funcoes: todas as formas de criar uma nota, abertas pelo microfone central. */
 export function NewNoteSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const navigate = useNavigate()
   const t = useT()
@@ -16,6 +16,7 @@ export function NewNoteSheet({ open, onClose }: { open: boolean; onClose: () => 
   return (
     <Sheet open={open} onClose={onClose} title={t('new.title')}>
       <div className="space-y-3">
+        <NewOption icon={<Mic size={20} />} label={t('new.smartRec')} hint={t('new.smartRecHint')} onClick={() => startCapture('record')} />
         <NewOption icon={<Headphones size={20} />} label={t('new.recordMeeting')} hint={t('new.recordMeetingHint')} onClick={() => startCapture('meeting')} />
         <NewOption icon={<Upload size={20} />} label={t('new.uploadAudio')} hint={t('new.uploadAudioHint')} onClick={() => startCapture('upload')} />
         <NewOption icon={<Video size={20} />} label={t('new.uploadVideo')} hint={t('new.uploadVideoHint')} onClick={() => startCapture('video')} />

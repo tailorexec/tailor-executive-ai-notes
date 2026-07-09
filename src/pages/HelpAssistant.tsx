@@ -17,10 +17,14 @@ export function HelpAssistant({ open, onClose }: { open: boolean; onClose: () =>
   const [messages, setMessages] = useState<{ role: 'user' | 'ana'; text: string }[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const endRef = useRef<HTMLDivElement | null>(null)
+  const listRef = useRef<HTMLDivElement | null>(null)
 
+  // Rola SO o container da conversa (nunca o documento) e apenas quando ja ha mensagens.
+  // scrollIntoView aqui rolava a pagina inteira por baixo do overlay no iOS.
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (!messages.length && !loading) return
+    const el = listRef.current
+    if (el) el.scrollTop = el.scrollHeight
   }, [messages.length, loading])
 
   /** Resposta instantanea (fixa) para as sugestoes pre-criadas. */
@@ -52,7 +56,7 @@ export function HelpAssistant({ open, onClose }: { open: boolean; onClose: () =>
         {t('help.greeting')}
       </div>
 
-      <div className="max-h-72 overflow-y-auto space-y-2 mb-3 pr-1">
+      <div ref={listRef} className="max-h-72 overflow-y-auto overscroll-contain space-y-2 mb-3 pr-1">
         {messages.length === 0 && (
           <div className="space-y-2">
             {SUGGESTIONS.map((s) => (
@@ -81,7 +85,6 @@ export function HelpAssistant({ open, onClose }: { open: boolean; onClose: () =>
             <Spinner size={14} />
           </div>
         )}
-        <div ref={endRef} />
       </div>
 
       <div className="flex items-center gap-2">

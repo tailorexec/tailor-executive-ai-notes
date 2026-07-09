@@ -15,7 +15,7 @@ export const HELP_KB: HelpEntry[] = [
   },
   {
     q: 'Como gravar uma reuniao com o audio da chamada?',
-    a: 'No computador (Chrome/Edge), use "Gravar reuniao": ele captura o audio da aba/tela + seu microfone (funciona ate de fone). Marque "Compartilhar audio" no dialogo. No navegador do celular so da para gravar pelo microfone; a captura do audio interno chega no app Android.',
+    a: 'No computador (Chrome/Edge), use "Gravar Meet": ele captura o audio da aba/tela + seu microfone (funciona ate de fone). Marque "Compartilhar audio" no dialogo. No celular isso nao e possivel: o sistema (Android e iOS) nao deixa nenhum app capturar o audio de uma chamada de outro app. No celular, use o viva-voz e grave pelo microfone.',
     keywords: ['reuniao', 'audio', 'interno', 'zoom', 'meet', 'teams', 'chamada', 'fone', 'sistema', 'aba'],
   },
   {

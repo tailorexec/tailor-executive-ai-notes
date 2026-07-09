@@ -308,7 +308,7 @@ export function Home() {
       <button
         onClick={() => setHelpOpen(true)}
         aria-label={t('sidebar.talkAna')}
-        className="fixed right-5 bottom-24 md:bottom-8 z-40 overflow-hidden grid place-items-center h-16 w-16 rounded-full bg-brand-500 hover:bg-brand-600 text-white shadow-float ring-1 ring-white/25 transition-colors"
+        className="fixed right-5 fab-above-nav z-50 overflow-hidden grid place-items-center h-16 w-16 rounded-full bg-brand-500 hover:bg-brand-600 text-white shadow-float ring-1 ring-white/25 transition-colors"
       >
         <span
           aria-hidden

@@ -6,6 +6,7 @@ import { Login } from './pages/Login'
 import { Register } from './pages/Register'
 import { Home } from './pages/Home'
 import { TasksPage } from './pages/Tasks'
+import { Agenda } from './pages/Agenda'
 import { NoteDetail } from './pages/NoteDetail'
 import { MindMapPage } from './pages/MindMap'
 import { Capture } from './pages/Capture'
@@ -66,6 +67,7 @@ export default function App() {
       >
         <Route path="/" element={<Home />} />
         <Route path="/tarefas" element={<TasksPage />} />
+        <Route path="/agenda" element={<Agenda />} />
         <Route path="/nota/:id" element={<NoteDetail />} />
         <Route path="/nota/:id/mapa-mental" element={<MindMapPage />} />
         <Route path="/capturar" element={<Capture />} />
