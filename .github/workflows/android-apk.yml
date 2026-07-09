@@ -58,7 +58,8 @@ jobs:
             echo "::error::Secret ANDROID_KEYSTORE_BASE64 nao configurado."
             exit 1
           fi
-          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/ana-release.jks"
+          printf '%s' "$KEYSTORE_B64" | tr -d '[:space:]' | base64 -d > "$RUNNER_TEMP/ana-release.jks"
+          test -s "$RUNNER_TEMP/ana-release.jks" || { echo "::error::keystore vazia apos decode"; exit 1; }
 
       - name: Build signed release APK
         if: inputs.build_type == 'release'
