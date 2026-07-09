@@ -122,9 +122,9 @@ export function Home() {
               AI NOTES ADVISOR
             </span>
           </div>
-          {/* Caixa de 19px = altura da logo ANA, para as duas ficarem alinhadas.
-              A Tailor fica um pouco menor (17px). */}
-          <div className="flex items-center h-[19px] shrink-0">
+          {/* Caixa de 19px = altura da logo ANA. items-end alinha as duas pela BASE
+              (a Tailor tem 17px, um pouco menor). */}
+          <div className="flex items-end h-[19px] shrink-0">
             <Logo part="tailor" heightClass="h-[17px]" />
           </div>
         </div>
@@ -156,7 +156,7 @@ export function Home() {
 
       <button
         onClick={() => setAskOpen(true)}
-        className="card-featured md:shrink-0 w-full flex items-center gap-3 bg-surface-card border border-surface-border rounded-2xl px-4 py-2.5 mb-3 text-left transition-colors"
+        className="card-featured md:shrink-0 w-full flex items-center gap-3 bg-surface-card border rounded-2xl px-4 py-2.5 mb-3 text-left transition-colors"
       >
         <span className="grid place-items-center h-9 w-9 rounded-xl bg-brand-solid text-white shrink-0">
           <MessageSquare size={18} />

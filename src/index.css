@@ -14,12 +14,12 @@
     --content-secondary: 74 74 78;
     --content-muted: 135 134 132;   /* graphite */
 
-    --accent: 148 16 16;            /* vermelho de destaque (texto/icone) no claro */
+    /* Referencia de design (light): vermelho vivo, nao o oxblood. */
+    --accent: 185 15 40;            /* #B90F28 texto/icone -> 6.6:1 no branco */
 
-    /* Preenchimento solido: oxblood no claro. */
-    --brand-solid: 148 16 16;       /* #941010 */
-    --brand-solid-lite: 178 32 32;
-    --brand-solid-dark: 100 8 22;
+    --brand-solid: 201 17 44;       /* #C9112C preenchimento -> branco 5.8:1 */
+    --brand-solid-lite: 226 42 68;
+    --brand-solid-dark: 150 10 32;
 
     color-scheme: light;
   }
@@ -158,9 +158,19 @@
            border border-surface-border hover:bg-surface-elevated;
   }
 
-  /* Card em destaque ("conversar com todas as reunioes"): faixa vermelha a esquerda
-     + brilho vermelho saindo dela. */
+  /* Card em destaque ("conversar com todas as reunioes").
+     Claro: fundo levemente rosado com borda vermelha suave.
+     Escuro: faixa vermelha a esquerda + brilho saindo dela. */
   .card-featured {
+    border-color: rgb(var(--brand-solid) / 0.3);
+    background-image: linear-gradient(
+      0deg,
+      rgb(var(--brand-solid) / 0.05),
+      rgb(var(--brand-solid) / 0.05)
+    );
+  }
+  .dark .card-featured {
+    border-color: rgb(var(--surface-border));
     border-left: 3px solid rgb(var(--brand-solid));
     background-image: radial-gradient(
       70% 130% at 0% 50%,
