@@ -60,7 +60,9 @@ export function UpcomingEvents({ mode = 'card' }: { mode?: 'card' | 'page' }) {
       if (res.done) {
         if (res.ok) {
           setNeedsAuth(false)
-          if (!isPage) setEventsOpen(true)
+          // No desktop os eventos ja aparecem no card + botao "Ver meus eventos" — nao abre o popup.
+          const isDesktop = typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches
+          if (!isPage && !isDesktop) setEventsOpen(true)
           toast('Google Calendar conectado')
           refresh()
         } else {
