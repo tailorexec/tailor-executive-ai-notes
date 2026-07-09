@@ -18,3 +18,8 @@ supabase/.temp
 
 # APK baixado do workflow (nao versionar binario)
 apk-out/
+
+# Keystores / credenciais de assinatura (NUNCA versionar)
+*.jks
+*.keystore
+keystore.properties
