@@ -20,12 +20,8 @@
   }
 
   .dark {
-    /* Fundo cinza escuro (nao mais preto). Elevacao = mais CLARO: cards, menu,
-       busca e botoes ficam bem acima do fundo, mantendo o texto branco. */
-    /* O fundo precisa ser da MESMA familia dos cards. Os cards (#5E5E65) sao um cinza
-       levemente frio (B > R,G); um fundo neutro puro (#262626) desafinava com eles.
-       Este tom compartilha o matiz e reduz o salto de luminosidade ate o card. */
-    --surface-bg: 46 46 53;         /* #2E2E35 pagina */
+    /* Fundo preto (ink). Os cards claros se separam dele pela luminosidade. */
+    --surface-bg: 1 1 1;            /* #010101 pagina */
     /* Cinza de referencia do card "conversar com todas" (#4E4E54) clareado 20%,
        aplicado a TUDO: cards, menu, busca, botoes. */
     --surface-card: 94 94 101;      /* #5E5E65 */
@@ -152,10 +148,16 @@
   .btn-danger {
     @apply btn border border-brand-400 text-brand-400 hover:bg-brand-400 hover:text-white px-4 py-2.5;
   }
-  /* CTA neutro (monocromatico da identidade): tinta no claro, quase branco no escuro.
-     Usado onde o vermelho poluiria a tela (ex.: conectar Google Calendar). */
+  /* CTA neutro: cinza com texto branco. Usado onde o vermelho poluiria a tela
+     (ex.: conectar Google Calendar). No escuro ganha borda para nao "colar" no preto. */
   .btn-neutral {
-    @apply btn bg-content-primary text-surface-bg hover:opacity-90 px-4 py-2.5;
+    @apply btn px-4 py-2.5 text-white border hover:opacity-90;
+    background-color: #5c5c60;
+    border-color: #5c5c60;
+  }
+  .dark .btn-neutral {
+    background-color: rgb(var(--surface-elevated));
+    border-color: rgb(var(--surface-border));
   }
 
   /* Bloco de erro. O texto NAO usa text-accent: sobre os cards claros do modo escuro

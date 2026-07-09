@@ -122,7 +122,11 @@ export function Home() {
               AI NOTES ADVISOR
             </span>
           </div>
-          <Logo part="tailor" heightClass="h-[31px]" className="pt-0.5" />
+          {/* Caixa de 19px = altura da logo ANA, para as duas ficarem alinhadas.
+              A Tailor fica um pouco menor (17px). */}
+          <div className="flex items-center h-[19px] shrink-0">
+            <Logo part="tailor" heightClass="h-[17px]" />
+          </div>
         </div>
         <div className="flex items-center justify-between">
           <h1 className="font-display text-2xl sm:text-3xl font-bold whitespace-nowrap">{t('home.title')}</h1>
@@ -275,7 +279,7 @@ export function Home() {
                   </div>
                   <span
                     className={`grid place-items-center h-7 w-7 rounded-full shrink-0 ${
-                      fc ? '' : 'bg-surface-bg text-content-secondary'
+                      fc ? '' : 'bg-surface-border/50 text-content-primary'
                     }`}
                     style={fc ? { color: fc, background: `${fc}1a` } : undefined}
                   >
@@ -304,11 +308,14 @@ export function Home() {
       )}
       </div>
 
-      {/* FAB da ANA: neutro (tinta no claro, quase branco no escuro). Sem vermelho. */}
+      {/* FAB da ANA: cinza com a bonequinha vermelha. No escuro, cinza mais fechado
+          (para o vermelho vivo ter contraste) + borda, para nao sumir no preto. */}
       <button
         onClick={() => setHelpOpen(true)}
         aria-label={t('sidebar.talkAna')}
-        className="fixed right-5 fab-above-nav z-50 grid place-items-center h-16 w-16 rounded-full bg-content-primary text-surface-bg shadow-float ring-1 ring-black/10 dark:ring-white/20 transition-opacity hover:opacity-90"
+        className="fixed right-5 fab-above-nav z-50 grid place-items-center h-16 w-16 rounded-full shadow-float border transition-opacity hover:opacity-90
+                   bg-[#E6E6E8] border-black/10 text-brand-500
+                   dark:bg-[#2E2E33] dark:border-[#7A7A82] dark:text-brand-400"
       >
         <AnaIcon size={30} />
       </button>
