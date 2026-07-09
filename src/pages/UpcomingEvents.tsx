@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { CalendarDays, RefreshCw, Clock, Link2Off, Mic, ChevronLeft, ChevronRight } from 'lucide-react'
+import { CalendarDays, RefreshCw, Clock, Link2Off, Mic, ChevronLeft, ChevronRight, Minus, Plus } from 'lucide-react'
 import {
   startCalendarConnect,
   finishCalendarConnect,
@@ -28,6 +28,7 @@ export function UpcomingEvents({ mode = 'card' }: { mode?: 'card' | 'page' }) {
   const [eventsOpen, setEventsOpen] = useState(false)
   const [error, setError] = useState<CalError | null>(null)
   const [page, setPage] = useState(0)
+  const [minimized, setMinimized] = useState(false)
   const toast = useToast()
   const t = useT()
   const navigate = useNavigate()
@@ -214,13 +215,29 @@ export function UpcomingEvents({ mode = 'card' }: { mode?: 'card' | 'page' }) {
   return (
     <div className="card p-4 mb-4">
       {!needsAuth && (
-        <div className="flex items-center justify-between mb-2">
+        <div className={`flex items-center justify-between ${minimized ? '' : 'mb-2'}`}>
           <h3 className="flex items-center gap-2 font-display font-semibold">
             <CalendarDays size={18} className="text-accent" /> {t('events.title')}
           </h3>
-          <button onClick={refresh} className="text-content-muted hover:text-content-primary" aria-label="Atualizar">
-            {loading ? <Spinner size={14} /> : <RefreshCw size={14} />}
-          </button>
+          <div className="flex items-center gap-1">
+            {!minimized && (
+              <button
+                onClick={refresh}
+                className="grid place-items-center h-7 w-7 rounded-lg text-content-muted hover:bg-surface-elevated hover:text-content-primary"
+                aria-label={t('events.update')}
+              >
+                {loading ? <Spinner size={14} /> : <RefreshCw size={14} />}
+              </button>
+            )}
+            <button
+              onClick={() => setMinimized((v) => !v)}
+              className="grid place-items-center h-7 w-7 rounded-lg text-content-muted hover:bg-surface-elevated hover:text-content-primary"
+              aria-label={minimized ? t('events.expand') : t('events.minimize')}
+              title={minimized ? t('events.expand') : t('events.minimize')}
+            >
+              {minimized ? <Plus size={15} /> : <Minus size={15} />}
+            </button>
+          </div>
         </div>
       )}
 
@@ -243,7 +260,7 @@ export function UpcomingEvents({ mode = 'card' }: { mode?: 'card' | 'page' }) {
           </div>
           {errorBlock && <div className="mt-2">{errorBlock}</div>}
         </>
-      ) : (
+      ) : minimized ? null : (
         <>
           {loading && events.length === 0 ? (
             <ul className="space-y-2.5 mb-3">
