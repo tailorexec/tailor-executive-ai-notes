@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, PhoneOff, Upload, Monitor, Info } from 'lucide-react'
+import { ArrowLeft, PhoneOff, Upload, Monitor, Info, PhoneForwarded } from 'lucide-react'
 import { useT } from '../lib/i18n'
 
 /**
@@ -58,6 +58,17 @@ export function Dialer() {
           <button className="btn-primary w-full mt-6" onClick={() => navigate('/capturar?mode=upload')}>
             <Upload size={18} /> {t('dialer.sendAudio')}
           </button>
+        </div>
+
+        {/* Disclaimer: o unico caminho tecnico para gravar uma chamada e o app FAZER a chamada. */}
+        <div className="card p-4 max-w-md w-full mt-3 flex items-start gap-3">
+          <span className="grid place-items-center h-9 w-9 rounded-xl bg-surface-elevated text-accent shrink-0">
+            <PhoneForwarded size={18} />
+          </span>
+          <div>
+            <p className="font-medium text-sm">{t('dialer.soonTitle')}</p>
+            <p className="text-content-muted text-xs mt-0.5 leading-relaxed">{t('dialer.soonBody')}</p>
+          </div>
         </div>
       </div>
     </div>
