@@ -157,9 +157,9 @@ export function UpcomingEvents({ mode = 'card' }: { mode?: 'card' | 'page' }) {
           <p className="text-sm text-content-muted text-center py-10">{t('events.none')}</p>
         ) : (
           <>
-            <ul className="grid sm:grid-cols-2 gap-3">
+            <ul className="grid sm:grid-cols-2 gap-3 min-w-0">
               {slice.map((e) => (
-                <li key={e.id} className="card p-4">
+                <li key={e.id} className="card p-4 min-w-0">
                   <div className="flex gap-3">
                     <div className="grid place-items-center h-10 w-10 rounded-xl bg-brand-solid text-white shrink-0">
                       <CalendarDays size={18} />
@@ -299,9 +299,9 @@ export function UpcomingEvents({ mode = 'card' }: { mode?: 'card' | 'page' }) {
           ) : events.length === 0 ? (
             <p className="text-sm text-content-muted text-center py-6">{t('events.none')}</p>
           ) : (
-            <ul className="grid sm:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto pr-1">
+            <ul className="grid sm:grid-cols-2 gap-3 min-w-0 max-h-[60vh] overflow-y-auto pr-1">
               {events.map((e) => (
-                <li key={e.id} className="card p-4">
+                <li key={e.id} className="card p-4 min-w-0">
                   <div className="flex gap-3">
                     <div className="grid place-items-center h-10 w-10 rounded-xl bg-brand-solid text-white shrink-0">
                       <CalendarDays size={18} />

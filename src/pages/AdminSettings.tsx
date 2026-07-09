@@ -117,7 +117,9 @@ export function AdminSettings() {
         />
 
         <label className="label">Periodo (opcional)</label>
-        <div className="grid grid-cols-2 gap-3 mb-1">
+        {/* O datetime-local tem largura MINIMA intrinseca (calendario + texto). Em duas colunas
+            estreitas ele estoura o card mesmo com min-w-0 — por isso empilha ate 480px. */}
+        <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-3 mb-1">
           <div className="min-w-0">
             <span className="block text-[11px] text-content-muted mb-1">Inicio</span>
             <input
