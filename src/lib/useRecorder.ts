@@ -14,11 +14,26 @@ interface StartOptions {
   system?: boolean
 }
 
+export function isMobileBrowser(): boolean {
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+}
+
 /** Captura de audio interno (aba/sistema) so existe no desktop via getDisplayMedia. */
 export function canCaptureSystemAudio(): boolean {
   const md = navigator.mediaDevices as MediaDevices | undefined
-  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
-  return !!md && typeof md.getDisplayMedia === 'function' && !isMobile
+  return !!md && typeof md.getDisplayMedia === 'function' && !isMobileBrowser()
+}
+
+/**
+ * Somente navegadores Chromium (Chrome, Edge, Opera, Brave) entregam o AUDIO da aba
+ * no getDisplayMedia. Safari e Firefox implementam a API mas devolvem apenas o video —
+ * a gravacao sairia com o seu microfone e SEM a outra ponta da reuniao.
+ */
+export function supportsTabAudio(): boolean {
+  if (isMobileBrowser()) return false
+  const ua = navigator.userAgent
+  const isChromium = /Chrome|Chromium|Edg\//i.test(ua) && !/Firefox\//i.test(ua)
+  return isChromium
 }
 
 export function useRecorder() {

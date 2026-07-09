@@ -123,41 +123,88 @@ export async function finishCalendarConnect(): Promise<{ done: boolean; ok?: boo
   }
 }
 
+/** Erro estruturado: a UI mostra `key` (traduzida) e esconde `detail` atras de "ver mais". */
+export interface CalError {
+  key: string
+  detail?: string
+}
+
+const TIMEOUT_MS = 12000
+
+/** fetch com timeout. Sem isso, uma rede lenta trava o carregamento indefinidamente. */
+async function fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
+  const ctrl = new AbortController()
+  const id = setTimeout(() => ctrl.abort(), TIMEOUT_MS)
+  try {
+    return await fetch(url, { ...init, signal: ctrl.signal })
+  } finally {
+    clearTimeout(id)
+  }
+}
+
 export async function listUpcomingEvents(
   max = 5,
-): Promise<{ needsAuth: boolean; events: CalEvent[]; error?: string }> {
+): Promise<{ needsAuth: boolean; events: CalEvent[]; error?: CalError }> {
   const token = storedToken()
   if (!token) return { needsAuth: true, events: [] }
+
+  // O navegador ja sabe que nao ha rede: nem tenta (e evita o "TypeError: Load failed").
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    return { needsAuth: false, events: [], error: { key: 'err.offline' } }
+  }
+
   const now = new Date().toISOString()
   const url =
     `https://www.googleapis.com/calendar/v3/calendars/primary/events` +
     `?timeMin=${encodeURIComponent(now)}&maxResults=${max}&singleEvents=true&orderBy=startTime`
-  try {
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
-    if (res.status === 401) {
-      disconnectCalendar()
-      return { needsAuth: true, events: [], error: 'Sessão do Google expirada. Conecte novamente.' }
+  const init = { headers: { Authorization: `Bearer ${token}` } }
+
+  let lastErr: unknown = null
+  // Uma retentativa: falhas de rede momentaneas sao comuns quando o app volta do
+  // segundo plano no celular (o Safari aborta o fetch e joga "Load failed").
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetchWithTimeout(url, init)
+
+      if (res.status === 401) {
+        disconnectCalendar()
+        return { needsAuth: true, events: [], error: { key: 'err.calExpired' } }
+      }
+      if (!res.ok) {
+        return {
+          needsAuth: false,
+          events: [],
+          error: {
+            key: res.status === 403 ? 'err.calForbidden' : 'err.calApi',
+            detail: `HTTP ${res.status} ${res.statusText}`,
+          },
+        }
+      }
+
+      const data = await res.json()
+      const events: CalEvent[] = (data.items ?? []).map((e: {
+        id: string
+        summary?: string
+        start?: { dateTime?: string; date?: string }
+      }) => ({
+        id: e.id,
+        title: e.summary || '(sem titulo)',
+        start: e.start?.dateTime || e.start?.date || '',
+        allDay: !e.start?.dateTime,
+      }))
+      return { needsAuth: false, events }
+    } catch (e) {
+      lastErr = e
+      const aborted = e instanceof DOMException && e.name === 'AbortError'
+      if (aborted) break // timeout: repetir so aumentaria a espera
+      if (attempt === 0) await new Promise((r) => setTimeout(r, 700))
     }
-    if (!res.ok) {
-      const hint =
-        res.status === 403
-          ? ' Ative a "Google Calendar API" no Google Cloud e confirme o escopo de calendário.'
-          : ''
-      return { needsAuth: false, events: [], error: `Erro ${res.status} da Google Calendar API.${hint}` }
-    }
-    const data = await res.json()
-    const events: CalEvent[] = (data.items ?? []).map((e: {
-      id: string
-      summary?: string
-      start?: { dateTime?: string; date?: string }
-    }) => ({
-      id: e.id,
-      title: e.summary || '(sem titulo)',
-      start: e.start?.dateTime || e.start?.date || '',
-      allDay: !e.start?.dateTime,
-    }))
-    return { needsAuth: false, events }
-  } catch (e) {
-    return { needsAuth: false, events: [], error: `Falha de rede ao buscar eventos: ${String(e)}` }
+  }
+
+  const aborted = lastErr instanceof DOMException && lastErr.name === 'AbortError'
+  return {
+    needsAuth: false,
+    events: [],
+    error: { key: aborted ? 'err.timeout' : 'err.network', detail: String(lastErr) },
   }
 }

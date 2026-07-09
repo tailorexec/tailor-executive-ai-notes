@@ -17,8 +17,9 @@ export function Agenda() {
         </div>
       </header>
 
-      <div className="max-w-2xl">
-        <UpcomingEvents />
+      {/* Modo pagina: lista os eventos direto aqui (10 por pagina), sem "ver meus eventos". */}
+      <div className="max-w-4xl pb-6">
+        <UpcomingEvents mode="page" />
       </div>
     </div>
   )

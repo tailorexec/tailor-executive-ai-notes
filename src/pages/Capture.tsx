@@ -12,9 +12,10 @@ import {
   Video,
   MonitorSmartphone,
   Headphones,
+  Info,
 } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
-import { useRecorder, canCaptureSystemAudio } from '../lib/useRecorder'
+import { useRecorder, canCaptureSystemAudio, supportsTabAudio } from '../lib/useRecorder'
 import { db, config } from '../lib/api'
 import { generateActionItems, generateSummary, transcribeAudio } from '../lib/ai'
 import { saveAudio } from '../lib/audioStore'
@@ -493,13 +494,12 @@ export function Capture() {
             !canCaptureSystemAudio() ? (
               <div className="card p-6 text-center max-w-sm">
                 <MonitorSmartphone size={36} className="text-accent mx-auto mb-3" />
-                <h3 className="font-display font-semibold text-lg">Disponível no desktop ou no app</h3>
+                <h3 className="font-display font-semibold text-lg">Disponível apenas no computador</h3>
                 <p className="text-content-secondary mt-2 text-sm">
                   Gravar o <span className="text-content-primary font-medium">Meet</span> (e Zoom/Teams) captura o
                   {' '}<span className="text-content-primary font-medium">áudio da reunião + seu microfone</span> juntos.
-                  O navegador do celular não permite capturar o áudio de uma aba, então isso só funciona no
-                  {' '}<span className="text-content-primary font-medium">computador</span> (Chrome/Edge) ou no
-                  {' '}<span className="text-content-primary font-medium">app Android</span>.
+                  Nenhum celular permite isso: o sistema não deixa um aplicativo capturar o áudio de outro.
+                  Use o <span className="text-content-primary font-medium">navegador do computador</span> (Chrome ou Edge).
                 </p>
                 <button className="btn-outline mt-5 mx-auto" onClick={() => navigate('/capturar?mode=record')}>
                   <Mic size={18} /> Gravar só pelo microfone
@@ -517,10 +517,34 @@ export function Capture() {
                     diálogo do navegador.
                   </li>
                 </ol>
+
+                {/* Navegadores suportados: so Chromium entrega o audio da aba. */}
+                {supportsTabAudio() ? (
+                  <p className="text-xs text-content-muted mt-3 flex items-start gap-1.5">
+                    <Info size={13} className="shrink-0 mt-0.5" />
+                    <span>
+                      Funciona no <span className="text-content-secondary font-medium">Chrome, Edge, Opera e Brave</span>.
+                      No <span className="text-content-secondary font-medium">Safari</span> e no{' '}
+                      <span className="text-content-secondary font-medium">Firefox</span> o navegador não entrega o áudio
+                      da aba — a gravação sairia só com o seu microfone.
+                    </span>
+                  </p>
+                ) : (
+                  <div className="alert-error text-xs mt-3">
+                    Seu navegador não entrega o áudio da aba. Abra o ANA no{' '}
+                    <span className="font-medium">Chrome</span> ou no <span className="font-medium">Edge</span> para
+                    gravar a reunião — aqui a gravação sairia só com o seu microfone.
+                  </div>
+                )}
+
                 <p className="text-xs text-content-muted mt-3">
                   Gravamos o áudio da reunião + seu microfone juntos. Nada de vídeo é enviado.
                 </p>
-                <button className="btn-primary w-full mt-5" onClick={() => withConsent(startMeeting)}>
+                <button
+                  className="btn-primary w-full mt-5"
+                  onClick={() => withConsent(startMeeting)}
+                  disabled={!supportsTabAudio()}
+                >
                   <Headphones size={18} /> Iniciar gravacao da reuniao
                 </button>
               </div>
