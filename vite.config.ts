@@ -14,7 +14,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
+      includeAssets: ['favicon.png', 'favicon-48.png', 'apple-touch-icon.png'],
       manifest: {
         name: 'Tailor Executive AI Notes',
         short_name: 'Tailor Notes',

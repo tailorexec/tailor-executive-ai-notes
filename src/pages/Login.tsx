@@ -3,92 +3,49 @@ import { Link, useNavigate } from 'react-router-dom'
 import {
   Eye,
   EyeOff,
-  Mic,
+  AudioLines,
   FileText,
-  BarChart3,
-  Share2,
-  Headphones,
-  MessageSquare,
-  Phone,
-  Plus,
+  Sparkles,
+  Search,
   Mail,
+  Lock,
+  ShieldCheck,
+  Cloud,
 } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
 import { useT } from '../lib/i18n'
 import { Logo } from '../components/Logo'
-import { ThemeToggle } from '../components/ThemeToggle'
-import { Spinner, Sheet } from '../components/ui'
+import { Spinner } from '../components/ui'
 import { config } from '../lib/config'
 
-const FEATURES = [
-  { icon: <Mic size={18} />, k: 'f1' },
-  { icon: <FileText size={18} />, k: 'f2' },
-  { icon: <BarChart3 size={18} />, k: 'f3' },
-  { icon: <Headphones size={18} />, k: 'f4' },
-  { icon: <Share2 size={18} />, k: 'f5' },
-  { icon: <MessageSquare size={18} />, k: 'f6' },
-  { icon: <Phone size={18} />, k: 'f7' },
+/** Os 4 pilares da referencia. */
+const PILLARS = [
+  { icon: <AudioLines size={20} />, k: 'login.p1' },
+  { icon: <FileText size={20} />, k: 'login.p2' },
+  { icon: <Sparkles size={20} />, k: 'login.p3' },
+  { icon: <Search size={20} />, k: 'login.p4' },
 ]
 
-function useIsDesktop() {
-  const [isDesktop, setIsDesktop] = useState(false)
-  useEffect(() => {
-    const mq = window.matchMedia('(min-width: 768px)')
-    const update = () => setIsDesktop(mq.matches)
-    update()
-    mq.addEventListener('change', update)
-    return () => mq.removeEventListener('change', update)
-  }, [])
-  return isDesktop
-}
+const TRUST = [
+  { icon: <ShieldCheck size={20} />, t: 'login.t1', d: 'login.t1d' },
+  { icon: <Lock size={20} />, t: 'login.t2', d: 'login.t2d' },
+  { icon: <Cloud size={20} />, t: 'login.t3', d: 'login.t3d' },
+]
 
-function VideoBackground() {
-  // Enfeite bem sutil, so no desktop (nao baixa no mobile), sem travar a pagina.
+/** Fundo preto com brilho vermelho e arcos sutis (referencia). */
+function Backdrop() {
   return (
-    <>
-      <video
-        className="pointer-events-none fixed inset-0 -z-20 h-full w-full object-cover brightness-110 dark:brightness-[1.75] dark:contrast-125 dark:saturate-150"
-        autoPlay
-        muted
-        loop
-        playsInline
-        preload="metadata"
-        aria-hidden
-      >
-        <source src="/tailor_loop.mp4" type="video/mp4" />
-      </video>
-      {/* Vel para manter texto legivel (mais forte no claro). */}
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-surface-bg/70 dark:bg-black/25" aria-hidden />
-    </>
-  )
-}
-
-function TechBackground() {
-  return (
-    <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-      {/* Blobs vermelhos suaves */}
+    <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-black">
       <div
-        className="absolute -top-40 -right-40 h-[36rem] w-[36rem] rounded-full blur-3xl opacity-30"
-        style={{ background: 'radial-gradient(circle, rgba(241,12,39,0.45), transparent 60%)' }}
+        className="absolute -bottom-40 -left-40 h-[38rem] w-[38rem] rounded-full blur-3xl opacity-40"
+        style={{ background: 'radial-gradient(circle, rgba(208,30,39,0.55), transparent 62%)' }}
       />
       <div
-        className="absolute -bottom-48 -left-40 h-[34rem] w-[34rem] rounded-full blur-3xl opacity-20"
-        style={{ background: 'radial-gradient(circle, rgba(148,16,16,0.5), transparent 60%)' }}
+        className="absolute -top-56 -right-40 h-[42rem] w-[42rem] rounded-full blur-3xl opacity-25"
+        style={{ background: 'radial-gradient(circle, rgba(208,30,39,0.4), transparent 65%)' }}
       />
-      {/* Grade tecnologica com fade */}
-      <div
-        className="absolute inset-0 opacity-[0.12]"
-        style={{
-          backgroundImage:
-            'linear-gradient(rgba(135,134,132,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(135,134,132,0.6) 1px, transparent 1px)',
-          backgroundSize: '46px 46px',
-          maskImage: 'radial-gradient(ellipse at center, black 30%, transparent 75%)',
-          WebkitMaskImage: 'radial-gradient(ellipse at center, black 30%, transparent 75%)',
-        }}
-      />
-      {/* Aneis concentricos sutis */}
-      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[52rem] w-[52rem] rounded-full border border-surface-border/40" />
-      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[38rem] w-[38rem] rounded-full border border-surface-border/30" />
+      <div className="absolute -top-1/4 -right-1/4 h-[60rem] w-[60rem] rounded-full border border-white/[0.04]" />
+      <div className="absolute -top-1/3 -right-1/3 h-[72rem] w-[72rem] rounded-full border border-white/[0.03]" />
     </div>
   )
 }
@@ -96,12 +53,23 @@ function TechBackground() {
 export function Login() {
   const { signIn } = useAuth()
   const navigate = useNavigate()
+  const t = useT()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [show, setShow] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [loginOpen, setLoginOpen] = useState(false)
+
+  // A tela de login tem MODO UNICO (escuro). Forca o tema enquanto ela existe e
+  // devolve o tema do usuario ao sair. Por isso nao ha botao de light/dark aqui.
+  useEffect(() => {
+    const root = document.documentElement
+    const wasDark = root.classList.contains('dark')
+    root.classList.add('dark')
+    return () => {
+      if (!wasDark) root.classList.remove('dark')
+    }
+  }, [])
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -117,163 +85,162 @@ export function Login() {
     }
   }
 
-  const isDesktop = useIsDesktop()
-  const t = useT()
+  const field =
+    'w-full rounded-xl bg-white/[0.04] border border-white/10 pl-11 py-3 text-white placeholder:text-white/35 focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent/50'
 
   return (
-    <div className="min-h-[100dvh] flex flex-col safe-top">
-      {/* Video de fundo no desktop (claro e escuro); no mobile usa o fundo tecnologico */}
-      {isDesktop ? <VideoBackground /> : <TechBackground />}
+    <div className="min-h-[100dvh] flex flex-col safe-top text-white">
+      <Backdrop />
 
-      <header className="flex items-center justify-end px-6 md:shrink-0">
-        <ThemeToggle />
+      <header className="flex items-center justify-between gap-4 px-6 md:px-10 pb-6 shrink-0">
+        <Logo part="ana" heightClass="h-9 md:h-11" />
+        <Logo part="tailor" heightClass="h-5 md:h-6" />
       </header>
 
-      {/* min-h (nao h) + justify-center: centraliza quando cabe e nao corta o topo quando nao cabe */}
-      <main className="flex-1 flex flex-col items-center justify-center px-6 py-8 md:py-6 w-full max-w-4xl mx-auto">
-        {/* Logo centralizada, perto do titulo */}
-        <Logo size="md" heightClass="h-[53px] md:h-[58px]" className="mb-5" />
+      <main className="flex-1 w-full max-w-6xl mx-auto px-6 md:px-10 pb-10">
+        <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 lg:items-center">
+          {/* Marca. No mobile o titulo fica centralizado. */}
+          <div className="text-center lg:text-left">
+            <span className="inline-block rounded-xl border border-brand-solid/60 text-accent text-[11px] font-bold tracking-[0.18em] px-4 py-2">
+              {t('login.badge')}
+            </span>
 
-        {/* Hero */}
-        <div className="text-center max-w-2xl">
-          <h1 className="font-display text-4xl sm:text-5xl md:text-4xl font-bold leading-tight dark:[text-shadow:0_2px_14px_rgba(0,0,0,0.55)]">
-            {t('login.heroTitle')}
-          </h1>
-          <p className="text-content-secondary mt-4 md:mt-3 text-lg md:text-base dark:[text-shadow:0_1px_10px_rgba(0,0,0,0.5)]">
-            {t('login.heroSub')}
-          </p>
-        </div>
+            <h1 className="font-display text-4xl sm:text-5xl font-bold leading-tight mt-6">
+              {t('login.h1a')}
+              <br />
+              {t('login.h1b')} <span className="text-accent">{t('login.h1c')}</span>
+            </h1>
 
-        {/* Card: Entrar com e-mail (abre o popup de login) */}
-        <button
-          onClick={() => setLoginOpen(true)}
-          className="card w-full max-w-sm mx-auto mt-8 p-4 flex items-center justify-center gap-3 shadow-float hover:shadow-hover transition-shadow"
-        >
-          <span className="grid place-items-center h-9 w-9 rounded-xl bg-brand-solid text-white shrink-0">
-            <Mail size={18} />
-          </span>
-          <span className="font-semibold">{t('login.signinEmail')}</span>
-        </button>
+            <p className="text-white/70 mt-5 text-base sm:text-lg max-w-xl mx-auto lg:mx-0 leading-relaxed">
+              {t('login.lead')}
+            </p>
 
-        <p className="text-center text-content-secondary mt-4">
-          {t('login.noAccount')}{' '}
-          <Link to="/cadastro" className="text-accent font-medium hover:underline">
-            {t('login.createAccount')}
-          </Link>
-        </p>
-
-        {/* O que a plataforma faz — centralizado */}
-        <div className="w-full max-w-3xl mx-auto mt-12 text-center">
-          <h2 className="font-display text-lg md:text-xl font-semibold mb-5">{t('login.whatItDoes')}</h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {FEATURES.map((f) => (
-              <div key={f.k} className="card p-4 flex gap-3 text-left">
-                <div className="grid place-items-center h-9 w-9 rounded-xl bg-brand-solid text-white shrink-0">
-                  {f.icon}
+            <div className="grid grid-cols-4 gap-2 mt-9 max-w-xl mx-auto lg:mx-0">
+              {PILLARS.map((p, i) => (
+                <div key={p.k} className={`text-center px-1 ${i > 0 ? 'border-l border-white/10' : ''}`}>
+                  <span className="grid place-items-center h-11 w-11 rounded-full bg-brand-solid/15 text-accent mx-auto mb-2">
+                    {p.icon}
+                  </span>
+                  <p className="text-[11px] sm:text-xs text-white/80 leading-snug">{t(p.k)}</p>
                 </div>
-                <div>
-                  <p className="font-medium text-sm">{t(`login.${f.k}t`)}</p>
-                  <p className="text-content-muted text-xs mt-0.5 leading-relaxed">{t(`login.${f.k}d`)}</p>
-                </div>
-              </div>
-            ))}
-            <div className="card p-4 flex items-center gap-3 border-dashed">
-              <div className="grid place-items-center h-9 w-9 rounded-xl bg-brand-solid text-white shrink-0">
-                <Plus size={18} />
-              </div>
-              <p className="font-medium text-sm text-left">{t('login.more')}</p>
+              ))}
+            </div>
+
+            <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-4 max-w-md mx-auto lg:mx-0">
+              <p className="text-sm font-medium">{t('login.audience')}</p>
             </div>
           </div>
+
+          {/* Formulario: somente e-mail e senha (sem login social). */}
+          <div className="w-full max-w-md mx-auto rounded-3xl border border-white/10 bg-white/[0.03] backdrop-blur px-6 py-7 sm:px-8">
+            <h2 className="font-display text-2xl font-bold text-center">{t('login.cardTitle')}</h2>
+            <p className="text-white/60 text-sm text-center mt-1 mb-6">{t('login.cardSub')}</p>
+
+            {config.mockMode && (
+              <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
+                <p className="font-medium">Modo demonstração ativo.</p>
+                <p className="mt-1">
+                  Este ambiente não está usando o Supabase real. Defina VITE_SUPABASE_URL e
+                  VITE_SUPABASE_ANON_KEY no ambiente de deploy.
+                </p>
+              </div>
+            )}
+
+            <form onSubmit={onSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-1.5" htmlFor="email">
+                  {t('login.email')}
+                </label>
+                <div className="relative">
+                  <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
+                  <input
+                    id="email"
+                    type="email"
+                    autoComplete="email"
+                    className={`${field} pr-4`}
+                    placeholder={`nome@${config.allowedDomain}`}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-1.5" htmlFor="password">
+                  {t('login.password')}
+                </label>
+                <div className="relative">
+                  <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
+                  <input
+                    id="password"
+                    type={show ? 'text' : 'password'}
+                    autoComplete="current-password"
+                    className={`${field} pr-12`}
+                    placeholder={t('login.yourPassword')}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShow((s) => !s)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
+                    aria-label={show ? 'Ocultar senha' : 'Mostrar senha'}
+                  >
+                    {show ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              {error && (
+                <div className="text-sm text-white bg-brand-solid/20 border border-brand-solid/50 rounded-xl px-4 py-3">
+                  {error}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                className="btn w-full py-3 rounded-xl bg-brand-solid hover:opacity-90 text-white font-medium"
+                disabled={loading}
+              >
+                {loading ? <Spinner /> : t('login.signin')}
+              </button>
+            </form>
+
+            <div className="border-t border-white/10 mt-6 pt-5 text-center text-sm text-white/60">
+              {t('login.newHere')}{' '}
+              <Link to="/cadastro" className="text-accent font-medium hover:underline">
+                {t('login.createAccount')}
+              </Link>
+            </div>
+
+            {config.mockMode && (
+              <div className="mt-5 text-xs text-white/50 bg-white/[0.04] border border-white/10 rounded-xl p-4">
+                <p className="font-medium text-white/70 mb-1">Modo demonstração (sem backend)</p>
+                <p>Admin: {config.adminEmail} / Tailor@007</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Selos de confianca */}
+        <div className="border-t border-white/10 mt-12 pt-7 grid gap-6 sm:grid-cols-3">
+          {TRUST.map((x) => (
+            <div key={x.t} className="flex items-start gap-3">
+              <span className="text-white/50 shrink-0 mt-0.5">{x.icon}</span>
+              <div>
+                <p className="text-sm font-semibold">{t(x.t)}</p>
+                <p className="text-xs text-white/50 mt-0.5 leading-snug">{t(x.d)}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </main>
 
-      {/* Popup de login */}
-      <Sheet open={loginOpen} onClose={() => setLoginOpen(false)} title={t('login.signin')}>
-        <p className="text-content-secondary -mt-2 mb-5">{t('login.signinSub')}</p>
-
-        {config.mockMode && (
-          <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
-            <p className="font-medium">Modo demonstração ativo.</p>
-            <p className="mt-1">
-              Este ambiente não está usando o Supabase real. Para entrar com a conta corporativa,
-              defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no Vercel ou no ambiente de deploy.
-            </p>
-          </div>
-        )}
-
-        <form onSubmit={onSubmit} className="space-y-4">
-          <div>
-            <label className="label" htmlFor="email">{t('login.email')}</label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              className="input"
-              placeholder={`nome@${config.allowedDomain}`}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-
-          <div>
-            <label className="label" htmlFor="password">{t('login.password')}</label>
-            <div className="relative">
-              <input
-                id="password"
-                type={show ? 'text' : 'password'}
-                autoComplete="current-password"
-                className="input pr-12"
-                placeholder={t('login.yourPassword')}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShow((s) => !s)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-content-muted hover:text-content-primary"
-                aria-label={show ? 'Ocultar senha' : 'Mostrar senha'}
-              >
-                {show ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-          </div>
-
-          {error && (
-            <div className="alert-error">
-              {error}
-            </div>
-          )}
-
-          <button type="submit" className="btn-primary w-full py-3" disabled={loading}>
-            {loading ? <Spinner /> : t('login.signin')}
-          </button>
-        </form>
-
-        <p className="text-center text-content-secondary mt-6">
-          {t('login.noAccount')}{' '}
-          <Link to="/cadastro" className="text-accent font-medium hover:underline">
-            {t('login.createAccount')}
-          </Link>
-        </p>
-
-        {config.mockMode && (
-          <div className="mt-6 text-xs text-content-muted bg-surface-elevated border border-surface-border rounded-xl p-4">
-            <p className="font-medium text-content-secondary mb-1">Modo demonstração (sem backend)</p>
-            <p>Admin: {config.adminEmail} / Tailor@007</p>
-          </div>
-        )}
-      </Sheet>
-
-      <footer className="text-center py-6 md:py-3 text-sm text-content-muted md:shrink-0 safe-bottom">
+      <footer className="text-center py-6 text-sm text-white/40 safe-bottom shrink-0">
         A N A Technology by{' '}
-        <a
-          href="https://tailorexec.com.br"
-          target="_blank"
-          rel="noreferrer"
-          className="hover:text-accent transition-colors"
-        >
+        <a href="https://tailorexec.com.br" target="_blank" rel="noreferrer" className="hover:text-accent transition-colors">
           Tailorexec.com.br
         </a>
       </footer>
