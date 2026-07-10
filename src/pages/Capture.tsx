@@ -473,7 +473,7 @@ export function Capture() {
         </button>
         <h1 className="font-display text-xl font-bold">
           {mode === 'record' && 'Gravar audio'}
-          {mode === 'meeting' && 'Gravar Meet'}
+          {mode === 'meeting' && 'Gravar reuniao no PC'}
           {mode === 'upload' && 'Enviar audio'}
           {mode === 'video' && 'Enviar video'}
           {mode === 'file' && 'PDF, arquivo ou texto'}
@@ -584,13 +584,27 @@ export function Capture() {
             ) : (
               <div className="card p-6 max-w-md">
                 <Headphones size={32} className="text-accent mb-3" />
-                <h3 className="font-display font-semibold text-lg">Gravar a reunião (mesmo de fone)</h3>
+                <h3 className="font-display font-semibold text-lg">Gravar reunião ou chamada no computador</h3>
+                <p className="text-content-secondary text-sm mt-2">
+                  Funciona com <span className="text-content-primary font-medium">Meet, WhatsApp, Zoom, Teams</span> ou
+                  qualquer app — mesmo de fone.
+                </p>
                 <ol className="text-content-secondary text-sm mt-3 space-y-2 list-decimal list-inside">
-                  <li>Abra sua reunião (Zoom, Meet ou Teams) em uma aba/janela.</li>
-                  <li>Clique em "Iniciar" abaixo e escolha a aba da reunião (ou a tela toda).</li>
+                  <li>Abra a reunião ou chamada que você quer gravar.</li>
+                  <li>Clique em "Iniciar" abaixo e escolha o que compartilhar:</li>
+                  <li className="list-none -mt-1 ml-5 space-y-1">
+                    <div>
+                      • No <span className="text-content-primary font-medium">navegador</span> (Meet, WhatsApp Web…):
+                      escolha a <span className="text-content-primary font-medium">aba</span> da reunião.
+                    </div>
+                    <div>
+                      • App <span className="text-content-primary font-medium">instalado no PC</span> (WhatsApp, Zoom
+                      ou Teams do Windows): escolha a <span className="text-content-primary font-medium">tela inteira</span>.
+                    </div>
+                  </li>
                   <li>
-                    <span className="text-content-primary font-medium">Marque "Compartilhar áudio"</span> no
-                    diálogo do navegador.
+                    <span className="text-content-primary font-medium">Marque "Compartilhar áudio"</span> no diálogo
+                    do navegador (na tela inteira, o "áudio do sistema").
                   </li>
                 </ol>
 
