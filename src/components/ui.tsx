@@ -2,6 +2,7 @@ import { Loader2, X, Flag } from 'lucide-react'
 import { useEffect, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { initials } from '../lib/format'
+import { useVisualViewport } from '../lib/useVisualViewport'
 import { useT } from '../lib/i18n'
 import type { NotePriority } from '../lib/types'
 
@@ -90,6 +91,10 @@ export function Sheet({
   title?: string
   children: ReactNode
 }) {
+  // Com o teclado aberto o `fixed inset-0` continua do tamanho da janela e a folha
+  // (ancorada embaixo) fica atras do teclado. Aqui ela passa a seguir o visual viewport.
+  const vp = useVisualViewport(open)
+
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -120,9 +125,16 @@ export function Sheet({
   // Portal para o body: chamadores como a bottom nav (`fixed z-40`) criam um contexto de
   // empilhamento, e o z-[60] daqui ficaria preso dentro dele — atras do botao da ANA.
   return createPortal(
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center">
+    <div
+      className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center"
+      style={vp ? { top: vp.top, height: vp.height, bottom: 'auto' } : undefined}
+    >
       <div className="absolute inset-0 bg-black/50 animate-fade-in" onClick={onClose} />
-      <div className="relative w-full sm:max-w-md max-h-[90dvh] overflow-y-auto overscroll-contain bg-surface-card border border-surface-border rounded-t-3xl sm:rounded-3xl shadow-float animate-slide-up safe-bottom">
+      <div
+        className={`relative w-full sm:max-w-md overflow-y-auto overscroll-contain bg-surface-card border border-surface-border rounded-t-3xl sm:rounded-3xl shadow-float animate-slide-up ${
+          vp ? 'max-h-full' : 'max-h-[90dvh] safe-bottom'
+        }`}
+      >
         <div className="flex items-center justify-between px-5 pt-5 pb-2">
           <h2 className="font-display font-semibold text-lg">{title}</h2>
           <button
@@ -196,7 +208,8 @@ export function ConfirmDialog({
   }, [open, onClose])
 
   if (!open) return null
-  return (
+  // Portal pelo mesmo motivo do Sheet: chamadores `fixed z-*` prendem o z-[70] aqui dentro.
+  return createPortal(
     <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/50 animate-fade-in" onClick={onClose} />
       <div className="relative w-full sm:max-w-sm bg-surface-card border border-surface-border rounded-t-3xl sm:rounded-3xl shadow-float animate-slide-up safe-bottom p-6">
@@ -217,7 +230,8 @@ export function ConfirmDialog({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 

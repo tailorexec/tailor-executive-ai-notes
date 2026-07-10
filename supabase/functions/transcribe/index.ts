@@ -5,9 +5,41 @@
 
 // @ts-nocheck  (ambiente Deno)
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const PROVIDER = Deno.env.get('TRANSCRIPTION_PROVIDER') ?? 'groq'
 const ASSEMBLYAI_API_KEY = Deno.env.get('ASSEMBLYAI_API_KEY')
+
+// USD por SEGUNDO de audio (transcricao nao e cobrada por token).
+const PRICE_PER_SEC: Record<string, number> = {
+  groq: 0.111 / 3600, // whisper-large-v3
+  openai: 0.006 / 60, // whisper-1
+  assemblyai: 0.37 / 3600, // com speaker labels
+}
+
+function callerId(req: Request): string | null {
+  try {
+    const token = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
+    if (!token) return null
+    const payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')
+    return JSON.parse(atob(payload)).sub ?? null
+  } catch {
+    return null
+  }
+}
+
+/** A contabilidade nunca pode derrubar a transcricao. */
+async function logUsage(row: Record<string, unknown>) {
+  try {
+    const url = Deno.env.get('SUPABASE_URL')
+    const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    if (!url || !key) return
+    const admin = createClient(url, key, { auth: { persistSession: false } })
+    await admin.from('api_usage').insert(row)
+  } catch (_) {
+    /* silencioso de proposito */
+  }
+}
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -15,7 +47,7 @@ const cors = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
-async function whisper(file: File): Promise<string> {
+async function whisper(file: File): Promise<{ text: string; seconds: number }> {
   const endpoint =
     PROVIDER === 'openai'
       ? 'https://api.openai.com/v1/audio/transcriptions'
@@ -26,14 +58,15 @@ async function whisper(file: File): Promise<string> {
   form.append('file', file, file.name || 'audio.webm')
   form.append('model', model)
   form.append('language', 'pt')
-  form.append('response_format', 'json')
+  // verbose_json traz `duration` (segundos), que e como a transcricao e cobrada.
+  form.append('response_format', 'verbose_json')
   const res = await fetch(endpoint, { method: 'POST', headers: { authorization: `Bearer ${key}` }, body: form })
   if (!res.ok) throw new Error(`${PROVIDER} ${res.status}: ${await res.text()}`)
   const data = await res.json()
-  return data.text ?? ''
+  return { text: data.text ?? '', seconds: Math.round(Number(data.duration) || 0) }
 }
 
-async function assemblyDiarize(file: File): Promise<string | null> {
+async function assemblyDiarize(file: File): Promise<{ text: string; seconds: number } | null> {
   if (!ASSEMBLYAI_API_KEY) return null
   // 1) upload
   const up = await fetch('https://api.assemblyai.com/v2/upload', {
@@ -79,12 +112,31 @@ Deno.serve(async (req) => {
     const file = inForm.get('file') as File
     if (!file) throw new Error('Arquivo de audio ausente.')
     const diarize = inForm.get('diarize') === 'true'
+    const userId = callerId(req)
 
-    let transcript: string | null = null
-    if (diarize) transcript = await assemblyDiarize(file)
-    if (transcript === null) transcript = await whisper(file) // fallback ou modo padrao
+    let result: { text: string; seconds: number } | null = null
+    let provider = PROVIDER
+    let model = PROVIDER === 'openai' ? 'whisper-1' : 'whisper-large-v3'
 
-    return new Response(JSON.stringify({ transcript, language: 'pt-BR' }), {
+    if (diarize) {
+      result = await assemblyDiarize(file)
+      if (result) {
+        provider = 'assemblyai'
+        model = 'best+speaker_labels'
+      }
+    }
+    if (result === null) result = await whisper(file) // fallback ou modo padrao
+
+    await logUsage({
+      user_id: userId,
+      provider,
+      model,
+      task: 'transcription',
+      audio_seconds: result.seconds,
+      cost_usd: result.seconds * (PRICE_PER_SEC[provider] ?? 0),
+    })
+
+    return new Response(JSON.stringify({ transcript: result.text, language: 'pt-BR' }), {
       headers: { ...cors, 'content-type': 'application/json' },
     })
   } catch (err) {

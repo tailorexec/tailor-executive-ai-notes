@@ -1,0 +1,295 @@
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import {
+  ArrowLeft,
+  Activity,
+  DollarSign,
+  Coins,
+  Users,
+  ExternalLink,
+  Info,
+  AudioLines,
+} from 'lucide-react'
+import { db } from '../lib/api'
+import { Avatar, Spinner } from '../components/ui'
+import { useToast } from '../components/Toast'
+import { fmtDuration } from '../lib/format'
+import {
+  compactNum,
+  costByUser,
+  listApiUsage,
+  periodRange,
+  summarize,
+  usd,
+  type ApiUsageRow,
+  type PeriodKey,
+} from '../lib/apiUsage'
+import type { Profile } from '../lib/types'
+
+const PERIODS: { key: PeriodKey; label: string }[] = [
+  { key: 'day', label: 'Hoje' },
+  { key: 'week', label: '7 dias' },
+  { key: 'month', label: '30 dias' },
+  { key: 'custom', label: 'Personalizado' },
+]
+
+const CONSOLES: { name: string; url: string }[] = [
+  { name: 'Anthropic', url: 'https://console.anthropic.com/settings/billing' },
+  { name: 'Groq', url: 'https://console.groq.com/settings/billing' },
+  { name: 'AssemblyAI', url: 'https://www.assemblyai.com/app/account' },
+]
+
+function Kpi({
+  icon,
+  label,
+  value,
+  hint,
+}: {
+  icon: React.ReactNode
+  label: string
+  value: string
+  hint?: string
+}) {
+  return (
+    <div className="card p-4">
+      <div className="flex items-center gap-2 text-content-muted mb-1.5">
+        <span className="text-accent">{icon}</span>
+        <span className="text-xs font-medium">{label}</span>
+      </div>
+      <p className="font-display text-2xl font-bold tabular-nums">{value}</p>
+      {hint && <p className="text-[11px] text-content-muted mt-0.5">{hint}</p>}
+    </div>
+  )
+}
+
+/** Barrinha proporcional ao maior valor da lista. */
+function Bar({ value, max }: { value: number; max: number }) {
+  const pct = max > 0 ? Math.max(2, (value / max) * 100) : 0
+  return (
+    <div className="h-1.5 rounded-full bg-surface-elevated overflow-hidden">
+      <div className="h-full rounded-full bg-brand-solid" style={{ width: `${pct}%` }} />
+    </div>
+  )
+}
+
+export function ApiMonitor() {
+  const navigate = useNavigate()
+  const toast = useToast()
+  const [period, setPeriod] = useState<PeriodKey>('month')
+  const [from, setFrom] = useState('')
+  const [to, setTo] = useState('')
+  const [rows, setRows] = useState<ApiUsageRow[] | null>(null)
+  const [people, setPeople] = useState<Map<string, Profile>>(new Map())
+
+  useEffect(() => {
+    if (period === 'custom' && (!from || !to)) return
+    setRows(null)
+    listApiUsage(periodRange(period, { from, to }))
+      .then(setRows)
+      .catch(() => {
+        setRows([])
+        toast('Nao consegui carregar o consumo das APIs', 'error')
+      })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [period, from, to])
+
+  useEffect(() => {
+    db.listProfiles()
+      .then((all) => setPeople(new Map(all.map((p) => [p.id, p]))))
+      .catch(() => {})
+  }, [])
+
+  const totals = useMemo(() => (rows ? summarize(rows) : null), [rows])
+  const perUser = useMemo(() => (rows ? costByUser(rows).slice(0, 10) : []), [rows])
+
+  const maxProvider = totals?.byProvider[0]?.costUsd ?? 0
+  const maxTask = totals?.byTask[0]?.costUsd ?? 0
+  const maxUser = perUser[0]?.costUsd ?? 0
+
+  return (
+    <div className="px-5 safe-top pb-12">
+      <header className="flex items-center gap-3 mb-6">
+        <button
+          onClick={() => navigate('/admin')}
+          className="grid place-items-center h-10 w-10 rounded-full bg-surface-elevated border border-surface-border shrink-0"
+          aria-label="Voltar"
+        >
+          <ArrowLeft size={18} />
+        </button>
+        <h1 className="font-display text-2xl font-bold flex items-center gap-2">
+          <Activity size={20} className="text-accent" /> Monitoramento da API
+        </h1>
+      </header>
+
+      <div className="flex flex-wrap gap-2 mb-3">
+        {PERIODS.map((p) => (
+          <button
+            key={p.key}
+            onClick={() => setPeriod(p.key)}
+            className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
+              period === p.key
+                ? 'bg-brand-solid border-brand-solid text-white'
+                : 'bg-surface-elevated border-surface-border text-content-secondary'
+            }`}
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
+
+      {period === 'custom' && (
+        <div className="space-y-3 mb-4">
+          <div className="min-w-0">
+            <span className="block text-[11px] text-content-muted mb-1">Inicio</span>
+            <input type="date" className="input w-full min-w-0 px-2" value={from} onChange={(e) => setFrom(e.target.value)} />
+          </div>
+          <div className="min-w-0">
+            <span className="block text-[11px] text-content-muted mb-1">Fim</span>
+            <input type="date" className="input w-full min-w-0 px-2" value={to} onChange={(e) => setTo(e.target.value)} />
+          </div>
+        </div>
+      )}
+
+      {rows === null ? (
+        <div className="grid place-items-center py-20">
+          <Spinner size={24} className="text-accent" />
+        </div>
+      ) : !totals || totals.calls === 0 ? (
+        <div className="card p-8 text-center text-content-muted">
+          Nenhuma chamada de API registrada neste periodo.
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+            <Kpi icon={<DollarSign size={16} />} label="Gasto total" value={usd(totals.costUsd)} />
+            <Kpi
+              icon={<Coins size={16} />}
+              label="Tokens"
+              value={compactNum(totals.totalTokens)}
+              hint={`${compactNum(totals.inputTokens)} entrada • ${compactNum(totals.outputTokens)} saida`}
+            />
+            <Kpi
+              icon={<Users size={16} />}
+              label="Gasto medio / usuario"
+              value={usd(totals.costPerUser)}
+              hint={`${totals.users} usuario(s) ativo(s)`}
+            />
+            <Kpi
+              icon={<Coins size={16} />}
+              label="Tokens medios / usuario"
+              value={compactNum(Math.round(totals.tokensPerUser))}
+            />
+            <Kpi icon={<Activity size={16} />} label="Chamadas" value={String(totals.calls)} />
+            <Kpi icon={<DollarSign size={16} />} label="Custo medio / chamada" value={usd(totals.costPerCall)} />
+            <Kpi
+              icon={<AudioLines size={16} />}
+              label="Audio transcrito"
+              value={fmtDuration(totals.audioSeconds)}
+            />
+            <Kpi
+              icon={<DollarSign size={16} />}
+              label="Projecao mensal"
+              value={usd(projectMonthly(totals.costUsd, period))}
+              hint="ritmo atual x 30 dias"
+            />
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-3 mb-3">
+            <div className="card p-4">
+              <h2 className="font-display font-semibold mb-3">Por provedor</h2>
+              <ul className="space-y-3">
+                {totals.byProvider.map((p) => (
+                  <li key={p.provider}>
+                    <div className="flex items-baseline justify-between gap-2 mb-1">
+                      <span className="font-medium text-sm capitalize">{p.provider}</span>
+                      <span className="text-sm tabular-nums">{usd(p.costUsd)}</span>
+                    </div>
+                    <Bar value={p.costUsd} max={maxProvider} />
+                    <p className="text-[11px] text-content-muted mt-1">
+                      {p.calls} chamada(s) • {compactNum(p.tokens)} tokens
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="card p-4">
+              <h2 className="font-display font-semibold mb-3">Por funcao</h2>
+              <ul className="space-y-3">
+                {totals.byTask.map((tk) => (
+                  <li key={tk.task}>
+                    <div className="flex items-baseline justify-between gap-2 mb-1">
+                      <span className="font-medium text-sm">{tk.task}</span>
+                      <span className="text-sm tabular-nums">{usd(tk.costUsd)}</span>
+                    </div>
+                    <Bar value={tk.costUsd} max={maxTask} />
+                    <p className="text-[11px] text-content-muted mt-1">
+                      {tk.calls} chamada(s) • {compactNum(tk.tokens)} tokens
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <div className="card p-4 mb-3">
+            <h2 className="font-display font-semibold mb-3">Maiores consumidores</h2>
+            <ul className="space-y-3">
+              {perUser.map((u) => {
+                const p = u.userId ? people.get(u.userId) : undefined
+                const name = p ? `${p.first_name} ${p.last_name}` : 'Conta excluida'
+                return (
+                  <li key={u.userId ?? 'deleted'}>
+                    <div className="flex items-center gap-2 mb-1">
+                      {p ? (
+                        <Avatar first={p.first_name} last={p.last_name} size={24} url={p.avatar_url} />
+                      ) : (
+                        <span className="h-6 w-6 rounded-full bg-surface-elevated shrink-0" />
+                      )}
+                      <span className="font-medium text-sm truncate flex-1">{name}</span>
+                      <span className="text-sm tabular-nums">{usd(u.costUsd)}</span>
+                    </div>
+                    <Bar value={u.costUsd} max={maxUser} />
+                    <p className="text-[11px] text-content-muted mt-1">{u.calls} chamada(s)</p>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        </>
+      )}
+
+      <div className="card p-4">
+        <h2 className="font-display font-semibold flex items-center gap-2 mb-2">
+          <Info size={16} className="text-accent" /> Saldo de creditos
+        </h2>
+        <p className="text-sm text-content-secondary leading-relaxed mb-3">
+          Anthropic, Groq e AssemblyAI <span className="font-medium text-content-primary">nao expoem</span> o saldo
+          restante por API. Os numeros acima sao o consumo real medido a cada chamada (tokens devolvidos pela
+          propria API) multiplicado pela tabela de precos configurada nas edge functions. Para ver o saldo,
+          abra o console do provedor:
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {CONSOLES.map((c) => (
+            <a
+              key={c.name}
+              href={c.url}
+              target="_blank"
+              rel="noreferrer"
+              className="btn-outline h-9 px-3 text-sm"
+            >
+              {c.name} <ExternalLink size={14} />
+            </a>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** Extrapola o gasto do periodo para 30 dias. */
+function projectMonthly(cost: number, period: PeriodKey): number {
+  if (period === 'day') return cost * 30
+  if (period === 'week') return (cost / 7) * 30
+  return cost
+}

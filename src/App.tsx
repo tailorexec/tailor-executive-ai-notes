@@ -22,6 +22,8 @@ import { NotificationsPage } from './pages/Notifications'
 import { FriendsPage } from './pages/Friends'
 import { SharedWithMePage } from './pages/SharedWithMe'
 import { AnalyticsPage, ConnectorsPage } from './pages/ComingSoon'
+import { About } from './pages/About'
+import { ApiMonitor } from './pages/ApiMonitor'
 import type { ReactNode } from 'react'
 
 function FullscreenLoader() {
@@ -86,11 +88,20 @@ export default function App() {
         <Route path="/compartilhados" element={<SharedWithMePage />} />
         <Route path="/conectores" element={<ConnectorsPage />} />
         <Route path="/analytics" element={<AnalyticsPage />} />
+        <Route path="/sobre" element={<About />} />
         <Route
           path="/admin"
           element={
             <AdminOnly>
               <Admin />
+            </AdminOnly>
+          }
+        />
+        <Route
+          path="/admin/api"
+          element={
+            <AdminOnly>
+              <ApiMonitor />
             </AdminOnly>
           }
         />

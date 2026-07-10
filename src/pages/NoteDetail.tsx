@@ -6,6 +6,8 @@ import {
   Sparkles,
   Volume2,
   Square,
+  Pause,
+  Play,
   Send,
   FileText,
   ListChecks,
@@ -25,7 +27,8 @@ import {
 import { useAuth } from '../auth/AuthProvider'
 import { db, config } from '../lib/api'
 import { chatWithNote, generateAnalysis, generateDetailed } from '../lib/ai'
-import { speak, stopSpeaking, ttsSupported } from '../lib/tts'
+import { pauseSpeaking, resumeSpeaking, speak, stopSpeaking, ttsSupported } from '../lib/tts'
+import { audioDaysLeft, retentionOf } from '../lib/retention'
 import { fmtDateTime, fmtDuration } from '../lib/format'
 import { Spinner, ConfirmDialog, PriorityBadge } from '../components/ui'
 import { useToast } from '../components/Toast'
@@ -53,7 +56,7 @@ export function NoteDetail() {
   const [note, setNote] = useState<Note | null | undefined>(undefined)
   const [tab, setTab] = useState<Tab>('summary')
   const [busy, setBusy] = useState<null | 'detailed' | 'analysis' | 'mindmap'>(null)
-  const [narrating, setNarrating] = useState(false)
+  const [narration, setNarration] = useState<'idle' | 'speaking' | 'paused'>('idle')
   const [shareOpen, setShareOpen] = useState(false)
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const [translateOpen, setTranslateOpen] = useState(false)
@@ -178,15 +181,26 @@ export function NoteDetail() {
     navigate(`/nota/${note.id}/mapa-mental`)
   }
 
-  function toggleNarration() {
-    if (narrating) {
-      stopSpeaking()
-      setNarrating(false)
-      return
-    }
-    setNarrating(true)
+  function startNarration() {
+    setNarration('speaking')
     if (profile) db.logUsage(profile.id, 'tts', note!.id)
-    speak(narratableText, { onEnd: () => setNarrating(false) })
+    speak(narratableText, { onEnd: () => setNarration('idle') })
+  }
+
+  /** Pausar guarda a posicao; retomar continua de onde parou. */
+  function togglePauseNarration() {
+    if (narration === 'speaking') {
+      pauseSpeaking()
+      setNarration('paused')
+    } else if (narration === 'paused') {
+      resumeSpeaking()
+      setNarration('speaking')
+    }
+  }
+
+  function endNarration() {
+    stopSpeaking()
+    setNarration('idle')
   }
 
   async function toggleKeepAudio() {
@@ -400,13 +414,7 @@ export function NoteDetail() {
                     ? t('note.keepAudioOn')
                     : t('note.keepAudioOff').replace(
                         '{n}',
-                        String(
-                          Math.max(
-                            0,
-                            config.audioRetentionDays -
-                              Math.floor((Date.now() - Date.parse(note.created_at)) / 86400000),
-                          ),
-                        ),
+                        String(audioDaysLeft(note, retentionOf(profile)) ?? 0),
                       )}
                 </span>
               </span>
@@ -439,14 +447,30 @@ export function NoteDetail() {
             hint={t('note.mindmapHint')}
             onClick={openMindMap}
           />
-          {ttsSupported() && (
-            <ActionButton
-              icon={narrating ? <Square size={18} /> : <Volume2 size={18} />}
-              label={narrating ? t('note.stopNarr') : t('note.narrate')}
-              hint={t('note.narrateHint')}
-              onClick={toggleNarration}
-            />
-          )}
+          {ttsSupported() &&
+            (narration === 'idle' ? (
+              <ActionButton
+                icon={<Volume2 size={18} />}
+                label={t('note.narrate')}
+                hint={t('note.narrateHint')}
+                onClick={startNarration}
+              />
+            ) : (
+              <>
+                <ActionButton
+                  icon={narration === 'paused' ? <Play size={18} /> : <Pause size={18} />}
+                  label={narration === 'paused' ? t('note.resumeNarr') : t('note.pauseNarr')}
+                  hint={t('note.narrateHint')}
+                  onClick={togglePauseNarration}
+                />
+                <ActionButton
+                  icon={<Square size={18} />}
+                  label={t('note.stopNarr')}
+                  hint={t('note.narrateHint')}
+                  onClick={endNarration}
+                />
+              </>
+            ))}
         </div>
 
         {/* Tabs */}

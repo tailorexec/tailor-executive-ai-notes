@@ -5,39 +5,92 @@
 import { config } from './config'
 import { supabase } from './supabase'
 
+export const TEXT_FILE_ACCEPT = '.pdf,.txt,.md,.csv,.docx'
+const TEXT_EXTS = ['pdf', 'docx', 'txt', 'md', 'csv']
+
+const extOf = (name: string) => name.toLowerCase().split('.').pop() ?? ''
+
+/** Erro de arquivo que a UI mostra tal e qual (ja escrito para o usuario). */
+export class FileError extends Error {}
+
 /** Extrai o texto de um PDF no navegador. */
 export async function extractPdf(file: File): Promise<string> {
-  const pdfjs = await import('pdfjs-dist')
-  const workerUrl = (await import('pdfjs-dist/build/pdf.worker.min.mjs?url')).default
-  pdfjs.GlobalWorkerOptions.workerSrc = workerUrl
-  const data = new Uint8Array(await file.arrayBuffer())
-  const doc = await pdfjs.getDocument({ data }).promise
   let out = ''
-  for (let i = 1; i <= doc.numPages; i++) {
-    const page = await doc.getPage(i)
-    const content = await page.getTextContent()
-    out += content.items.map((it) => ('str' in it ? it.str : '')).join(' ') + '\n'
+  try {
+    const pdfjs = await import('pdfjs-dist')
+    const workerUrl = (await import('pdfjs-dist/build/pdf.worker.min.mjs?url')).default
+    pdfjs.GlobalWorkerOptions.workerSrc = workerUrl
+    const data = new Uint8Array(await file.arrayBuffer())
+    const doc = await pdfjs.getDocument({ data }).promise
+    for (let i = 1; i <= doc.numPages; i++) {
+      const page = await doc.getPage(i)
+      const content = await page.getTextContent()
+      const items = Array.isArray(content?.items) ? content.items : []
+      out += items.map((it) => ('str' in it ? it.str : '')).join(' ') + '\n'
+    }
+  } catch (err) {
+    // A mensagem crua do pdfjs ("undefined is not a function...") nao ajuda ninguem.
+    const msg = err instanceof Error ? err.message : String(err)
+    if (/password/i.test(msg)) throw new FileError('Este PDF esta protegido por senha.')
+    if (/invalid|corrupt|structure/i.test(msg)) throw new FileError('Este PDF parece estar corrompido.')
+    throw new FileError('Nao consegui ler este PDF. Se ele for digitalizado, use "Resumir imagem".')
   }
-  return out.replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim()
+
+  const text = out.replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim()
+  if (text.length < 20) {
+    // PDF de texto-em-imagem (escaneado/fotografado): nao ha camada de texto para extrair.
+    throw new FileError(
+      'Este PDF nao tem texto selecionavel — parece ser digitalizado (imagem). ' +
+        'Envie a pagina como imagem em "Resumir imagem" para a IA ler o conteudo.',
+    )
+  }
+  return text
 }
 
 /** Extrai o texto de um DOCX no navegador. */
 export async function extractDocx(file: File): Promise<string> {
-  const mammoth = await import('mammoth')
-  const arrayBuffer = await file.arrayBuffer()
-  const res = await mammoth.extractRawText({ arrayBuffer })
-  return (res.value || '').trim()
+  try {
+    const mammoth = await import('mammoth')
+    const arrayBuffer = await file.arrayBuffer()
+    const res = await mammoth.extractRawText({ arrayBuffer })
+    const text = (res.value || '').trim()
+    if (!text) throw new FileError('Este DOCX nao tem texto para extrair.')
+    return text
+  } catch (err) {
+    if (err instanceof FileError) throw err
+    throw new FileError('Nao consegui ler este DOCX. Salve novamente como .docx ou PDF.')
+  }
 }
 
-/** Extrai o texto de um arquivo (pdf/docx/txt/md/csv). */
+/**
+ * Valida e extrai o texto de um arquivo. Rejeita tipos errados com mensagem util
+ * em vez de tentar ler bytes binarios como texto.
+ */
 export async function extractFile(file: File): Promise<string> {
-  const name = file.name.toLowerCase()
-  if (name.endsWith('.pdf')) return extractPdf(file)
-  if (name.endsWith('.docx')) return extractDocx(file)
-  if (name.endsWith('.doc')) {
-    throw new Error('Formato .doc antigo nao suportado — salve como .docx ou PDF.')
+  const ext = extOf(file.name)
+
+  if (file.type.startsWith('image/')) {
+    throw new FileError('Isto e uma imagem. Use a opcao "Resumir imagem" para a IA ler o conteudo.')
   }
-  return (await file.text()).trim()
+  if (file.type.startsWith('audio/')) {
+    throw new FileError('Isto e um audio. Use "Enviar audio" para transcrever.')
+  }
+  if (file.type.startsWith('video/')) {
+    throw new FileError('Isto e um video. Use "Enviar video" para transcrever.')
+  }
+  if (ext === 'doc') {
+    throw new FileError('Formato .doc antigo nao suportado — salve como .docx ou PDF.')
+  }
+  if (!TEXT_EXTS.includes(ext)) {
+    throw new FileError(`Formato .${ext || '?'} nao suportado. Envie PDF, DOCX, TXT, MD ou CSV.`)
+  }
+
+  if (ext === 'pdf') return extractPdf(file)
+  if (ext === 'docx') return extractDocx(file)
+
+  const text = (await file.text()).trim()
+  if (!text) throw new FileError('O arquivo esta vazio.')
+  return text
 }
 
 /** Extrai o texto principal de uma pagina web (via edge function, sem CORS). */
@@ -46,8 +99,10 @@ export async function extractLink(url: string): Promise<string> {
     return `Conteudo do link: ${url}\n\n(A extracao real do conteudo requer o backend configurado.)`
   }
   const { data, error } = await supabase.functions.invoke('extract-link', { body: { url } })
-  if (error) throw new Error(error.message || 'Falha ao extrair o link.')
+  if (error) throw new FileError(error.message || 'Falha ao extrair o link.')
   const d = data as { text?: string; error?: string }
-  if (d.error) throw new Error(d.error)
-  return (d.text || '').trim()
+  if (d.error) throw new FileError(d.error)
+  const text = (d.text || '').trim()
+  if (!text) throw new FileError('Nao consegui extrair texto desta pagina.')
+  return text
 }

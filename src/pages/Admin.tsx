@@ -12,13 +12,17 @@ import {
   Pencil,
   Trash2,
   LifeBuoy,
+  Activity,
+  ChevronRight,
 } from 'lucide-react'
 import { db } from '../lib/api'
 import { useAuth } from '../auth/AuthProvider'
 import type { AdminUserRow, Profile, SupportTicket } from '../lib/types'
-import { Avatar, Sheet, Spinner } from '../components/ui'
+import { Avatar, ConfirmDialog, Sheet, Spinner } from '../components/ui'
 import { fmtRelative, fmtDateTime } from '../lib/format'
 import { AdminSettings } from './AdminSettings'
+
+const USERS_PER_PAGE = 3
 
 function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
   return (
@@ -37,6 +41,8 @@ export function Admin() {
   const { profile: me } = useAuth()
   const [rows, setRows] = useState<AdminUserRow[] | null>(null)
   const [query, setQuery] = useState('')
+  const [page, setPage] = useState(0)
+  const [pendingDelete, setPendingDelete] = useState<Profile | null>(null)
   const [editing, setEditing] = useState<Profile | null>(null)
   const [form, setForm] = useState({ first_name: '', last_name: '', email: '' })
   const [busy, setBusy] = useState(false)
@@ -71,13 +77,12 @@ export function Admin() {
   }
 
   async function deleteUser(p: Profile) {
-    if (!confirm(`Excluir ${p.first_name} ${p.last_name} (${p.email})? Isso remove tambem as notas e dados dele. Nao pode ser desfeito.`))
-      return
     try {
       await db.adminDeleteUser(p.id)
+      setPendingDelete(null)
       load()
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Falha ao excluir.')
+      setActionError(e instanceof Error ? e.message : 'Falha ao excluir.')
     }
   }
 
@@ -106,6 +111,15 @@ export function Admin() {
         r.profile.email.toLowerCase().includes(q),
     )
   }, [rows, query])
+
+  // Lista de usuarios paginada: 3 por pagina, para nao virar uma pagina unica gigante.
+  const pageCount = Math.max(1, Math.ceil(filtered.length / USERS_PER_PAGE))
+  const safePage = Math.min(page, pageCount - 1)
+  const paged = filtered.slice(safePage * USERS_PER_PAGE, safePage * USERS_PER_PAGE + USERS_PER_PAGE)
+
+  useEffect(() => {
+    setPage(0) // uma busca nova sempre volta para a primeira pagina
+  }, [query])
 
   return (
     <div className="px-5 safe-top">
@@ -166,7 +180,7 @@ export function Admin() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-border">
-                {filtered.map((r) => (
+                {paged.map((r) => (
                   <tr key={r.profile.id}>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
@@ -200,7 +214,7 @@ export function Admin() {
                           <Pencil size={16} />
                         </button>
                         <button
-                          onClick={() => deleteUser(r.profile)}
+                          onClick={() => setPendingDelete(r.profile)}
                           disabled={r.profile.id === me?.id}
                           className="grid place-items-center h-8 w-8 rounded-lg text-content-secondary hover:bg-brand-solid hover:text-white disabled:opacity-30"
                           aria-label="Excluir"
@@ -217,7 +231,7 @@ export function Admin() {
 
           {/* Cards (mobile) */}
           <div className="md:hidden space-y-3">
-            {filtered.map((r) => (
+            {paged.map((r) => (
               <div key={r.profile.id} className="card p-4">
                 <div className="flex items-center gap-3 mb-3">
                   <Avatar first={r.profile.first_name} last={r.profile.last_name} size={40} />
@@ -249,7 +263,7 @@ export function Admin() {
                     <Pencil size={15} /> Editar
                   </button>
                   <button
-                    onClick={() => deleteUser(r.profile)}
+                    onClick={() => setPendingDelete(r.profile)}
                     disabled={r.profile.id === me?.id}
                     className="btn-outline h-9 text-sm text-accent disabled:opacity-30"
                   >
@@ -259,6 +273,58 @@ export function Admin() {
               </div>
             ))}
           </div>
+
+          {pageCount > 1 && (
+            <div className="flex items-center justify-center gap-3 mt-4">
+              <button
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                disabled={safePage === 0}
+                className="btn-outline h-9 px-3 text-sm disabled:opacity-40"
+              >
+                Anterior
+              </button>
+              <span className="text-sm text-content-muted tabular-nums">
+                {safePage + 1} / {pageCount}
+              </span>
+              <button
+                onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+                disabled={safePage >= pageCount - 1}
+                className="btn-outline h-9 px-3 text-sm disabled:opacity-40"
+              >
+                Proxima
+              </button>
+            </div>
+          )}
+
+          <ConfirmDialog
+            open={!!pendingDelete}
+            title="Excluir usuario?"
+            message={
+              pendingDelete
+                ? `${pendingDelete.first_name} ${pendingDelete.last_name} (${pendingDelete.email}). Isso remove tambem as notas e dados dele. Nao pode ser desfeito.`
+                : undefined
+            }
+            confirmLabel="Excluir"
+            cancelLabel="Cancelar"
+            danger
+            onConfirm={() => pendingDelete && deleteUser(pendingDelete)}
+            onClose={() => setPendingDelete(null)}
+          />
+
+          {/* Monitoramento de consumo/custo das APIs pagas (somente admin) */}
+          <button
+            onClick={() => navigate('/admin/api')}
+            className="card w-full mt-8 flex items-center gap-3 px-4 py-4 text-left hover:border-accent/40 transition-colors"
+          >
+            <span className="grid place-items-center h-10 w-10 rounded-xl bg-accent/10 text-accent shrink-0">
+              <Activity size={18} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-medium">Monitoramento da API</span>
+              <span className="block text-sm text-content-muted">Tokens, custo em USD e KPIs por periodo</span>
+            </span>
+            <ChevronRight size={18} className="text-content-muted shrink-0" />
+          </button>
 
           {/* Chamados de suporte recebidos (somente admin) */}
           <div className="mt-8 mb-10">

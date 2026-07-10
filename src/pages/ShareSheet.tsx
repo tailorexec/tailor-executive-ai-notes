@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
-import { FileText, FileType, Mail, Copy, Check, Users, Share as ShareIcon, AudioLines, ScrollText } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { FileText, FileType, Mail, Copy, Check, Users, Share as ShareIcon, AudioLines, ScrollText, Search } from 'lucide-react'
 import { db } from '../lib/api'
 import { useAuth } from '../auth/AuthProvider'
-import type { Note, Profile } from '../lib/types'
+import type { Note, PersonRef } from '../lib/types'
 import { Avatar, Sheet } from '../components/ui'
+import { listAcceptedFriends } from '../lib/friends'
 import { useT } from '../lib/i18n'
 import {
   copyToClipboard,
@@ -38,13 +39,33 @@ export function ShareSheet({
 }) {
   const { profile } = useAuth()
   const t = useT()
-  const [partners, setPartners] = useState<Profile[]>([])
+  const [partners, setPartners] = useState<PersonRef[]>([])
+  const [term, setTerm] = useState('')
   const [copied, setCopied] = useState(false)
   const [savingShare, setSavingShare] = useState(false)
 
+  // So amigos aceitos podem receber a nota. Quem ja recebeu antes continua na lista
+  // (ainda que nao seja amigo) para que dê para revogar o compartilhamento.
   useEffect(() => {
-    db.listProfiles().then((all) => setPartners(all.filter((p) => p.id !== profile?.id)))
+    if (!profile) return
+    const me = profile.id
+    Promise.all([listAcceptedFriends(me), db.listProfiles()])
+      .then(([friends, all]) => {
+        const known = new Set(friends.map((f) => f.id))
+        const legacy = all.filter((p) => note.shared_with.includes(p.id) && !known.has(p.id) && p.id !== me)
+        setPartners([...friends, ...legacy])
+      })
+      .catch(() => setPartners([]))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile])
+
+  const visible = useMemo(() => {
+    const q = term.trim().toLowerCase()
+    if (!q) return partners
+    return partners.filter((p) =>
+      `${p.first_name} ${p.last_name} ${p.email}`.toLowerCase().includes(q),
+    )
+  }, [partners, term])
 
   async function togglePartner(id: string) {
     setSavingShare(true)
@@ -101,11 +122,30 @@ export function ShareSheet({
           <Users size={18} className="text-accent" /> {t('sh.withPartners')}
         </h3>
         <p className="text-sm text-content-muted mb-3">{t('sh.partnersDesc')}</p>
-        <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-          {partners.length === 0 && (
-            <p className="text-sm text-content-muted py-4 text-center">{t('sh.noPartners')}</p>
+
+        <div className="relative mb-3">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-content-muted" />
+          <input
+            className="input pl-9"
+            placeholder={t('sh.searchPartners')}
+            value={term}
+            onChange={(e) => setTerm(e.target.value)}
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
+          />
+        </div>
+
+        <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-1">
+          {partners.length === 0 ? (
+            <p className="text-sm text-content-muted py-4 text-center">{t('sh.noFriends')}</p>
+          ) : (
+            visible.length === 0 && (
+              <p className="text-sm text-content-muted py-4 text-center">{t('friends.noResults')}</p>
+            )
           )}
-          {partners.map((p) => {
+          {visible.map((p) => {
             const active = note.shared_with.includes(p.id)
             return (
               <button
@@ -116,7 +156,7 @@ export function ShareSheet({
                   active ? 'border-brand-solid bg-accent/5' : 'border-surface-border bg-surface-elevated'
                 }`}
               >
-                <Avatar first={p.first_name} last={p.last_name} size={36} />
+                <Avatar first={p.first_name} last={p.last_name} size={36} url={p.avatar_url} />
                 <div className="min-w-0 flex-1">
                   <p className="font-medium truncate">
                     {p.first_name} {p.last_name}

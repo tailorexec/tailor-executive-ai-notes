@@ -16,13 +16,15 @@ import {
   StickyNote,
   ListChecks,
   Folder as FolderIcon,
+  Clock,
+  Image as ImageIcon,
 } from 'lucide-react'
 import { AnaIcon } from '../components/AnaIcon'
 import { useAuth } from '../auth/AuthProvider'
 import { db } from '../lib/api'
 import type { Note, Folder } from '../lib/types'
 import { fmtDate, fmtDuration, fmtTime } from '../lib/format'
-import { Avatar, EmptyState, Chip, NoteCardSkeleton, PriorityBadge } from '../components/ui'
+import { Avatar, EmptyState, Chip, NoteCardSkeleton, PriorityBadge, ConfirmDialog } from '../components/ui'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { Logo } from '../components/Logo'
 import { NewNoteSheet } from '../components/NewNoteSheet'
@@ -33,10 +35,13 @@ import { UpcomingEvents } from './UpcomingEvents'
 import { HelpAssistant } from './HelpAssistant'
 import { useT } from '../lib/i18n'
 import { useToast } from '../components/Toast'
+import { SwipeRow } from '../components/SwipeRow'
+import { audioDaysLeft, EXPIRY_WARN_DAYS, retentionOf } from '../lib/retention'
 
 /** Icone de origem: diferencia como a nota foi criada. */
 function sourceIcon(n: Note): React.ReactNode {
   if (n.type === 'video') return <Video size={18} />
+  if (n.type === 'image') return <ImageIcon size={18} />
   if (n.type === 'file') return <StickyNote size={18} />
   if (n.type === 'link') return <Link2 size={18} />
   // audio (recording/upload/call): mostra o dispositivo de origem quando conhecido
@@ -75,6 +80,22 @@ export function Home() {
   const [newOpen, setNewOpen] = useState(false)
   const [askOpen, setAskOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
+  const [pendingDelete, setPendingDelete] = useState<Note | null>(null)
+
+  const retention = retentionOf(profile)
+
+  /** Exclusao sempre passa pela confirmacao. Vai para a lixeira (7 dias para desfazer). */
+  async function confirmDelete() {
+    const target = pendingDelete
+    if (!target) return
+    try {
+      await db.deleteNote(target.id)
+      setNotes((prev) => (prev ? prev.filter((x) => x.id !== target.id) : prev))
+      toast(t('home.deleted'))
+    } catch {
+      toast(t('common.error'), 'error')
+    }
+  }
 
   useEffect(() => {
     if (!profile) return
@@ -330,9 +351,13 @@ export function Home() {
         <ul className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mt-2">
           {filtered.map((n) => {
             const fc = folderColor(n.folder_id)
-            return (
-            <li key={n.id}>
-              {/* Faixa colorida a esquerda (so no mobile): cor da pasta, ou o vermelho da marca. */}
+            const daysLeft = audioDaysLeft(n, retention)
+            const expiring = daysLeft !== null && daysLeft <= EXPIRY_WARN_DAYS
+            // A RLS so deixa o DONO excluir. Sem isto, uma nota compartilhada comigo sumiria
+            // da tela e o banco nao mudaria nada.
+            const mine = n.user_id === profile?.id
+            // Faixa colorida a esquerda (so no mobile): cor da pasta, ou o vermelho da marca.
+            const card = (
               <button
                 onClick={() => navigate(`/nota/${n.id}`)}
                 style={fc ? ({ '--stripe': fc } as React.CSSProperties) : undefined}
@@ -367,8 +392,31 @@ export function Home() {
                   {n.duration_seconds ? ` • ${fmtDuration(n.duration_seconds)}` : ''}
                   {folderName(n.folder_id) ? ` • ${folderName(n.folder_id)}` : ''}
                 </p>
+
+                {/* Aviso de auto-delete: so nos ultimos dias, e so se nao estiver marcada para manter. */}
+                {expiring && (
+                  <p className="mt-2 flex items-center gap-1.5 text-[11px] font-medium text-accent">
+                    <Clock size={12} className="shrink-0" />
+                    {daysLeft === 0
+                      ? t('home.expiresToday')
+                      : t(daysLeft === 1 ? 'home.expiresDay' : 'home.expiresDays').replace(
+                          '{n}',
+                          String(daysLeft),
+                        )}
+                  </p>
+                )}
               </button>
-            </li>
+            )
+            return (
+              <li key={n.id}>
+                {mine ? (
+                  <SwipeRow label={t('home.delete')} onDelete={() => setPendingDelete(n)}>
+                    {card}
+                  </SwipeRow>
+                ) : (
+                  card
+                )}
+              </li>
             )
           })}
         </ul>
@@ -388,6 +436,17 @@ export function Home() {
 
       {askOpen && <AskNotesSheet open={askOpen} onClose={() => setAskOpen(false)} notes={notes ?? []} />}
       {helpOpen && <HelpAssistant open={helpOpen} onClose={() => setHelpOpen(false)} />}
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title={t('home.deleteTitle')}
+        message={t('home.deleteConfirm').replace('{title}', pendingDelete?.title ?? '')}
+        confirmLabel={t('home.delete')}
+        cancelLabel={t('common.cancel')}
+        danger
+        onConfirm={confirmDelete}
+        onClose={() => setPendingDelete(null)}
+      />
 
       {folderOpen && profile && (
         <FolderSheet

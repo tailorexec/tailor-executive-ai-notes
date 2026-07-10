@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Plus, Pencil, Trash2, Check, Folder as FolderIcon } from 'lucide-react'
-import { Sheet, Spinner } from '../components/ui'
+import { ConfirmDialog, Sheet, Spinner } from '../components/ui'
 import { useToast } from '../components/Toast'
 import { useT } from '../lib/i18n'
 import { db } from '../lib/api'
@@ -49,6 +49,7 @@ export function FolderSheet({
   const [name, setName] = useState('')
   const [color, setColor] = useState(COLORS[0])
   const [editing, setEditing] = useState<Folder | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<Folder | null>(null)
   const [busy, setBusy] = useState(false)
   const atLimit = (folders?.length ?? 0) >= MAX_FOLDERS
 
@@ -90,8 +91,8 @@ export function FolderSheet({
   }
 
   async function remove(id: string) {
-    if (!confirm(t('folder.deleteConfirm'))) return
     await db.deleteFolder(id)
+    setPendingDelete(null)
     load()
   }
 
@@ -174,7 +175,7 @@ export function FolderSheet({
                     <button onClick={() => setEditing(f)} className="text-content-muted hover:text-content-primary" aria-label="Editar">
                       <Pencil size={16} />
                     </button>
-                    <button onClick={() => remove(f.id)} className="text-content-muted hover:text-accent" aria-label="Excluir">
+                    <button onClick={() => setPendingDelete(f)} className="text-content-muted hover:text-accent" aria-label="Excluir">
                       <Trash2 size={16} />
                     </button>
                   </>
@@ -184,6 +185,17 @@ export function FolderSheet({
           )}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title={t('folder.deleteTitle')}
+        message={t('folder.deleteConfirm')}
+        confirmLabel={t('home.delete')}
+        cancelLabel={t('common.cancel')}
+        danger
+        onConfirm={() => pendingDelete && remove(pendingDelete.id)}
+        onClose={() => setPendingDelete(null)}
+      />
     </Sheet>
   )
 }

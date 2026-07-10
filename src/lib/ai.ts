@@ -23,6 +23,7 @@ import {
   mockMindMap,
 } from './aiMock'
 import type { ActionItem, MeetingAnalysis, MindMap } from './types'
+import type { PreparedImage } from './image'
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
@@ -56,6 +57,24 @@ export async function transcribeAudio(
 export interface AiMeta {
   template?: string
   context?: string
+}
+
+/** Le e resume uma imagem (inclusive texto fotografado/escaneado), com tamanho delimitado. */
+export async function summarizeImage(
+  image: PreparedImage,
+  opts: { maxWords?: number; context?: string } = {},
+): Promise<string> {
+  if (config.mockMode) {
+    await delay(900)
+    return '## Descricao\n\nModo demo: a leitura de imagens exige o backend configurado.'
+  }
+  const r = await invoke<{ summary: string }>('ai', {
+    task: 'image',
+    image: { media_type: image.media_type, data: image.data },
+    maxWords: opts.maxWords ?? 150,
+    context: opts.context,
+  })
+  return r.summary
 }
 
 export async function generateSummary(transcript: string, meta: AiMeta = {}): Promise<string> {

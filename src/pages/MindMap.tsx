@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Network, RefreshCw } from 'lucide-react'
+import { ArrowLeft, Network } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
 import { db } from '../lib/api'
 import { generateMindMap } from '../lib/ai'
@@ -85,15 +85,8 @@ export function MindMapPage() {
           </h1>
           <p className="text-sm text-content-muted truncate">{note.title}</p>
         </div>
-        {note.mindmap && (
-          <button
-            onClick={() => generate(note)}
-            disabled={generating}
-            className="btn-ghost h-9 px-3 text-sm shrink-0"
-          >
-            {generating ? <Spinner size={16} /> : <RefreshCw size={16} />} {t('note.regenerate')}
-          </button>
-        )}
+        {/* "Gerar de novo" removido a pedido: cada geracao custa tokens e o mapa ja fica salvo
+            na nota. Para alterar o mapa, baixe em SVG ou OPML pela barra do proprio mapa. */}
       </header>
 
       {generating && !note.mindmap ? (

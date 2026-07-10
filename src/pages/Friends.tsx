@@ -14,7 +14,7 @@ import {
   sendMessage,
 } from '../lib/friends'
 import { FRIEND_MSG_MAX, type FriendEdge, type FriendMessage, type PersonRef } from '../lib/types'
-import { Avatar, EmptyState, Sheet, Spinner } from '../components/ui'
+import { Avatar, ConfirmDialog, EmptyState, Sheet, Spinner } from '../components/ui'
 import { useToast } from '../components/Toast'
 import { useT } from '../lib/i18n'
 
@@ -218,6 +218,12 @@ function AddFriendSheet({
           placeholder={t('friends.searchPlaceholder')}
           value={term}
           onChange={(e) => setTerm(e.target.value)}
+          // Sem isto o preenchimento automatico do navegador cobre a lista de sugestoes.
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
+          enterKeyHint="search"
           autoFocus
         />
       </div>
@@ -227,7 +233,7 @@ function AddFriendSheet({
       ) : results.length === 0 ? (
         <p className="text-sm text-content-muted py-6 text-center">{t('friends.noResults')}</p>
       ) : (
-        <ul className="space-y-2 max-h-72 overflow-y-auto">
+        <ul className="space-y-2 max-h-[40vh] overflow-y-auto">
           {results.map((p) => (
             <li key={p.id} className="flex items-center gap-3 p-2 rounded-xl bg-surface-elevated">
               <Avatar first={p.first_name} last={p.last_name} size={36} url={p.avatar_url} />
@@ -263,6 +269,7 @@ export function FriendsPage() {
   const [addOpen, setAddOpen] = useState(false)
   const [chatWith, setChatWith] = useState<PersonRef | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
+  const [pendingRemove, setPendingRemove] = useState<FriendEdge | null>(null)
 
   const refresh = useCallback(() => {
     if (!me) return
@@ -393,10 +400,7 @@ export function FriendsPage() {
               </button>
 
               <button
-                onClick={() => {
-                  if (!confirm(t('friends.removeConfirm'))) return
-                  run(e.friendship.id, () => removeFriendship(e.friendship.id, me, e.person.id), t('friends.removed'))
-                }}
+                onClick={() => setPendingRemove(e)}
                 disabled={busy === e.friendship.id}
                 title={t('friends.remove')}
                 aria-label={t('friends.remove')}
@@ -415,7 +419,7 @@ export function FriendsPage() {
                 <p className="text-xs text-content-muted">{t('friends.pending')}</p>
               </div>
               <button
-                onClick={() => run(e.friendship.id, () => removeFriendship(e.friendship.id, me, e.person.id))}
+                onClick={() => setPendingRemove(e)}
                 disabled={busy === e.friendship.id}
                 className="grid place-items-center h-9 w-9 rounded-xl text-content-muted hover:text-accent shrink-0"
                 aria-label={t('friends.decline')}
@@ -426,6 +430,21 @@ export function FriendsPage() {
           ))}
         </ul>
       )}
+
+      <ConfirmDialog
+        open={!!pendingRemove}
+        title={t('friends.remove')}
+        message={t('friends.removeConfirm')}
+        confirmLabel={t('friends.remove')}
+        cancelLabel={t('common.cancel')}
+        danger
+        onConfirm={() => {
+          const e = pendingRemove
+          if (!e) return
+          run(e.friendship.id, () => removeFriendship(e.friendship.id, me, e.person.id), t('friends.removed'))
+        }}
+        onClose={() => setPendingRemove(null)}
+      />
 
       {me && (
         <AddFriendSheet

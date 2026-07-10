@@ -7,7 +7,7 @@ import { createTask, deleteTask, listTasks, setTaskDone, tasksEnabled } from '..
 import type { ActionItem, Note, Task } from '../lib/types'
 import { TASK_TEXT_MAX } from '../lib/types'
 import { fmtDate } from '../lib/format'
-import { EmptyState, NoteCardSkeleton, Chip, Sheet, Spinner } from '../components/ui'
+import { ConfirmDialog, EmptyState, NoteCardSkeleton, Chip, Sheet, Spinner } from '../components/ui'
 import { useToast } from '../components/Toast'
 import { useT } from '../lib/i18n'
 
@@ -31,6 +31,7 @@ export function TasksPage() {
   const [busy, setBusy] = useState<string | null>(null)
 
   const [newOpen, setNewOpen] = useState(false)
+  const [pendingDelete, setPendingDelete] = useState<Task | null>(null)
   const [text, setText] = useState('')
   const [owner, setOwner] = useState('')
   const [due, setDue] = useState('')
@@ -224,7 +225,7 @@ export function TasksPage() {
                 <div className="mt-3 flex items-center gap-2 text-xs text-content-muted border-t border-surface-border pt-2">
                   <span className="flex-1 text-left">{t('tasks.manual')}</span>
                   <button
-                    onClick={() => removeTask(task!.id)}
+                    onClick={() => setPendingDelete(task!)}
                     disabled={busy === task!.id}
                     aria-label={t('tasks.delete')}
                     title={t('tasks.delete')}
@@ -276,6 +277,17 @@ export function TasksPage() {
           {saving ? <Spinner /> : <Plus size={18} />} {t('tasks.create')}
         </button>
       </Sheet>
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title={t('tasks.delete')}
+        message={pendingDelete?.text}
+        confirmLabel={t('home.delete')}
+        cancelLabel={t('common.cancel')}
+        danger
+        onConfirm={() => pendingDelete && removeTask(pendingDelete.id)}
+        onClose={() => setPendingDelete(null)}
+      />
     </div>
   )
 }

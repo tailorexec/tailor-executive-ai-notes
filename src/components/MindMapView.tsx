@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Download, FileDown, Maximize2, X } from 'lucide-react'
+import { Download, FileCode2, FileDown, ListTree, Maximize2, X } from 'lucide-react'
 import type { Note } from '../lib/types'
 import { useToast } from './Toast'
 
@@ -246,6 +246,55 @@ export function MindMapView({ map, title }: { map: MindMap; title?: string }) {
     }
   }
 
+  function saveBlob(content: string, mime: string, ext: string) {
+    const url = URL.createObjectURL(new Blob([content], { type: mime }))
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${fileBase()}.${ext}`
+    a.click()
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+  }
+
+  /** SVG vetorial: abre e edita em Figma, Illustrator, Inkscape ou Canva. */
+  function downloadSvg() {
+    try {
+      const svg = svgRef.current
+      if (!svg) throw new Error('svg')
+      const clone = svg.cloneNode(true) as SVGSVGElement
+      clone.setAttribute('width', String(totalW))
+      clone.setAttribute('height', String(totalHeight))
+      clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+      const str = '<?xml version="1.0" encoding="UTF-8"?>\n' + new XMLSerializer().serializeToString(clone)
+      saveBlob(str, 'image/svg+xml;charset=utf-8', 'svg')
+    } catch {
+      toast('Nao foi possivel gerar o SVG.', 'error')
+    }
+  }
+
+  /** OPML: formato de mapa mental aceito por XMind, Freeplane, MindMeister, iThoughts. */
+  function downloadOpml() {
+    const esc = (s: string) =>
+      s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+
+    const branches = map.branches
+      .map((b) => {
+        const kids = b.children.map((c) => `      <outline text="${esc(c)}"/>`).join('\n')
+        return `    <outline text="${esc(b.title)}">\n${kids}\n    </outline>`
+      })
+      .join('\n')
+
+    const opml = `<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+  <head><title>${esc(title || map.central)}</title></head>
+  <body>
+    <outline text="${esc(map.central)}">
+${branches}
+    </outline>
+  </body>
+</opml>`
+    saveBlob(opml, 'text/x-opml;charset=utf-8', 'opml')
+  }
+
   async function enterFs() {
     setFs(true)
     try {
@@ -316,10 +365,19 @@ export function MindMapView({ map, title }: { map: MindMap; title?: string }) {
         <button onClick={downloadPdf} className={toolbarBtn} aria-label="Baixar PDF" title="Baixar PDF">
           <FileDown size={17} />
         </button>
+        <button onClick={downloadSvg} className={toolbarBtn} aria-label="Baixar SVG editavel" title="Baixar SVG editável (Figma, Illustrator, Inkscape)">
+          <FileCode2 size={17} />
+        </button>
+        <button onClick={downloadOpml} className={toolbarBtn} aria-label="Baixar OPML editavel" title="Baixar OPML editável (XMind, Freeplane, MindMeister)">
+          <ListTree size={17} />
+        </button>
         <button onClick={enterFs} className={toolbarBtn} aria-label="Tela cheia" title="Tela cheia (landscape)">
           <Maximize2 size={17} />
         </button>
       </div>
+      <p className="text-xs text-content-muted text-right mb-2">
+        SVG e OPML abrem em editores de mapa mental para você continuar editando.
+      </p>
 
       <div className="rounded-2xl border border-surface-border overflow-hidden">{svgEl(true)}</div>
       <p className="text-xs text-content-muted mt-2">Use dois dedos para dar zoom no mapa.</p>

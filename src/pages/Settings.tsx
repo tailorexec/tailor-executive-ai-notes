@@ -23,11 +23,12 @@ import {
   BarChart3,
   Share2,
   Timer,
+  Info,
 } from 'lucide-react'
 import { deleteMyAccount } from '../lib/account'
 import { useAuth } from '../auth/AuthProvider'
 import { useTheme } from '../theme/ThemeProvider'
-import { Avatar, Sheet, Spinner } from '../components/ui'
+import { Avatar, ConfirmDialog, Sheet, Spinner } from '../components/ui'
 import { useToast } from '../components/Toast'
 import { Logo } from '../components/Logo'
 import { uploadAvatar } from '../lib/avatar'
@@ -37,6 +38,7 @@ import { langLabel, LANGS } from '../lib/lang'
 import { useI18n } from '../lib/i18n'
 import { RETENTION_CHOICES, RETENTION_DEFAULT, type RetentionDays } from '../lib/types'
 import { friendsEnabled, unreadCount } from '../lib/friends'
+import { APP_NAME, APP_VERSION } from '../lib/version'
 
 function Row({
   icon,
@@ -82,6 +84,7 @@ export function Settings() {
   const [deleting, setDeleting] = useState(false)
   const [delError, setDelError] = useState<string | null>(null)
   const [retOpen, setRetOpen] = useState(false)
+  const [retLower, setRetLower] = useState<RetentionDays | null>(null)
   const [unread, setUnread] = useState(0)
   const { lang, setLang, t } = useI18n()
   const fileRef = useRef<HTMLInputElement | null>(null)
@@ -95,15 +98,24 @@ export function Settings() {
       .catch(() => setUnread(0))
   }, [profile])
 
-  async function pickRetention(days: RetentionDays) {
-    setRetOpen(false)
-    if (days === retention) return
+  async function applyRetention(days: RetentionDays) {
     try {
       await updateProfile({ audio_retention_days: days })
       toast(t('settings.autoDeleteSaved'))
     } catch {
       toast(t('common.error'), 'error')
     }
+  }
+
+  function pickRetention(days: RetentionDays) {
+    setRetOpen(false)
+    if (days === retention) return
+    // Encurtar o prazo alcanca gravacoes que ja existem: precisa de confirmacao.
+    if (days < retention) {
+      setRetLower(days)
+      return
+    }
+    void applyRetention(days)
   }
 
   async function deleteAccount() {
@@ -338,6 +350,17 @@ export function Settings() {
         <p className="text-xs text-content-muted mt-4">{t('settings.langNote')}</p>
       </Sheet>
 
+      <ConfirmDialog
+        open={retLower !== null}
+        title={t('settings.autoDeleteLower')}
+        message={t('settings.autoDeleteLowerWarn').replace('{n}', String(retLower ?? ''))}
+        confirmLabel={t('common.save')}
+        cancelLabel={t('common.cancel')}
+        danger
+        onConfirm={() => retLower !== null && applyRetention(retLower)}
+        onClose={() => setRetLower(null)}
+      />
+
       <p className="text-xs uppercase tracking-wide text-content-muted mb-2 px-1">{t('settings.myData')}</p>
       <div className="card divide-y divide-surface-border mb-6">
         <Row
@@ -399,9 +422,14 @@ export function Settings() {
         </button>
       </Sheet>
 
+      <p className="text-xs uppercase tracking-wide text-content-muted mb-2 px-1">{t('about.title')}</p>
+      <div className="card mb-8">
+        <Row icon={<Info size={20} />} label={t('about.title')} onClick={() => navigate('/sobre')} />
+      </div>
+
       <div className="flex flex-col items-center gap-2 pb-4 text-content-muted">
         <Logo size="lg" />
-        <p className="text-xs">ANA by Tailor • v0.8.0</p>
+        <p className="text-xs">{APP_NAME} • {APP_VERSION}</p>
       </div>
     </div>
   )

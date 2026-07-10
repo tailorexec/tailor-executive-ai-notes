@@ -310,11 +310,15 @@ export const supabaseDb: Db = {
 
   async deleteNote(id) {
     // Soft-delete: vai para a lixeira.
-    const { error } = await client()
+    // `select()` para saber se a RLS deixou passar: sem ele, tentar excluir uma nota de
+    // outra pessoa afeta 0 linhas e retorna sucesso, e a UI mentiria para o usuario.
+    const { data, error } = await client()
       .from('notes')
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', id)
+      .select('id')
     if (error) throw error
+    if (!data?.length) throw new Error('Voce nao tem permissao para excluir esta nota.')
   },
 
   async logUsage(userId, type, noteId = null) {

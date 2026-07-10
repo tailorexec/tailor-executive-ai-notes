@@ -63,6 +63,12 @@ export async function listFriends(me: string): Promise<FriendEdge[]> {
   })
 }
 
+/** So os amigos ja aceitos — usado no compartilhamento de notas. */
+export async function listAcceptedFriends(me: string): Promise<PersonRef[]> {
+  const edges = await listFriends(me)
+  return edges.filter((e) => e.friendship.status === 'accepted').map((e) => e.person)
+}
+
 /** Busca por nome ou e-mail, excluindo eu mesmo e quem ja tem vinculo comigo. */
 export async function searchPeople(me: string, term: string, exclude: string[]): Promise<PersonRef[]> {
   const q = term.trim()

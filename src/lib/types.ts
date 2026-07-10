@@ -94,7 +94,7 @@ export interface SupportTicket {
   created_at: string
 }
 
-export type NoteSourceType = 'recording' | 'upload' | 'file' | 'link' | 'call' | 'video'
+export type NoteSourceType = 'recording' | 'upload' | 'file' | 'link' | 'call' | 'video' | 'image'
 export type NoteDevice = 'mobile' | 'desktop' | null
 export type NotePriority = 'alta' | 'media' | 'baixa'
 

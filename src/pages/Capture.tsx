@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft,
   Mic,
+  Image as ImageIcon,
   Pause,
   Play,
   Square,
@@ -14,10 +15,12 @@ import {
   Headphones,
   Info,
 } from 'lucide-react'
+import { extractFile, extractLink, FileError, TEXT_FILE_ACCEPT } from '../lib/extract'
+import { IMAGE_ACCEPT, isSupportedImage, MAX_IMAGE_MB, prepareImage } from '../lib/image'
 import { useAuth } from '../auth/AuthProvider'
 import { useRecorder, canCaptureSystemAudio, supportsTabAudio } from '../lib/useRecorder'
 import { db, config } from '../lib/api'
-import { generateActionItems, generateSummary, transcribeAudio } from '../lib/ai'
+import { generateActionItems, generateSummary, summarizeImage, transcribeAudio } from '../lib/ai'
 import { saveAudio } from '../lib/audioStore'
 import { isSilentAudio } from '../lib/audioLevel'
 import { currentDevice } from '../lib/device'
@@ -30,7 +33,7 @@ import { bgRecorder, canRecordInBackground } from '../lib/bgRecorder'
 import { TEMPLATES } from '../lib/templates'
 import type { NoteSourceType } from '../lib/types'
 
-type Mode = 'record' | 'meeting' | 'upload' | 'video' | 'file' | 'link'
+type Mode = 'record' | 'meeting' | 'upload' | 'video' | 'file' | 'link' | 'image'
 
 const MAX_VIDEO_MB = 25
 
@@ -52,6 +55,7 @@ export function Capture() {
   const [fileName, setFileName] = useState<string | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [imageWords, setImageWords] = useState(150)
   const [processing, setProcessing] = useState(false)
   const [step, setStep] = useState(0)
   const [error, setError] = useState<string | null>(null)
@@ -187,6 +191,10 @@ export function Capture() {
     audioBlob?: Blob
     fallbackTitle: string
     skipAudioStore?: boolean
+    /** Resumo ja pronto (ex.: visao de imagem): evita uma segunda chamada paga a IA. */
+    summary?: string
+    /** Conteudo sem action items (imagem): pula mais uma chamada. */
+    skipActionItems?: boolean
   }) {
     if (!profile) return
     setProcessing(true)
@@ -215,11 +223,14 @@ export function Capture() {
       const meta = { template, context }
 
       setStep(1)
-      const summary = await generateSummary(transcript, meta)
-      await db.logUsage(profile.id, 'ai_summary')
+      let summary = opts.summary
+      if (!summary) {
+        summary = await generateSummary(transcript, meta)
+        await db.logUsage(profile.id, 'ai_summary')
+      }
 
       setStep(2)
-      const actionItems = await generateActionItems(transcript, meta)
+      const actionItems = opts.skipActionItems ? [] : await generateActionItems(transcript, meta)
 
       setStep(3)
       let note = await db.createNote({
@@ -287,6 +298,11 @@ export function Capture() {
   async function onUploadAudio(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    setError(null)
+    if (!file.type.startsWith('audio/')) {
+      setError('Este arquivo nao e um audio. Envie MP3, M4A, WAV, WEBM ou OGG.')
+      return
+    }
     await finalize({
       type: 'upload',
       audioBlob: file,
@@ -298,6 +314,11 @@ export function Capture() {
   async function onUploadVideo(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    setError(null)
+    if (!file.type.startsWith('video/')) {
+      setError('Este arquivo nao e um video. Envie MP4, MOV, WEBM ou MKV.')
+      return
+    }
     if (file.size > MAX_VIDEO_MB * 1024 * 1024) {
       setError(`Video muito grande. Limite de ${MAX_VIDEO_MB} MB (a IA extrai apenas o audio).`)
       return
@@ -323,6 +344,44 @@ export function Capture() {
     setTextInput(isText ? await file.text() : '')
   }
 
+  async function onPickImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setError(null)
+    if (!isSupportedImage(file)) {
+      setError('Formato nao suportado. Envie PNG, JPG, WEBP ou GIF.')
+      return
+    }
+    setFileName(file.name)
+    setSelectedFile(file)
+  }
+
+  /** Le a imagem com a IA de visao (transcreve texto fotografado e resume). */
+  async function onSubmitImage() {
+    if (!selectedFile) {
+      setError('Selecione uma imagem.')
+      return
+    }
+    setSubmitting(true)
+    setError(null)
+    try {
+      const prepared = await prepareImage(selectedFile)
+      const summary = await summarizeImage(prepared, { maxWords: imageWords, context })
+      setSubmitting(false)
+      // A visao ja devolveu o texto e o resumo: nao ha por que pagar outra chamada.
+      await finalize({
+        type: 'image',
+        transcript: summary,
+        summary,
+        skipActionItems: true,
+        fallbackTitle: fileName?.replace(/\.[^.]+$/, '') || 'Resumo de imagem',
+      })
+    } catch (err) {
+      setSubmitting(false)
+      setError(err instanceof Error ? err.message : 'Nao consegui ler esta imagem.')
+    }
+  }
+
   async function onSubmitText() {
     setError(null)
     let content = textInput.trim()
@@ -339,7 +398,6 @@ export function Capture() {
     // Extracao real (link no servidor; PDF/DOCX no navegador).
     setSubmitting(true)
     try {
-      const { extractFile, extractLink } = await import('../lib/extract')
       if (mode === 'link') {
         content = await extractLink(content)
       } else if (!content && selectedFile) {
@@ -347,7 +405,12 @@ export function Capture() {
       }
     } catch (err) {
       setSubmitting(false)
-      setError(`Nao consegui extrair o conteudo. ${err instanceof Error ? err.message : String(err)}`)
+      // FileError ja carrega um texto pronto para o usuario; o resto vira mensagem generica.
+      setError(
+        err instanceof FileError
+          ? err.message
+          : 'Nao consegui extrair o conteudo deste arquivo. Verifique o formato e tente de novo.',
+      )
       return
     }
     setSubmitting(false)
@@ -408,6 +471,7 @@ export function Capture() {
           {mode === 'upload' && 'Enviar audio'}
           {mode === 'video' && 'Enviar video'}
           {mode === 'file' && 'PDF, arquivo ou texto'}
+          {mode === 'image' && 'Resumir imagem'}
           {mode === 'link' && 'Link da web'}
         </h1>
       </header>
@@ -681,7 +745,7 @@ export function Capture() {
             <p className="font-medium">{fileName ? 'Trocar arquivo' : 'Selecionar PDF, TXT, DOCX...'}</p>
             {fileName && <p className="text-sm text-content-secondary">{fileName}</p>}
           </button>
-          <input ref={fileRef} type="file" accept=".pdf,.txt,.md,.csv,.docx" className="hidden" onChange={onFileText} />
+          <input ref={fileRef} type="file" accept={TEXT_FILE_ACCEPT} className="hidden" onChange={onFileText} />
           {fileName && (
             <p className="text-xs text-content-muted -mt-1">
               Arquivo selecionado. O texto do PDF/DOCX e extraido ao clicar em "Processar".
@@ -697,6 +761,58 @@ export function Capture() {
           <button className="btn-primary" onClick={onSubmitText} disabled={submitting}>
             {submitting ? <Spinner size={18} /> : null}
             {submitting ? 'Extraindo...' : 'Processar'}
+          </button>
+        </div>
+      )}
+
+      {mode === 'image' && (
+        <div className="flex-1 flex flex-col gap-4 pb-24">
+          <button
+            onClick={() => fileRef.current?.click()}
+            className="card w-full py-10 flex flex-col items-center gap-3 border-dashed hover:border-accent/50"
+          >
+            <ImageIcon size={32} className="text-accent" />
+            <p className="font-medium">{fileName ? 'Trocar imagem' : 'Selecionar imagem'}</p>
+            <p className="text-sm text-content-muted">PNG, JPG, WEBP, GIF • ate {MAX_IMAGE_MB} MB</p>
+            {fileName && <p className="text-sm text-content-secondary truncate max-w-full px-4">{fileName}</p>}
+          </button>
+          <input ref={fileRef} type="file" accept={IMAGE_ACCEPT} className="hidden" onChange={onPickImage} />
+
+          <div>
+            <label className="label">Tamanho do resumo</label>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { w: 80, label: 'Curto' },
+                { w: 150, label: 'Medio' },
+                { w: 300, label: 'Longo' },
+              ].map((o) => (
+                <button
+                  key={o.w}
+                  type="button"
+                  onClick={() => setImageWords(o.w)}
+                  className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
+                    imageWords === o.w
+                      ? 'bg-brand-solid border-brand-solid text-white'
+                      : 'bg-surface-elevated border-surface-border text-content-secondary'
+                  }`}
+                >
+                  {o.label} • {o.w} palavras
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <p className="text-xs text-content-muted flex items-start gap-1.5">
+            <Info size={13} className="shrink-0 mt-0.5" />
+            <span>
+              Se a imagem tiver texto (documento, print, foto de pagina), a IA transcreve o texto e depois
+              resume. A imagem nao e armazenada.
+            </span>
+          </p>
+
+          <button className="btn-primary" onClick={onSubmitImage} disabled={submitting || !selectedFile}>
+            {submitting ? <Spinner size={18} /> : null}
+            {submitting ? 'Lendo imagem...' : 'Resumir imagem'}
           </button>
         </div>
       )}
