@@ -88,8 +88,9 @@ function Sidebar({ onCollapse }: { onCollapse: () => void }) {
         {t('sidebar.smartRec')}
       </button>
 
-      {/* Duas secoes: o menu principal e as "Mais funcoes" (as mesmas do Config). */}
-      <nav className="flex-1 min-h-0 overflow-y-auto px-3">
+      {/* Duas secoes: o menu principal e as "Mais funcoes" (as mesmas do Config). Sem rolagem
+          propria: com ~8 itens fixos, sempre cabe: nao precisa de scrollbar interna na sidebar. */}
+      <nav className="flex-1 px-3">
         <p className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-content-muted">
           {t('sidebar.menu')}
         </p>
