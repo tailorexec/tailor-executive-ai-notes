@@ -189,7 +189,7 @@ function BottomNav() {
   const [newOpen, setNewOpen] = useState(false)
 
   return (
-    <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 safe-bottom bg-surface-card/95 backdrop-blur border-t border-surface-border">
+    <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 safe-bottom nav-bg-bleed bg-surface-card/95 backdrop-blur border-t border-surface-border">
       <div className="mx-auto max-w-2xl">
         <div className="relative flex items-center h-16 px-2">
           <NavItem to="/" icon={<Home size={20} />} label={t('nav.notes')} />

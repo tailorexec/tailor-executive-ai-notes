@@ -118,6 +118,18 @@
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom);
   }
+  /*
+   * Rede de seguranca contra o "vazamento de fundo" abaixo da bottom nav no PWA instalado
+   * do iOS (relatado mesmo apos a correcao de env(safe-area-inset-bottom) via min-h-dvh).
+   * Estende visualmente o fundo do nav bem alem da propria caixa com um box-shadow SOLIDO
+   * (sem blur/spread): cobre qualquer gap de renderizacao logo abaixo dela, seja qual for a
+   * causa exata (uma particularidade do WebKit que nao reproduzo fora de um iPhone real).
+   * box-shadow e so pintura -- nunca muda posicao/tamanho de nada, entao e seguro mesmo se
+   * a causa real for outra.
+   */
+  .nav-bg-bleed {
+    box-shadow: 0 100px 0 0 rgb(var(--surface-card) / 0.95);
+  }
   /* Respiro extra acima do indicador de home (iPhone) */
   .safe-bottom-2 {
     padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem);
