@@ -66,7 +66,7 @@ function Sidebar({ onCollapse }: { onCollapse: () => void }) {
   const [newOpen, setNewOpen] = useState(false)
 
   return (
-    <aside className="hidden md:flex fixed inset-y-0 left-0 w-64 flex-col border-r border-surface-border bg-surface-card z-40">
+    <aside className="hidden md:flex fixed inset-y-0 left-0 w-64 flex-col overflow-y-auto border-r border-surface-border bg-surface-card z-40">
       <button
         onClick={onCollapse}
         aria-label={t('sidebar.hide')}
@@ -88,8 +88,10 @@ function Sidebar({ onCollapse }: { onCollapse: () => void }) {
         {t('sidebar.smartRec')}
       </button>
 
-      {/* Duas secoes: o menu principal e as "Mais funcoes" (as mesmas do Config). Sem rolagem
-          propria: com ~8 itens fixos, sempre cabe: nao precisa de scrollbar interna na sidebar. */}
+      {/* Duas secoes: o menu principal e as "Mais funcoes" (as mesmas do Config). O nav em si
+          nao tem rolagem propria (cabe com folga na maioria das telas); a rolagem-fallback e
+          da propria <aside> acima, para o rodape (perfil/config/sair) nunca ficar inacessivel
+          quando a altura util encolhe (barra de tarefas do Windows, zoom, tela pequena). */}
       <nav className="flex-1 px-3">
         <p className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-content-muted">
           {t('sidebar.menu')}
