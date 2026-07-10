@@ -186,6 +186,15 @@ export interface UsageEvent {
 
 export type AnnouncementType = 'info' | 'warning' | 'maintenance' | 'promo'
 
+export interface BudgetAlert {
+  id: string
+  day: string
+  spend_usd: number
+  threshold_usd: number
+  acknowledged: boolean
+  created_at: string
+}
+
 export interface AppSettings {
   announcement_enabled: boolean
   announcement_type: AnnouncementType
@@ -196,6 +205,12 @@ export interface AppSettings {
   maintenance_enabled: boolean
   maintenance_message: string
   maintenance_eta: string
+  /** Freios de gasto com IA (Config > Admin). */
+  ai_enabled: boolean
+  ai_daily_usd_per_user: number
+  ai_monthly_usd_global: number
+  ai_rate_per_min: number
+  ai_daily_alert_usd: number
 }
 
 /** Linha agregada usada no painel de administrador. */

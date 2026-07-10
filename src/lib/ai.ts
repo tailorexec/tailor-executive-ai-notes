@@ -27,10 +27,28 @@ import type { PreparedImage } from './image'
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
+/**
+ * O supabase-js embrulha erros HTTP e esconde o corpo. Os freios de gasto (429/503) e os
+ * limites de tamanho (413) respondem `{ error: "mensagem para o usuario" }` — sem ler o
+ * corpo, o usuario veria apenas "Edge Function returned a non-2xx status code".
+ */
+async function unwrapError(error: unknown): Promise<Error> {
+  const ctx = (error as { context?: Response })?.context
+  if (ctx && typeof ctx.json === 'function') {
+    try {
+      const body = await ctx.clone().json()
+      if (body?.error) return new Error(String(body.error))
+    } catch {
+      /* corpo nao era JSON */
+    }
+  }
+  return error instanceof Error ? error : new Error(String(error))
+}
+
 async function invoke<T>(fn: string, body: Record<string, unknown>): Promise<T> {
   if (!supabase) throw new Error('Supabase nao configurado')
   const { data, error } = await supabase.functions.invoke(fn, { body })
-  if (error) throw error
+  if (error) throw await unwrapError(error)
   return data as T
 }
 
@@ -50,7 +68,7 @@ export async function transcribeAudio(
   // Edge function reads multipart and forwards to the transcription provider.
   if (!supabase) throw new Error('Supabase nao configurado')
   const { data, error } = await supabase.functions.invoke('transcribe', { body: form })
-  if (error) throw error
+  if (error) throw await unwrapError(error)
   return data as { transcript: string; language: string }
 }
 
@@ -197,11 +215,14 @@ export async function chatWithNote(
   question: string,
   transcript: string,
   history: { role: string; content: string }[],
+  summary = '',
 ): Promise<string> {
   if (config.mockMode) {
     await delay(600)
     return mockChatReply(question, transcript)
   }
-  const r = await invoke<{ reply: string }>('ai', { task: 'chat', question, transcript, history })
+  // `summary` so e usado quando o transcript passa do limite: aí a edge function manda
+  // resumo + trechos, em vez de reenviar o texto inteiro a cada pergunta.
+  const r = await invoke<{ reply: string }>('ai', { task: 'chat', question, transcript, history, summary })
   return r.reply
 }

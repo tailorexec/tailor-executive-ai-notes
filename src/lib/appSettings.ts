@@ -15,6 +15,12 @@ const DEFAULTS: AppSettings = {
   maintenance_enabled: false,
   maintenance_message: 'Estamos em manutencao. Voltamos em breve.',
   maintenance_eta: '',
+  // Devem espelhar os defaults da migration 0019.
+  ai_enabled: true,
+  ai_daily_usd_per_user: 2,
+  ai_monthly_usd_global: 300,
+  ai_rate_per_min: 20,
+  ai_daily_alert_usd: 10,
 }
 
 const KEY = 'tailor.appsettings'

@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { extractFile, extractLink, FileError, TEXT_FILE_ACCEPT } from '../lib/extract'
 import { IMAGE_ACCEPT, isSupportedImage, MAX_IMAGE_MB, prepareImage } from '../lib/image'
+import { aiError } from '../lib/aiError'
 import { useAuth } from '../auth/AuthProvider'
 import { useRecorder, canCaptureSystemAudio, supportsTabAudio } from '../lib/useRecorder'
 import { db, config } from '../lib/api'
@@ -256,7 +257,7 @@ export function Capture() {
 
       navigate(`/nota/${note.id}`, { replace: true })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao processar.')
+      setError(aiError(err, 'Falha ao processar. Tente novamente.'))
       setProcessing(false)
     }
   }
@@ -378,7 +379,7 @@ export function Capture() {
       })
     } catch (err) {
       setSubmitting(false)
-      setError(err instanceof Error ? err.message : 'Nao consegui ler esta imagem.')
+      setError(aiError(err, err instanceof Error ? err.message : 'Nao consegui ler esta imagem.'))
     }
   }
 

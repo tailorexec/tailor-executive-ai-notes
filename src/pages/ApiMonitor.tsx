@@ -9,22 +9,70 @@ import {
   ExternalLink,
   Info,
   AudioLines,
+  AlertTriangle,
+  ShieldCheck,
+  Check,
 } from 'lucide-react'
 import { db } from '../lib/api'
 import { Avatar, Spinner } from '../components/ui'
 import { useToast } from '../components/Toast'
 import { fmtDuration } from '../lib/format'
 import {
+  ackBudgetAlert,
   compactNum,
   costByUser,
   listApiUsage,
+  listBudgetAlerts,
   periodRange,
   summarize,
   usd,
   type ApiUsageRow,
   type PeriodKey,
 } from '../lib/apiUsage'
-import type { Profile } from '../lib/types'
+import { getAppSettings, updateAppSettings } from '../lib/appSettings'
+import type { AppSettings, BudgetAlert, Profile } from '../lib/types'
+
+/** Campo numerico com botao de salvar: evita gravar a cada tecla. */
+function LimitField({
+  label,
+  value,
+  step,
+  onSave,
+}: {
+  label: string
+  value: number
+  step: string
+  onSave: (v: number) => void
+}) {
+  const [draft, setDraft] = useState(String(value))
+  const dirty = draft !== String(value) && draft.trim() !== '' && !Number.isNaN(Number(draft))
+
+  useEffect(() => setDraft(String(value)), [value])
+
+  return (
+    <div>
+      <label className="block text-[11px] text-content-muted mb-1">{label}</label>
+      <div className="flex gap-2">
+        <input
+          type="number"
+          min="0"
+          step={step}
+          className="input flex-1 min-w-0"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+        />
+        <button
+          onClick={() => onSave(Number(draft))}
+          disabled={!dirty}
+          className="btn-primary h-11 w-11 rounded-xl p-0 shrink-0 disabled:opacity-40"
+          aria-label="Salvar"
+        >
+          <Check size={18} />
+        </button>
+      </div>
+    </div>
+  )
+}
 
 const PERIODS: { key: PeriodKey; label: string }[] = [
   { key: 'day', label: 'Hoje' },
@@ -80,6 +128,27 @@ export function ApiMonitor() {
   const [to, setTo] = useState('')
   const [rows, setRows] = useState<ApiUsageRow[] | null>(null)
   const [people, setPeople] = useState<Map<string, Profile>>(new Map())
+  const [alerts, setAlerts] = useState<BudgetAlert[]>([])
+  const [settings, setSettings] = useState<AppSettings | null>(null)
+
+  async function saveSettings(patch: Partial<AppSettings>) {
+    try {
+      const next = await updateAppSettings(patch)
+      setSettings(next)
+      toast('Limites atualizados')
+    } catch {
+      toast('Nao consegui salvar os limites', 'error')
+    }
+  }
+
+  async function dismissAlert(id: string) {
+    try {
+      await ackBudgetAlert(id)
+      setAlerts((prev) => prev.filter((a) => a.id !== id))
+    } catch {
+      toast('Nao consegui marcar o alerta', 'error')
+    }
+  }
 
   useEffect(() => {
     if (period === 'custom' && (!from || !to)) return
@@ -97,6 +166,8 @@ export function ApiMonitor() {
     db.listProfiles()
       .then((all) => setPeople(new Map(all.map((p) => [p.id, p]))))
       .catch(() => {})
+    listBudgetAlerts().then(setAlerts).catch(() => {})
+    getAppSettings().then(setSettings).catch(() => {})
   }, [])
 
   const totals = useMemo(() => (rows ? summarize(rows) : null), [rows])
@@ -257,6 +328,88 @@ export function ApiMonitor() {
             </ul>
           </div>
         </>
+      )}
+
+      {alerts.length > 0 && (
+        <div className="card p-4 mb-3 border-brand-solid">
+          <h2 className="font-display font-semibold flex items-center gap-2 mb-2 text-accent">
+            <AlertTriangle size={16} /> Alertas de gasto
+          </h2>
+          <ul className="space-y-2">
+            {alerts.map((a) => (
+              <li key={a.id} className="flex items-center gap-3 text-sm">
+                <span className="flex-1 min-w-0">
+                  <span className="font-medium">{a.day}</span>: gasto de {usd(Number(a.spend_usd))} passou do
+                  limiar de {usd(Number(a.threshold_usd))}.
+                </span>
+                <button onClick={() => dismissAlert(a.id)} className="btn-outline h-8 px-3 text-xs shrink-0">
+                  Ciente
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {settings && (
+        <div className="card p-4 mb-3">
+          <h2 className="font-display font-semibold flex items-center gap-2 mb-1">
+            <ShieldCheck size={16} className="text-accent" /> Freios de gasto
+          </h2>
+          <p className="text-xs text-content-muted mb-4">
+            Aplicados no servidor, antes de chamar a API. Valem para qualquer chamada, inclusive fora do app.
+          </p>
+
+          <button
+            onClick={() => saveSettings({ ai_enabled: !settings.ai_enabled })}
+            className="w-full flex items-center gap-3 mb-4 text-left"
+          >
+            <span
+              className={`h-6 w-11 rounded-full transition-colors relative shrink-0 ${
+                settings.ai_enabled ? 'bg-brand-solid' : 'bg-surface-border'
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
+                  settings.ai_enabled ? 'translate-x-5' : 'translate-x-0.5'
+                }`}
+              />
+            </span>
+            <span className="min-w-0">
+              <span className="block font-medium text-sm">Funcoes de IA ativas</span>
+              <span className="block text-xs text-content-muted">
+                Desligar bloqueia todas as chamadas pagas na hora (freio de emergencia).
+              </span>
+            </span>
+          </button>
+
+          <div className="space-y-3">
+            <LimitField
+              label="Cota diaria por usuario (USD)"
+              value={settings.ai_daily_usd_per_user}
+              step="0.5"
+              onSave={(v) => saveSettings({ ai_daily_usd_per_user: v })}
+            />
+            <LimitField
+              label="Teto mensal da empresa (USD)"
+              value={settings.ai_monthly_usd_global}
+              step="10"
+              onSave={(v) => saveSettings({ ai_monthly_usd_global: v })}
+            />
+            <LimitField
+              label="Chamadas por minuto, por usuario"
+              value={settings.ai_rate_per_min}
+              step="1"
+              onSave={(v) => saveSettings({ ai_rate_per_min: Math.round(v) })}
+            />
+            <LimitField
+              label="Alerta quando o gasto do dia passar de (USD)"
+              value={settings.ai_daily_alert_usd}
+              step="1"
+              onSave={(v) => saveSettings({ ai_daily_alert_usd: v })}
+            />
+          </div>
+        </div>
       )}
 
       <div className="card p-4">

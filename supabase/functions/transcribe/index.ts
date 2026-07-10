@@ -5,46 +5,20 @@
 
 // @ts-nocheck  (ambiente Deno)
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { callerId, checkBudget, cors, guardResponse, logUsage } from '../_shared/guard.ts'
 
 const PROVIDER = Deno.env.get('TRANSCRIPTION_PROVIDER') ?? 'groq'
 const ASSEMBLYAI_API_KEY = Deno.env.get('ASSEMBLYAI_API_KEY')
+
+// Limites no SERVIDOR: o cliente ja valida, mas a edge function e chamavel direto.
+const MAX_FILE_MB = 30
+const MAX_AUDIO_SECONDS = 2 * 60 * 60 // 2 horas
 
 // USD por SEGUNDO de audio (transcricao nao e cobrada por token).
 const PRICE_PER_SEC: Record<string, number> = {
   groq: 0.111 / 3600, // whisper-large-v3
   openai: 0.006 / 60, // whisper-1
   assemblyai: 0.37 / 3600, // com speaker labels
-}
-
-function callerId(req: Request): string | null {
-  try {
-    const token = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
-    if (!token) return null
-    const payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')
-    return JSON.parse(atob(payload)).sub ?? null
-  } catch {
-    return null
-  }
-}
-
-/** A contabilidade nunca pode derrubar a transcricao. */
-async function logUsage(row: Record<string, unknown>) {
-  try {
-    const url = Deno.env.get('SUPABASE_URL')
-    const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-    if (!url || !key) return
-    const admin = createClient(url, key, { auth: { persistSession: false } })
-    await admin.from('api_usage').insert(row)
-  } catch (_) {
-    /* silencioso de proposito */
-  }
-}
-
-const cors = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
 async function whisper(file: File): Promise<{ text: string; seconds: number }> {
@@ -108,11 +82,20 @@ async function assemblyDiarize(file: File): Promise<{ text: string; seconds: num
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   try {
+    const userId = callerId(req)
+    const guard = await checkBudget(userId)
+    if (!guard.ok) return guardResponse(guard)
+
     const inForm = await req.formData()
     const file = inForm.get('file') as File
     if (!file) throw new Error('Arquivo de audio ausente.')
+    if (file.size > MAX_FILE_MB * 1024 * 1024) {
+      return new Response(
+        JSON.stringify({ error: `Arquivo muito grande. Limite de ${MAX_FILE_MB} MB.` }),
+        { status: 413, headers: { ...cors, 'content-type': 'application/json' } },
+      )
+    }
     const diarize = inForm.get('diarize') === 'true'
-    const userId = callerId(req)
 
     let result: { text: string; seconds: number } | null = null
     let provider = PROVIDER
@@ -135,6 +118,13 @@ Deno.serve(async (req) => {
       audio_seconds: result.seconds,
       cost_usd: result.seconds * (PRICE_PER_SEC[provider] ?? 0),
     })
+
+    if (result.seconds > MAX_AUDIO_SECONDS) {
+      return new Response(
+        JSON.stringify({ error: 'Audio acima do limite de 2 horas.' }),
+        { status: 413, headers: { ...cors, 'content-type': 'application/json' } },
+      )
+    }
 
     return new Response(JSON.stringify({ transcript: result.text, language: 'pt-BR' }), {
       headers: { ...cors, 'content-type': 'application/json' },

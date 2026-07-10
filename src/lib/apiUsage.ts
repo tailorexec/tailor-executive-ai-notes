@@ -1,6 +1,7 @@
 // Leitura do consumo das APIs pagas. So o administrador enxerga (RLS em api_usage).
 
 import { supabase } from './supabase'
+import type { BudgetAlert } from './types'
 
 export type Provider = 'anthropic' | 'groq' | 'assemblyai' | 'openai'
 
@@ -131,6 +132,25 @@ export function costByUser(rows: ApiUsageRow[]): { userId: string | null; costUs
   return [...m.entries()]
     .map(([userId, v]) => ({ userId, ...v }))
     .sort((a, b) => b.costUsd - a.costUsd)
+}
+
+/** Alertas de gasto gravados pelo cron diario. So o admin le (RLS). */
+export async function listBudgetAlerts(): Promise<BudgetAlert[]> {
+  if (!supabase) return []
+  const { data, error } = await supabase
+    .from('budget_alerts')
+    .select('*')
+    .eq('acknowledged', false)
+    .order('day', { ascending: false })
+    .limit(20)
+  if (error) throw error
+  return (data ?? []) as BudgetAlert[]
+}
+
+export async function ackBudgetAlert(id: string): Promise<void> {
+  if (!supabase) return
+  const { error } = await supabase.from('budget_alerts').update({ acknowledged: true }).eq('id', id)
+  if (error) throw error
 }
 
 export const usd = (n: number) =>

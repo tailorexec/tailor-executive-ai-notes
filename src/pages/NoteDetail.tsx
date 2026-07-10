@@ -29,6 +29,7 @@ import { db, config } from '../lib/api'
 import { chatWithNote, generateAnalysis, generateDetailed } from '../lib/ai'
 import { pauseSpeaking, resumeSpeaking, speak, stopSpeaking, ttsSupported } from '../lib/tts'
 import { audioDaysLeft, retentionOf } from '../lib/retention'
+import { aiError } from '../lib/aiError'
 import { fmtDateTime, fmtDuration } from '../lib/format'
 import { Spinner, ConfirmDialog, PriorityBadge } from '../components/ui'
 import { useToast } from '../components/Toast'
@@ -152,8 +153,8 @@ export function NoteDetail() {
       if (profile) await db.logUsage(profile.id, 'ai_detailed', note.id)
       setNote(updated)
       setTab('detailed')
-    } catch {
-      toast(t('common.error'), 'error')
+    } catch (err) {
+      toast(aiError(err, t('common.error')), 'error')
     } finally {
       setBusy(null)
     }
@@ -168,8 +169,8 @@ export function NoteDetail() {
       if (profile) await db.logUsage(profile.id, 'ai_analysis', note.id)
       setNote(updated)
       setTab('analysis')
-    } catch {
-      toast(t('common.error'), 'error')
+    } catch (err) {
+      toast(aiError(err, t('common.error')), 'error')
     } finally {
       setBusy(null)
     }
@@ -229,13 +230,14 @@ export function NoteDetail() {
         question,
         note.transcript,
         note.chat.map((m) => ({ role: m.role, content: m.content })),
+        note.summary,
       )
       const botMsg: ChatMessage = { id: uid('c_'), role: 'assistant', content: reply, created_at: new Date().toISOString() }
       const updated = await db.updateNote(note.id, { chat: [...withUser.chat, botMsg] })
       if (profile) await db.logUsage(profile.id, 'ai_chat', note.id)
       setNote(updated)
-    } catch {
-      toast(t('common.error'), 'error')
+    } catch (err) {
+      toast(aiError(err, t('common.error')), 'error')
     } finally {
       setChatBusy(false)
     }
