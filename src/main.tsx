@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
+import { registerSW } from 'virtual:pwa-register'
 import './index.css'
 import App from './App'
 import { ThemeProvider } from './theme/ThemeProvider'
@@ -9,6 +10,38 @@ import { SettingsProvider } from './app/SettingsProvider'
 import { ToastProvider } from './components/Toast'
 import { I18nProvider } from './lib/i18n'
 import { initLang } from './lib/lang'
+
+/**
+ * O registro que a Vite injeta sozinha so escuta 'load' e nunca mais checa por uma versao
+ * nova. Um PWA instalado no iOS quase sempre e RETOMADO (o WKWebView so volta do segundo
+ * plano) em vez de recarregado do zero -- 'load' nunca refaz, entao o app pode ficar preso
+ * numa versao antiga indefinidamente, por mais deploys que sejam publicados.
+ *
+ * Aqui: registra na hora (nao espera 'load'), forca uma checagem manual a cada minuto (nao
+ * depende so da heuristica interna do navegador) e recarrega a pagina sozinho assim que um
+ * service worker novo assume o controle -- sem isso, skipWaiting+clientsClaim atualizam o
+ * "controlador" mas a tela ja renderizada continua mostrando o JS/CSS antigo ate um reload.
+ */
+function setupServiceWorkerUpdates() {
+  const updateSW = registerSW({
+    immediate: true,
+    onRegisteredSW(_url, registration) {
+      if (!registration) return
+      setInterval(() => void registration.update(), 60_000)
+    },
+  })
+
+  let reloading = false
+  navigator.serviceWorker?.addEventListener('controllerchange', () => {
+    if (reloading) return
+    reloading = true
+    window.location.reload()
+  })
+
+  return updateSW
+}
+
+setupServiceWorkerUpdates()
 
 // Remove sessoes corrompidas no localStorage (residuo de tentativas antigas) que
 // causavam "String contains non ISO-8859-1 code point" ao montar headers do fetch.
