@@ -26,7 +26,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
 import { db, config } from '../lib/api'
-import { chatWithNote, generateAnalysis, generateDetailed } from '../lib/ai'
+import { chatWithNote, generateAnalysis, generateDetailed, hasAnalysis } from '../lib/ai'
 import { pauseSpeaking, resumeSpeaking, speak, stopSpeaking, ttsSupported } from '../lib/tts'
 import { audioDaysLeft, retentionOf } from '../lib/retention'
 import { aiError } from '../lib/aiError'
@@ -165,6 +165,11 @@ export function NoteDetail() {
     setBusy('analysis')
     try {
       const analysis = await generateAnalysis(note.transcript, { template: note.template, context: note.context })
+      // Nunca gravar uma analise vazia por cima da nota: melhor errar e deixar o usuario repetir.
+      if (!hasAnalysis(analysis)) {
+        toast(t('note.analysisEmpty'), 'error')
+        return
+      }
       const updated = await db.updateNote(note.id, { analysis })
       if (profile) await db.logUsage(profile.id, 'ai_analysis', note.id)
       setNote(updated)
@@ -544,7 +549,7 @@ export function NoteDetail() {
             ))}
 
           {tab === 'analysis' &&
-            (note.analysis ? (
+            (hasAnalysis(note.analysis) ? (
               <AnalysisView analysis={note.analysis} t={t} />
             ) : (
               <GenerateCta
@@ -784,12 +789,14 @@ function AnalysisView({ analysis, t }: { analysis: NonNullable<Note['analysis']>
 }
 
 function AnalysisSection({ title, items, accent }: { title: string; items: string[]; accent?: boolean }) {
-  if (!items?.length) return null
+  // A IA as vezes devolve campos em branco; um card vazio na tela e pior do que nao mostrar a secao.
+  const list = (items ?? []).filter((it) => !!it?.trim())
+  if (!list.length) return null
   return (
     <div>
       <h3 className="font-display font-semibold mb-2">{title}</h3>
       <ul className="space-y-2">
-        {items.map((it, i) => (
+        {list.map((it, i) => (
           <li key={i} className={`card px-4 py-3 ${accent ? 'border-accent/30' : ''}`}>
             {it}
           </li>

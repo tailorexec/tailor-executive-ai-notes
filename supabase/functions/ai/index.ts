@@ -140,6 +140,27 @@ function extractJson<T>(text: string, fallback: T): T {
   }
 }
 
+/**
+ * Objeto JSON obrigatorio, sem fallback silencioso: o resultado ruim seria gravado na nota como
+ * se fosse bom e a tela ficaria em branco para sempre, sem opcao de gerar de novo.
+ *
+ * So aceita `{...}`. Uma resposta cortada no max_tokens nao tem chave de fechamento, e casar
+ * `[...]` pegaria um array de dentro do JSON (ex.: `strengths`) e o gravaria como se fosse a
+ * analise inteira. Falhar aqui devolve 500 com mensagem e o usuario tenta outra vez.
+ */
+function requireJsonObject<T>(text: string, what: string): T {
+  const match = text.match(/\{[\s\S]*\}/)
+  if (match) {
+    try {
+      const parsed = JSON.parse(match[0])
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed as T
+    } catch {
+      /* resposta truncada ou malformada: cai no erro abaixo */
+    }
+  }
+  throw new Error(`A IA nao conseguiu gerar ${what} agora. Tente novamente.`)
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   try {
@@ -198,21 +219,17 @@ Deno.serve(async (req) => {
         `Voce e um coach de reunioes executivas. Analise a reuniao e responda APENAS com JSON valido no formato exato:
 {"overallScore":number(0-100),"tone":string,"strengths":string[],"improvements":string[],"questionsAsked":string[],"suggestedQuestions":string[],"pacing":string,"keyPoints":string[],"risks":string[]}
 Foque em: tom, perguntas feitas e sugeridas, ritmo/andamento, pontos fortes, melhorias e dicas praticas.${hint}`,
-        2000,
+        // Folga suficiente para o JSON fechar: cortado no meio, ele nao parseia e a analise falha.
+        3000,
       )
-      out = {
-        analysis: extractJson(text, {
-          tone: '', strengths: [], improvements: [], questionsAsked: [],
-          suggestedQuestions: [], pacing: '', keyPoints: [], risks: [],
-        }),
-      }
+      out = { analysis: requireJsonObject(text, 'a analise') }
     } else if (task === 'mindmap') {
       const text = await askOnTranscript(
         HAIKU,
         `Crie um mapa mental do conteudo. Responda APENAS com JSON no formato exato: {"central":string,"branches":[{"title":string,"children":string[]}]}. Use de 3 a 6 branches, cada uma com 2 a 5 filhos curtos.${hint}`,
         1500,
       )
-      out = { mindmap: extractJson(text, { central: 'Reuniao', branches: [] }) }
+      out = { mindmap: requireJsonObject(text, 'o mapa mental') }
     } else if (task === 'feedback') {
       const audience = String(body.audience ?? 'cliente')
       const customLabel = String(body.customLabel ?? '').slice(0, 20).trim()

@@ -122,6 +122,27 @@ export async function generateActionItems(transcript: string, meta: AiMeta = {})
   return r.actionItems
 }
 
+/**
+ * Uma analise so "existe" se tiver algum conteudo. Quando a IA devolve texto que nao da para
+ * parsear, sobra um objeto com campos vazios: ele e truthy, entao a tela mostraria uma aba em
+ * branco e nunca mais ofereceria o botao de gerar. Aqui um objeto vazio conta como ausente.
+ */
+export function hasAnalysis(a: MeetingAnalysis | null | undefined): a is MeetingAnalysis {
+  if (!a) return false
+  const lists = [a.strengths, a.improvements, a.questionsAsked, a.suggestedQuestions, a.keyPoints, a.risks]
+  return (
+    typeof a.overallScore === 'number' ||
+    !!a.tone?.trim() ||
+    !!a.pacing?.trim() ||
+    lists.some((l) => Array.isArray(l) && l.some((s) => !!s?.trim()))
+  )
+}
+
+/** Mesmo criterio do `hasAnalysis`: mapa sem nenhum ramo e um mapa que nao foi gerado. */
+export function hasMindMap(m: MindMap | null | undefined): m is MindMap {
+  return !!m && Array.isArray(m.branches) && m.branches.length > 0
+}
+
 export async function generateAnalysis(transcript: string, meta: AiMeta = {}): Promise<MeetingAnalysis> {
   if (config.mockMode) {
     await delay(1400)

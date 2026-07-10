@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Network } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
 import { db } from '../lib/api'
-import { generateMindMap } from '../lib/ai'
+import { generateMindMap, hasMindMap } from '../lib/ai'
 import type { Note } from '../lib/types'
 import { Spinner } from '../components/ui'
 import { MindMapView } from '../components/MindMapView'
@@ -34,6 +34,11 @@ export function MindMapPage() {
         template: current.template,
         context: current.context,
       })
+      // Um mapa sem ramos so serviria para travar a nota num mapa vazio: nao salva, deixa repetir.
+      if (!hasMindMap(mindmap)) {
+        toast(t('common.error'), 'error')
+        return
+      }
       const updated = await db.updateNote(current.id, { mindmap })
       if (profile) await db.logUsage(profile.id, 'ai_analysis', current.id)
       setNote(updated)
@@ -46,7 +51,7 @@ export function MindMapPage() {
 
   // Gera automaticamente na primeira vez (quando a nota ainda nao tem mapa salvo).
   useEffect(() => {
-    if (note && !note.mindmap && !startedRef.current) {
+    if (note && !hasMindMap(note.mindmap) && !startedRef.current) {
       startedRef.current = true
       generate(note)
     }
@@ -89,13 +94,13 @@ export function MindMapPage() {
             na nota. Para alterar o mapa, baixe em SVG ou OPML pela barra do proprio mapa. */}
       </header>
 
-      {generating && !note.mindmap ? (
+      {generating && !hasMindMap(note.mindmap) ? (
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <Spinner size={28} className="text-accent mb-4" />
           <p className="font-display font-semibold">{t('note.generating')}...</p>
           <p className="text-content-muted text-sm mt-1">{t('note.mindmapHint')}</p>
         </div>
-      ) : note.mindmap ? (
+      ) : hasMindMap(note.mindmap) ? (
         <MindMapView map={note.mindmap} title={note.title} />
       ) : (
         <div className="flex flex-col items-center justify-center py-24 text-center">

@@ -12,6 +12,7 @@ const FRIENDLY = [
   'Limite de',
   'acima do limite',
   'Sessao invalida',
+  'nao conseguiu gerar',
 ]
 
 export function aiError(err: unknown, fallback: string): string {
