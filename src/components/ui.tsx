@@ -1,5 +1,6 @@
 import { Loader2, X, Flag } from 'lucide-react'
 import { useEffect, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { initials } from '../lib/format'
 import { useT } from '../lib/i18n'
 import type { NotePriority } from '../lib/types'
@@ -115,7 +116,10 @@ export function Sheet({
   }, [open])
 
   if (!open) return null
-  return (
+
+  // Portal para o body: chamadores como a bottom nav (`fixed z-40`) criam um contexto de
+  // empilhamento, e o z-[60] daqui ficaria preso dentro dele — atras do botao da ANA.
+  return createPortal(
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/50 animate-fade-in" onClick={onClose} />
       <div className="relative w-full sm:max-w-md max-h-[90dvh] overflow-y-auto overscroll-contain bg-surface-card border border-surface-border rounded-t-3xl sm:rounded-3xl shadow-float animate-slide-up safe-bottom">
@@ -131,7 +135,8 @@ export function Sheet({
         </div>
         <div className="px-5 pb-6 pt-2">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 

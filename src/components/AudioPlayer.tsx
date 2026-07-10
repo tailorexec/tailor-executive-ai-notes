@@ -6,14 +6,19 @@ import { Spinner } from './ui'
 
 const SPEEDS = [1, 1.25, 1.5, 2]
 
-export function AudioPlayer({ audioRef }: { audioRef: string }) {
+const clock = (n: number) => (Number.isFinite(n) && n >= 0 ? fmtClock(n) : '--:--')
+
+export function AudioPlayer({ audioRef, durationHint = 0 }: { audioRef: string; durationHint?: number }) {
   const [url, setUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [playing, setPlaying] = useState(false)
   const [current, setCurrent] = useState(0)
   const [duration, setDuration] = useState(0)
+  const [seeking, setSeeking] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [speedIdx, setSpeedIdx] = useState(0)
   const el = useRef<HTMLAudioElement | null>(null)
+  const probing = useRef(false)
 
   useEffect(() => {
     let objUrl: string | null = null
@@ -27,16 +32,55 @@ export function AudioPlayer({ audioRef }: { audioRef: string }) {
     }
   }, [audioRef])
 
-  function toggle() {
+  /**
+   * O MediaRecorder grava WebM sem a duracao no cabecalho: `audio.duration` vem Infinity.
+   * Isso quebrava o tempo total, o max do slider e o seek. Truque padrao: pular para um
+   * tempo absurdo, deixar o browser varrer o arquivo, ler a duracao real e voltar ao inicio.
+   */
+  function resolveDuration(a: HTMLAudioElement) {
+    if (Number.isFinite(a.duration) && a.duration > 0) {
+      setDuration(a.duration)
+      return
+    }
+    const onTimeUpdate = () => {
+      a.removeEventListener('timeupdate', onTimeUpdate)
+      if (Number.isFinite(a.duration) && a.duration > 0) setDuration(a.duration)
+      else setDuration(durationHint) // ultimo recurso: o que salvamos na nota
+      a.currentTime = 0
+      setCurrent(0)
+      probing.current = false
+    }
+    probing.current = true
+    a.addEventListener('timeupdate', onTimeUpdate)
+    a.currentTime = 1e101 // forca a varredura
+  }
+
+  async function toggle() {
     const a = el.current
     if (!a) return
-    if (playing) a.pause()
-    else a.play()
+    setError(null)
+    if (playing) {
+      a.pause()
+      return
+    }
+    try {
+      await a.play()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Nao foi possivel reproduzir.')
+    }
+  }
+
+  function seekTo(v: number) {
+    const a = el.current
+    if (!a || !Number.isFinite(v)) return
+    const limit = duration || durationHint || v
+    a.currentTime = Math.min(Math.max(0, v), limit)
+    setCurrent(a.currentTime)
   }
 
   function skip(sec: number) {
     const a = el.current
-    if (a) a.currentTime = Math.min(Math.max(0, a.currentTime + sec), a.duration || 0)
+    if (a) seekTo(a.currentTime + sec)
   }
 
   function cycleSpeed() {
@@ -59,34 +103,53 @@ export function AudioPlayer({ audioRef }: { audioRef: string }) {
       </div>
     )
 
+  const max = duration || durationHint || 0
+
   return (
     <div className="card p-4">
       <audio
         ref={el}
         src={url}
         preload="metadata"
-        onLoadedMetadata={(e) => setDuration(e.currentTarget.duration || 0)}
-        onTimeUpdate={(e) => setCurrent(e.currentTarget.currentTime)}
+        onLoadedMetadata={(e) => resolveDuration(e.currentTarget)}
+        onDurationChange={(e) => {
+          const d = e.currentTarget.duration
+          if (Number.isFinite(d) && d > 0) setDuration(d)
+        }}
+        onTimeUpdate={(e) => {
+          if (!seeking && !probing.current) setCurrent(e.currentTarget.currentTime)
+        }}
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
         onEnded={() => setPlaying(false)}
+        onError={() => setError('Falha ao carregar o audio.')}
       />
+
       <input
         type="range"
         min={0}
-        max={duration || 0}
-        value={current}
+        max={max || 1}
+        value={Math.min(current, max || current)}
         step={0.1}
-        onChange={(e) => {
-          if (el.current) el.current.currentTime = Number(e.target.value)
-        }}
-        className="w-full accent-accent mb-2"
+        disabled={!max}
+        // Enquanto arrasta, o timeupdate nao pode sobrescrever a posicao do cursor.
+        onPointerDown={() => setSeeking(true)}
+        onPointerUp={() => setSeeking(false)}
+        onPointerCancel={() => setSeeking(false)}
+        onKeyDown={() => setSeeking(true)}
+        onKeyUp={() => setSeeking(false)}
+        onChange={(e) => seekTo(Number(e.target.value))}
+        className="w-full accent-accent mb-2 cursor-pointer disabled:cursor-not-allowed"
         aria-label="Progresso do audio"
       />
+
       <div className="flex items-center justify-between text-xs text-content-muted mb-3 tabular-nums">
-        <span>{fmtClock(current)}</span>
-        <span>{fmtClock(duration)}</span>
+        <span>{clock(current)}</span>
+        <span>{clock(max)}</span>
       </div>
+
+      {error && <p className="alert-error text-xs mb-3">{error}</p>}
+
       <div className="flex items-center justify-center gap-4">
         <button onClick={() => skip(-10)} className="grid place-items-center h-11 w-11 rounded-full bg-surface-elevated text-content-secondary" aria-label="Voltar 10s">
           <RotateCcw size={20} />

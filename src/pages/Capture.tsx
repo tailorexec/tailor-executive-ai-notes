@@ -106,6 +106,12 @@ export function Capture() {
   const recSeconds = useNative ? nSecs : recorder.seconds
   const recLevel = useNative ? 0 : recorder.level
 
+  /**
+   * Gravando (ou pausado): o formulario sai da tela. Ele so servia antes de comecar e,
+   * montado, empurrava o cronometro e os botoes de pausar/parar para baixo da dobra.
+   */
+  const recActive = isAudioMode && recState !== 'idle' && !recorder.error
+
   async function startRecord() {
     autoStoppedRef.current = false
     if (useNative) {
@@ -406,7 +412,7 @@ export function Capture() {
         </h1>
       </header>
 
-      {mode !== 'link' && !meetingBlocked && (
+      {mode !== 'link' && !meetingBlocked && !recActive && (
         <div className="mb-4">
           <label className="label">Título (opcional)</label>
           <input
@@ -418,7 +424,7 @@ export function Capture() {
         </div>
       )}
 
-      {(mode === 'record' || mode === 'meeting' || mode === 'upload') && !meetingBlocked && (
+      {(mode === 'record' || mode === 'meeting' || mode === 'upload') && !meetingBlocked && !recActive && (
         <div className="mb-4">
           <label className="label">{mode === 'upload' ? 'Tema do áudio (opcional)' : 'Tema (opcional)'}</label>
           <div className="flex flex-wrap gap-2 mb-2">
@@ -443,7 +449,7 @@ export function Capture() {
         </div>
       )}
 
-      {!meetingBlocked && (
+      {!meetingBlocked && !recActive && (
         <div className="mb-3">
           <label className="label">Contexto (opcional)</label>
           <input
@@ -455,14 +461,14 @@ export function Capture() {
         </div>
       )}
 
-      {!meetingBlocked && (
+      {!meetingBlocked && !recActive && (
         <p className="text-xs text-content-muted mb-6">
           Todos os campos acima sao <span className="text-content-secondary font-medium">opcionais</span>. Se
           nao preencher, a IA gera a transcricao e o resumo normalmente, sem contexto previo.
         </p>
       )}
 
-      {(mode === 'record' || mode === 'meeting' || mode === 'upload') && !meetingBlocked && (
+      {(mode === 'record' || mode === 'meeting' || mode === 'upload') && !meetingBlocked && !recActive && (
         <button
           type="button"
           onClick={() => setDiarize((v) => !v)}
@@ -576,14 +582,34 @@ export function Capture() {
             </div>
           ) : (
             <>
-              <div className="relative mb-8">
-                <div
-                  className="absolute inset-0 rounded-full bg-accent/25"
-                  style={{ transform: `scale(${1 + recLevel * 0.8})`, transition: 'transform 80ms' }}
-                />
-                <div className="grid place-items-center h-28 w-28 rounded-full bg-brand-solid text-white relative">
-                  {mode === 'meeting' ? <Headphones size={40} /> : <Mic size={40} />}
+              {/* Pausar a esquerda do botao de gravacao, encerrar a direita. */}
+              <div className="flex items-center justify-center gap-6 mb-8">
+                <button
+                  onClick={togglePause}
+                  className="btn-ghost h-14 w-14 rounded-full p-0 shrink-0"
+                  aria-label={recState === 'recording' ? 'Pausar' : 'Retomar'}
+                >
+                  {recState === 'recording' ? <Pause size={22} /> : <Play size={22} />}
+                </button>
+
+                <div className="relative shrink-0">
+                  <div
+                    aria-hidden
+                    className="absolute inset-0 rounded-full bg-accent/25 pointer-events-none"
+                    style={{ transform: `scale(${1 + recLevel * 0.35})`, transition: 'transform 80ms' }}
+                  />
+                  <div className="grid place-items-center h-28 w-28 rounded-full bg-brand-solid text-white relative">
+                    {mode === 'meeting' ? <Headphones size={40} /> : <Mic size={40} />}
+                  </div>
                 </div>
+
+                <button
+                  onClick={onStopRecording}
+                  className="btn-primary h-14 w-14 rounded-full p-0 shrink-0"
+                  aria-label="Encerrar e processar"
+                >
+                  <Square size={24} />
+                </button>
               </div>
               <p className="font-display text-4xl font-bold tabular-nums mb-2">{fmtClock(recSeconds)}</p>
               <p className="text-content-muted mb-1">
@@ -597,31 +623,13 @@ export function Capture() {
                 const remaining = config.recordingMaxSeconds - recSeconds
                 const low = remaining <= 300
                 return (
-                  <p className={`mb-9 text-sm ${low ? 'text-accent font-medium' : 'text-content-muted'}`}>
+                  <p className={`mb-4 text-sm ${low ? 'text-accent font-medium' : 'text-content-muted'}`}>
                     Limite de 2 horas • restam {fmtDuration(Math.max(0, remaining))}
                   </p>
                 )
               })()}
 
-              <div className="flex items-center gap-4">
-                {recState === 'recording' ? (
-                  <button onClick={togglePause} className="btn-ghost h-14 w-14 rounded-full p-0">
-                    <Pause size={22} />
-                  </button>
-                ) : (
-                  <button onClick={togglePause} className="btn-ghost h-14 w-14 rounded-full p-0">
-                    <Play size={22} />
-                  </button>
-                )}
-                <button
-                  onClick={onStopRecording}
-                  className="btn-primary h-16 w-16 rounded-full p-0"
-                  aria-label="Encerrar e processar"
-                >
-                  <Square size={24} />
-                </button>
-              </div>
-              <p className="text-xs text-content-muted mt-8 max-w-xs text-center">
+              <p className="text-xs text-content-muted mt-2 max-w-xs text-center">
                 {mode === 'meeting'
                   ? 'Mantenha a aba da reuniao aberta. Encerrar aqui ou "Parar compartilhamento" finaliza a gravacao.'
                   : 'Dica: em reunioes por telefone, use o viva-voz para captar melhor as duas vozes.'}
