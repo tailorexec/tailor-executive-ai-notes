@@ -19,6 +19,9 @@ import { Terms } from './pages/Terms'
 import { Privacy } from './pages/Privacy'
 import { Support } from './pages/Support'
 import { NotificationsPage } from './pages/Notifications'
+import { FriendsPage } from './pages/Friends'
+import { SharedWithMePage } from './pages/SharedWithMe'
+import { AnalyticsPage, ConnectorsPage } from './pages/ComingSoon'
 import type { ReactNode } from 'react'
 
 function FullscreenLoader() {
@@ -79,6 +82,10 @@ export default function App() {
         <Route path="/privacidade" element={<Privacy />} />
         <Route path="/suporte" element={<Support />} />
         <Route path="/notificacoes" element={<NotificationsPage />} />
+        <Route path="/amigos" element={<FriendsPage />} />
+        <Route path="/compartilhados" element={<SharedWithMePage />} />
+        <Route path="/conectores" element={<ConnectorsPage />} />
+        <Route path="/analytics" element={<AnalyticsPage />} />
         <Route
           path="/admin"
           element={

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ChevronRight,
@@ -18,6 +18,11 @@ import {
   Languages,
   Check,
   UserX,
+  Users,
+  Plug,
+  BarChart3,
+  Share2,
+  Timer,
 } from 'lucide-react'
 import { deleteMyAccount } from '../lib/account'
 import { useAuth } from '../auth/AuthProvider'
@@ -30,6 +35,8 @@ import { db } from '../lib/api'
 import { exportNotesMarkdown } from '../lib/share'
 import { langLabel, LANGS } from '../lib/lang'
 import { useI18n } from '../lib/i18n'
+import { RETENTION_CHOICES, RETENTION_DEFAULT, type RetentionDays } from '../lib/types'
+import { friendsEnabled, unreadCount } from '../lib/friends'
 
 function Row({
   icon,
@@ -74,8 +81,30 @@ export function Settings() {
   const [delText, setDelText] = useState('')
   const [deleting, setDeleting] = useState(false)
   const [delError, setDelError] = useState<string | null>(null)
+  const [retOpen, setRetOpen] = useState(false)
+  const [unread, setUnread] = useState(0)
   const { lang, setLang, t } = useI18n()
   const fileRef = useRef<HTMLInputElement | null>(null)
+
+  const retention: RetentionDays = profile?.audio_retention_days ?? RETENTION_DEFAULT
+
+  useEffect(() => {
+    if (!profile || !friendsEnabled()) return
+    unreadCount(profile.id)
+      .then(setUnread)
+      .catch(() => setUnread(0))
+  }, [profile])
+
+  async function pickRetention(days: RetentionDays) {
+    setRetOpen(false)
+    if (days === retention) return
+    try {
+      await updateProfile({ audio_retention_days: days })
+      toast(t('settings.autoDeleteSaved'))
+    } catch {
+      toast(t('common.error'), 'error')
+    }
+  }
 
   async function deleteAccount() {
     setDeleting(true)
@@ -190,6 +219,32 @@ export function Settings() {
         </div>
       )}
 
+      <p className="text-xs uppercase tracking-wide text-content-muted mb-2 px-1">{t('settings.more')}</p>
+      <div className="card divide-y divide-surface-border mb-6">
+        <Row
+          icon={<Users size={20} />}
+          label={t('settings.friends')}
+          onClick={() => navigate('/amigos')}
+          right={
+            unread > 0 ? (
+              <span className="flex items-center gap-1.5">
+                <span className="grid place-items-center min-w-5 h-5 px-1.5 rounded-full bg-brand-solid text-white text-xs font-semibold">
+                  {unread}
+                </span>
+                <ChevronRight size={18} className="text-content-muted" />
+              </span>
+            ) : undefined
+          }
+        />
+        <Row
+          icon={<Share2 size={20} />}
+          label={t('settings.sharedWithMe')}
+          onClick={() => navigate('/compartilhados')}
+        />
+        <Row icon={<Plug size={20} />} label={t('settings.connectors')} onClick={() => navigate('/conectores')} />
+        <Row icon={<BarChart3 size={20} />} label={t('settings.analytics')} onClick={() => navigate('/analytics')} />
+      </div>
+
       <p className="text-xs uppercase tracking-wide text-content-muted mb-2 px-1">{t('settings.prefs')}</p>
       <div className="card divide-y divide-surface-border mb-6">
         <Row
@@ -226,7 +281,38 @@ export function Settings() {
             </span>
           }
         />
+        <Row
+          icon={<Timer size={20} />}
+          label={t('settings.autoDelete')}
+          onClick={() => setRetOpen(true)}
+          right={
+            <span className="flex items-center gap-1 text-sm text-content-muted">
+              {t('settings.autoDeleteDays').replace('{n}', String(retention))}
+              <ChevronRight size={18} />
+            </span>
+          }
+        />
       </div>
+
+      <Sheet open={retOpen} onClose={() => setRetOpen(false)} title={t('settings.autoDelete')}>
+        <p className="text-sm text-content-secondary mb-4">{t('settings.autoDeleteDesc')}</p>
+        <div className="space-y-2">
+          {RETENTION_CHOICES.map((d) => (
+            <button
+              key={d}
+              onClick={() => pickRetention(d)}
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-colors ${
+                retention === d
+                  ? 'border-brand-solid bg-accent/10'
+                  : 'border-surface-border bg-surface-elevated hover:border-accent/40'
+              }`}
+            >
+              <span className="font-medium">{t('settings.autoDeleteDays').replace('{n}', String(d))}</span>
+              {retention === d && <Check size={18} className="text-accent" />}
+            </button>
+          ))}
+        </div>
+      </Sheet>
 
       <Sheet open={langOpen} onClose={() => setLangOpen(false)} title={t('settings.appLang')}>
         <div className="space-y-2">
@@ -315,7 +401,7 @@ export function Settings() {
 
       <div className="flex flex-col items-center gap-2 pb-4 text-content-muted">
         <Logo size="lg" />
-        <p className="text-xs">ANA by Tailor • v0.7.9</p>
+        <p className="text-xs">ANA by Tailor • v0.8.0</p>
       </div>
     </div>
   )

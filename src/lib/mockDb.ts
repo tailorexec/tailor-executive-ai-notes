@@ -5,6 +5,7 @@ import { config, isAdminEmail, isAllowedDomain } from './config'
 import { deleteAudio } from './audioStore'
 import type { Db, SignUpInput } from './db'
 import { uid } from './db'
+import { RETENTION_DEFAULT } from './types'
 import type {
   AdminUserRow,
   Folder,
@@ -52,6 +53,7 @@ function seed(): void {
     phone: '+55 11 90000-0000',
     role: 'admin',
     avatar_url: null,
+    audio_retention_days: RETENTION_DEFAULT,
     created_at: new Date().toISOString(),
   }
 
@@ -127,6 +129,7 @@ export const mockDb: Db = {
       phone: input.phone.trim(),
       role: isAdminEmail(email) ? 'admin' : 'member',
       avatar_url: null,
+      audio_retention_days: RETENTION_DEFAULT,
       created_at: new Date().toISOString(),
     }
     profiles.push(profile)

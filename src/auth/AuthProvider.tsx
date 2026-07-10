@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import { db } from '../lib/api'
 import type { SignUpInput } from '../lib/db'
-import type { Profile } from '../lib/types'
+import type { Profile, ProfilePatch } from '../lib/types'
 import { isAdminEmail } from '../lib/config'
 
 interface AuthCtx {
@@ -11,7 +11,7 @@ interface AuthCtx {
   signIn: (email: string, password: string) => Promise<void>
   signUp: (input: SignUpInput) => Promise<void>
   signOut: () => Promise<void>
-  updateProfile: (patch: { first_name?: string; last_name?: string; avatar_url?: string | null }) => Promise<void>
+  updateProfile: (patch: ProfilePatch) => Promise<void>
 }
 
 const Ctx = createContext<AuthCtx | null>(null)
@@ -42,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const updateProfile = useCallback(
-    async (patch: { first_name?: string; last_name?: string; avatar_url?: string | null }) => {
+    async (patch: ProfilePatch) => {
       const current = await db.getCurrentProfile()
       if (!current) return
       const updated = await db.updateMyProfile(current.id, patch)

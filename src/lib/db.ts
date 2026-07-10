@@ -6,6 +6,7 @@ import type {
   Folder,
   Note,
   Profile,
+  ProfilePatch,
   SupportTicket,
   TicketTopic,
   UsageEvent,
@@ -29,10 +30,7 @@ export interface Db {
 
   // --- profiles ---
   listProfiles(): Promise<Profile[]>
-  updateMyProfile(
-    id: string,
-    patch: { first_name?: string; last_name?: string; avatar_url?: string | null },
-  ): Promise<Profile>
+  updateMyProfile(id: string, patch: ProfilePatch): Promise<Profile>
   /** Admin: edita nome/e-mail de um usuario. */
   adminUpdateUser(id: string, patch: { first_name: string; last_name: string; email: string }): Promise<void>
   /** Admin: exclui um usuario e seus dados. */

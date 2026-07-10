@@ -1,17 +1,20 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ListChecks, Check, ChevronRight } from 'lucide-react'
+import { ListChecks, Check, ChevronRight, Plus, Trash2 } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
 import { db } from '../lib/api'
-import type { Note } from '../lib/types'
+import { createTask, deleteTask, listTasks, setTaskDone, tasksEnabled } from '../lib/tasks'
+import type { ActionItem, Note, Task } from '../lib/types'
+import { TASK_TEXT_MAX } from '../lib/types'
 import { fmtDate } from '../lib/format'
-import { EmptyState, NoteCardSkeleton, Chip } from '../components/ui'
+import { EmptyState, NoteCardSkeleton, Chip, Sheet, Spinner } from '../components/ui'
 import { useToast } from '../components/Toast'
 import { useT } from '../lib/i18n'
 
-type Row = { note: Note; item: Note['action_items'][number] }
+/** Uma linha da lista: item de acao de uma nota, ou tarefa avulsa (note = null). */
+type Row = { key: string; item: ActionItem; note: Note | null; task: Task | null }
 
-function dueTime(due?: string): number {
+function dueTime(due?: string | null): number {
   if (!due) return Infinity
   const t = Date.parse(due)
   return Number.isNaN(t) ? Infinity : t
@@ -23,8 +26,15 @@ export function TasksPage() {
   const t = useT()
   const toast = useToast()
   const [notes, setNotes] = useState<Note[] | null>(null)
+  const [tasks, setTasks] = useState<Task[]>([])
   const [filter, setFilter] = useState<'open' | 'all' | 'done'>('open')
   const [busy, setBusy] = useState<string | null>(null)
+
+  const [newOpen, setNewOpen] = useState(false)
+  const [text, setText] = useState('')
+  const [owner, setOwner] = useState('')
+  const [due, setDue] = useState('')
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     if (!profile) return
@@ -34,13 +44,26 @@ export function TasksPage() {
         setNotes([])
         toast(t('common.error'), 'error')
       })
+
+    if (tasksEnabled()) listTasks(profile.id).then(setTasks).catch(() => setTasks([]))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile])
 
   const rows = useMemo<Row[]>(() => {
     if (!notes) return []
     const all: Row[] = []
-    for (const n of notes) for (const item of n.action_items) all.push({ note: n, item })
+    for (const n of notes) {
+      for (const item of n.action_items) all.push({ key: item.id, item, note: n, task: null })
+    }
+    for (const tk of tasks) {
+      all.push({
+        key: tk.id,
+        item: { id: tk.id, text: tk.text, owner: tk.owner ?? undefined, due: tk.due ?? undefined, done: tk.done },
+        note: null,
+        task: tk,
+      })
+    }
+
     const f = all.filter(({ item }) =>
       filter === 'all' ? true : filter === 'open' ? !item.done : item.done,
     )
@@ -48,17 +71,19 @@ export function TasksPage() {
       const da = dueTime(a.item.due)
       const dbb = dueTime(b.item.due)
       if (da !== dbb) return da - dbb
-      return Date.parse(b.note.created_at) - Date.parse(a.note.created_at)
+      const ca = a.note?.created_at ?? a.task!.created_at
+      const cb = b.note?.created_at ?? b.task!.created_at
+      return Date.parse(cb) - Date.parse(ca)
     })
     return f
-  }, [notes, filter])
+  }, [notes, tasks, filter])
 
-  const openCount = useMemo(
-    () => (notes ? notes.reduce((s, n) => s + n.action_items.filter((a) => !a.done).length, 0) : 0),
-    [notes],
-  )
+  const totalOpen = useMemo(() => {
+    const fromNotes = notes ? notes.reduce((s, n) => s + n.action_items.filter((a) => !a.done).length, 0) : 0
+    return fromNotes + tasks.filter((tk) => !tk.done).length
+  }, [notes, tasks])
 
-  async function toggle(noteId: string, itemId: string) {
+  async function toggleNoteItem(noteId: string, itemId: string) {
     if (!notes) return
     setBusy(itemId)
     try {
@@ -74,15 +99,71 @@ export function TasksPage() {
     }
   }
 
+  async function toggleTask(tk: Task) {
+    setBusy(tk.id)
+    try {
+      const updated = await setTaskDone(tk.id, !tk.done)
+      setTasks((prev) => prev.map((x) => (x.id === tk.id ? updated : x)))
+    } catch {
+      toast(t('common.error'), 'error')
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  async function removeTask(id: string) {
+    setBusy(id)
+    try {
+      await deleteTask(id)
+      setTasks((prev) => prev.filter((x) => x.id !== id))
+      toast(t('tasks.deleted'))
+    } catch {
+      toast(t('common.error'), 'error')
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  async function submitTask() {
+    if (!profile || !text.trim() || saving) return
+    setSaving(true)
+    try {
+      const created = await createTask(profile.id, { text, owner, due })
+      setTasks((prev) => [created, ...prev])
+      setText('')
+      setOwner('')
+      setDue('')
+      setNewOpen(false)
+      toast(t('tasks.created'))
+    } catch {
+      toast(t('common.error'), 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const charsLeft = TASK_TEXT_MAX - text.length
+
   return (
     <div className="px-5 safe-top">
-      <header className="mb-4">
-        <h1 className="font-display text-3xl font-bold flex items-center gap-2.5">
-          <ListChecks size={26} className="text-accent" /> {t('tasks.title')}
-        </h1>
-        <p className="text-sm text-content-muted mt-1">
-          {openCount} {openCount === 1 ? t('tasks.openOne') : t('tasks.openMany')}
-        </p>
+      <header className="flex items-start gap-3 mb-4">
+        <div className="flex-1 min-w-0">
+          <h1 className="font-display text-3xl font-bold flex items-center gap-2.5">
+            <ListChecks size={26} className="text-accent" /> {t('tasks.title')}
+          </h1>
+          <p className="text-sm text-content-muted mt-1">
+            {totalOpen} {totalOpen === 1 ? t('tasks.openOne') : t('tasks.openMany')}
+          </p>
+        </div>
+        {tasksEnabled() && (
+          <button
+            onClick={() => setNewOpen(true)}
+            className="btn-primary h-10 w-10 rounded-full p-0 shrink-0 mt-1"
+            aria-label={t('tasks.new')}
+          >
+            <Plus size={20} />
+          </button>
+        )}
       </header>
 
       <div className="flex gap-2 mb-4">
@@ -104,18 +185,14 @@ export function TasksPage() {
           ))}
         </div>
       ) : rows.length === 0 ? (
-        <EmptyState
-          icon={<ListChecks size={40} />}
-          title={t('tasks.emptyTitle')}
-          subtitle={t('tasks.emptySub')}
-        />
+        <EmptyState icon={<ListChecks size={40} />} title={t('tasks.emptyTitle')} subtitle={t('tasks.emptySub')} />
       ) : (
         <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 pb-28 md:pb-10">
-          {rows.map(({ note, item }) => (
-            <li key={item.id} className="card p-4">
+          {rows.map(({ key, item, note, task }) => (
+            <li key={key} className="card p-4 flex flex-col">
               <div className="flex items-start gap-3">
                 <button
-                  onClick={() => toggle(note.id, item.id)}
+                  onClick={() => (note ? toggleNoteItem(note.id, item.id) : toggleTask(task!))}
                   disabled={busy === item.id}
                   aria-label="ok"
                   className={`mt-0.5 h-5 w-5 rounded-md border grid place-items-center shrink-0 transition-colors ${
@@ -125,7 +202,7 @@ export function TasksPage() {
                   {item.done && <Check size={13} />}
                 </button>
                 <div className="min-w-0 flex-1">
-                  <p className={`text-sm leading-snug ${item.done ? 'line-through text-content-muted' : ''}`}>
+                  <p className={`text-sm leading-snug break-words ${item.done ? 'line-through text-content-muted' : ''}`}>
                     {item.text}
                   </p>
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1.5 text-xs text-content-muted">
@@ -134,17 +211,71 @@ export function TasksPage() {
                   </div>
                 </div>
               </div>
-              <button
-                onClick={() => navigate(`/nota/${note.id}`)}
-                className="mt-3 w-full flex items-center gap-2 text-xs text-content-muted hover:text-accent border-t border-surface-border pt-2"
-              >
-                <span className="truncate flex-1 text-left">{note.title}</span>
-                <ChevronRight size={14} className="shrink-0" />
-              </button>
+
+              {note ? (
+                <button
+                  onClick={() => navigate(`/nota/${note.id}`)}
+                  className="mt-3 w-full flex items-center gap-2 text-xs text-content-muted hover:text-accent border-t border-surface-border pt-2"
+                >
+                  <span className="truncate flex-1 text-left">{note.title}</span>
+                  <ChevronRight size={14} className="shrink-0" />
+                </button>
+              ) : (
+                <div className="mt-3 flex items-center gap-2 text-xs text-content-muted border-t border-surface-border pt-2">
+                  <span className="flex-1 text-left">{t('tasks.manual')}</span>
+                  <button
+                    onClick={() => removeTask(task!.id)}
+                    disabled={busy === task!.id}
+                    aria-label={t('tasks.delete')}
+                    title={t('tasks.delete')}
+                    className="shrink-0 hover:text-accent"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              )}
             </li>
           ))}
         </ul>
       )}
+
+      <Sheet open={newOpen} onClose={() => setNewOpen(false)} title={t('tasks.new')}>
+        <div className="mb-3">
+          <label className="label">{t('tasks.text')}</label>
+          <textarea
+            className="input min-h-20 resize-none"
+            maxLength={TASK_TEXT_MAX}
+            placeholder={t('tasks.textPlaceholder')}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            autoFocus
+          />
+          <p className={`text-xs mt-1 ${charsLeft <= 15 ? 'text-accent' : 'text-content-muted'}`}>
+            {t('tasks.charsLeft').replace('{n}', String(charsLeft))}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-3 mb-4">
+          <div className="min-w-0">
+            <label className="label">{t('tasks.owner')}</label>
+            <input
+              className="input"
+              maxLength={60}
+              placeholder={t('tasks.ownerPlaceholder')}
+              value={owner}
+              onChange={(e) => setOwner(e.target.value)}
+            />
+          </div>
+          <div className="min-w-0">
+            <label className="label">{t('tasks.due')}</label>
+            <input type="date" className="input" value={due} onChange={(e) => setDue(e.target.value)} />
+          </div>
+        </div>
+
+        <button className="btn-primary w-full" onClick={submitTask} disabled={!text.trim() || saving}>
+          {saving ? <Spinner /> : <Plus size={18} />} {t('tasks.create')}
+        </button>
+      </Sheet>
     </div>
   )
 }

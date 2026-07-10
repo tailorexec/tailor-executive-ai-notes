@@ -13,6 +13,7 @@ import type {
   UsageEvent,
   UsageEventType,
 } from './types'
+import { RETENTION_DEFAULT } from './types'
 
 function client() {
   if (!supabase) throw new Error('Supabase nao configurado')
@@ -43,6 +44,8 @@ function rowToProfile(r: Record<string, unknown>): Profile {
     phone: (r.phone as string) ?? '',
     role: (r.role as Profile['role']) ?? 'member',
     avatar_url: (r.avatar_url as string | null) ?? null,
+    audio_retention_days:
+      (r.audio_retention_days as Profile['audio_retention_days']) ?? RETENTION_DEFAULT,
     created_at: (r.created_at as string) ?? new Date().toISOString(),
   }
 }

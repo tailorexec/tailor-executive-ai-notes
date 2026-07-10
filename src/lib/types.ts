@@ -10,6 +10,11 @@ export interface Folder {
   created_at: string
 }
 
+/** Periodo de auto-delete do audio (Config > Preferencias). */
+export type RetentionDays = 3 | 7 | 14
+export const RETENTION_CHOICES: RetentionDays[] = [3, 7, 14]
+export const RETENTION_DEFAULT: RetentionDays = 14
+
 export interface Profile {
   id: string
   first_name: string
@@ -18,6 +23,63 @@ export interface Profile {
   phone: string
   role: UserRole
   avatar_url: string | null
+  audio_retention_days: RetentionDays
+  created_at: string
+}
+
+/** Campos que o proprio usuario pode editar no seu perfil. */
+export type ProfilePatch = Partial<
+  Pick<Profile, 'first_name' | 'last_name' | 'avatar_url' | 'audio_retention_days'>
+>
+
+/** So o necessario para exibir alguem na busca de amigos e no chat. */
+export type PersonRef = Pick<Profile, 'id' | 'first_name' | 'last_name' | 'email' | 'avatar_url'>
+
+/** Tarefa avulsa: criada a mao, sem nota de origem. */
+export interface Task {
+  id: string
+  user_id: string
+  text: string
+  owner: string | null
+  due: string | null
+  done: boolean
+  created_at: string
+}
+
+export const TASK_TEXT_MAX = 140
+export const FRIEND_MSG_MAX = 50
+/** Mensagens entre amigos somem depois disso (limpeza diaria em retention-cleanup). */
+export const FRIEND_CHAT_DAYS = 7
+
+export type FriendshipStatus = 'pending' | 'accepted'
+
+export interface Friendship {
+  id: string
+  requester_id: string
+  addressee_id: string
+  status: FriendshipStatus
+  created_at: string
+}
+
+/** Uma amizade ja resolvida do ponto de vista do usuario atual. */
+export interface FriendEdge {
+  friendship: Friendship
+  /** O outro lado da amizade. */
+  person: PersonRef
+  /** Convite que chegou para mim e ainda nao respondi. */
+  incoming: boolean
+  unread: number
+}
+
+export type FriendMessageKind = 'message' | 'poke'
+
+export interface FriendMessage {
+  id: string
+  sender_id: string
+  recipient_id: string
+  kind: FriendMessageKind
+  body: string | null
+  read_at: string | null
   created_at: string
 }
 
