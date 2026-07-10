@@ -26,6 +26,15 @@ export default defineConfig({
         theme_color: '#FFFFFF',
         background_color: '#FFFFFF',
         display: 'standalone',
+        // Safari 16.4+ passou a ler o Web App Manifest tambem para apps adicionados a tela de
+        // inicio (antes disso so as meta tags apple-mobile-web-app-* valiam). Sem start_url/
+        // scope/id explicitos, o iOS pode ficar em duvida sobre o "modo" do app e reservar uma
+        // faixa extra de chrome (o espaco vazio abaixo do cabecalho, como se fosse a barra de
+        // endereco) em vez de abrir 100% em tela cheia.
+        start_url: '/',
+        scope: '/',
+        id: '/',
+        display_override: ['standalone', 'fullscreen', 'minimal-ui'],
         orientation: 'portrait',
         lang: 'pt-BR',
         icons: [
