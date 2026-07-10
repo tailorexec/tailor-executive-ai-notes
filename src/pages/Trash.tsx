@@ -15,6 +15,7 @@ export function TrashPage() {
   const [notes, setNotes] = useState<Note[] | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
   const [purgeTarget, setPurgeTarget] = useState<Note | null>(null)
+  const [purgeAll, setPurgeAll] = useState(false)
   const toast = useToast()
 
   function load() {
@@ -32,11 +33,35 @@ export function TrashPage() {
 
   async function purge(note: Note) {
     setBusy(note.id)
-    await deleteAudio(note.audio_url)
-    await db.deleteNotePermanent(note.id)
+    try {
+      await deleteAudio(note.audio_url)
+      await db.deleteNotePermanent(note.id)
+      toast('Nota excluida definitivamente', 'info')
+    } catch {
+      toast('Nao consegui excluir a nota', 'error')
+    } finally {
+      load()
+      setBusy(null)
+    }
+  }
+
+  /** Esvazia a lixeira. Uma falha isolada nao pode abortar o resto. */
+  async function purgeEverything() {
+    if (!notes?.length) return
+    setBusy('all')
+    let failed = 0
+    for (const n of notes) {
+      try {
+        await deleteAudio(n.audio_url)
+        await db.deleteNotePermanent(n.id)
+      } catch {
+        failed++
+      }
+    }
     load()
     setBusy(null)
-    toast('Nota excluida definitivamente', 'info')
+    if (failed) toast(`${failed} nota(s) nao puderam ser excluidas`, 'error')
+    else toast('Lixeira esvaziada', 'info')
   }
 
   return (
@@ -49,13 +74,25 @@ export function TrashPage() {
         >
           <ArrowLeft size={18} />
         </button>
-        <div>
+        <div className="min-w-0 flex-1">
           <h1 className="font-display text-2xl font-bold">Lixeira</h1>
           <p className="text-sm text-content-muted">
             Restaure aqui. Itens na lixeira são excluídos definitivamente após 7 dias.
           </p>
         </div>
       </header>
+
+      {!!notes?.length && (
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={() => setPurgeAll(true)}
+            disabled={busy === 'all'}
+            className="btn-danger h-9 px-3 text-sm"
+          >
+            {busy === 'all' ? <Spinner size={16} /> : <Trash2 size={16} />} Excluir tudo
+          </button>
+        </div>
+      )}
 
       {notes === null ? (
         <div className="grid place-items-center py-20">
@@ -110,6 +147,16 @@ export function TrashPage() {
           if (purgeTarget) purge(purgeTarget)
         }}
         onClose={() => setPurgeTarget(null)}
+      />
+
+      <ConfirmDialog
+        open={purgeAll}
+        title="Esvaziar a lixeira?"
+        message={`As ${notes?.length ?? 0} nota(s) da lixeira serao removidas permanentemente, junto com o audio. Esta acao nao pode ser desfeita.`}
+        confirmLabel="Excluir tudo"
+        danger
+        onConfirm={purgeEverything}
+        onClose={() => setPurgeAll(false)}
       />
     </div>
   )

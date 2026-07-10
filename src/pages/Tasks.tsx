@@ -256,11 +256,14 @@ export function TasksPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-3 mb-4">
+        {/* O `input type=date` tem largura MINIMA intrinseca (calendario + texto) que o grid nao
+            encolhe: em duas colunas ele escapa do card. Empilhados, cada campo ocupa a largura
+            do card e nada transborda. */}
+        <div className="space-y-3 mb-4">
           <div className="min-w-0">
             <label className="label">{t('tasks.owner')}</label>
             <input
-              className="input"
+              className="input w-full min-w-0"
               maxLength={60}
               placeholder={t('tasks.ownerPlaceholder')}
               value={owner}
@@ -269,7 +272,12 @@ export function TasksPage() {
           </div>
           <div className="min-w-0">
             <label className="label">{t('tasks.due')}</label>
-            <input type="date" className="input" value={due} onChange={(e) => setDue(e.target.value)} />
+            <input
+              type="date"
+              className="input w-full min-w-0 px-2"
+              value={due}
+              onChange={(e) => setDue(e.target.value)}
+            />
           </div>
         </div>
 

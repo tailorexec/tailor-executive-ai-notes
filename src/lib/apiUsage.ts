@@ -40,6 +40,11 @@ export function periodRange(key: PeriodKey, custom?: { from: string; to: string 
   return { from, to }
 }
 
+/** Dias cobertos pela janela (minimo 1), usado para projetar o gasto mensal. */
+export function periodDays(p: Period): number {
+  return Math.max(1, (p.to.getTime() - p.from.getTime()) / 86400000)
+}
+
 export async function listApiUsage(period: Period): Promise<ApiUsageRow[]> {
   if (!supabase) return []
   const { data, error } = await supabase
@@ -66,7 +71,6 @@ export interface UsageTotals {
   costPerCall: number
   byProvider: { provider: string; calls: number; tokens: number; costUsd: number }[]
   byTask: { task: string; calls: number; tokens: number; costUsd: number }[]
-  byDay: { day: string; costUsd: number }[]
 }
 
 export function summarize(rows: ApiUsageRow[]): UsageTotals {
@@ -78,7 +82,6 @@ export function summarize(rows: ApiUsageRow[]): UsageTotals {
 
   const provider = new Map<string, { calls: number; tokens: number; costUsd: number }>()
   const task = new Map<string, { calls: number; tokens: number; costUsd: number }>()
-  const day = new Map<string, number>()
 
   for (const r of rows) {
     if (r.user_id) users.add(r.user_id)
@@ -93,9 +96,6 @@ export function summarize(rows: ApiUsageRow[]): UsageTotals {
 
     const tk = task.get(r.task) ?? { calls: 0, tokens: 0, costUsd: 0 }
     task.set(r.task, { calls: tk.calls + 1, tokens: tk.tokens + tok, costUsd: tk.costUsd + Number(r.cost_usd) })
-
-    const d = r.created_at.slice(0, 10)
-    day.set(d, (day.get(d) ?? 0) + Number(r.cost_usd))
   }
 
   const userCount = users.size || 0
@@ -118,7 +118,6 @@ export function summarize(rows: ApiUsageRow[]): UsageTotals {
     byTask: [...task.entries()]
       .map(([tname, v]) => ({ task: tname, ...v }))
       .sort((a, b) => b.costUsd - a.costUsd),
-    byDay: [...day.entries()].map(([d, c]) => ({ day: d, costUsd: c })).sort((a, b) => a.day.localeCompare(b.day)),
   }
 }
 

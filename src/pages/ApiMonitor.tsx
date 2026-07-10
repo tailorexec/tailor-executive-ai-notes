@@ -16,13 +16,14 @@ import {
 import { db } from '../lib/api'
 import { Avatar, Spinner } from '../components/ui'
 import { useToast } from '../components/Toast'
-import { fmtDuration } from '../lib/format'
+import { fmtDate, fmtDuration } from '../lib/format'
 import {
   ackBudgetAlert,
   compactNum,
   costByUser,
   listApiUsage,
   listBudgetAlerts,
+  periodDays,
   periodRange,
   summarize,
   usd,
@@ -170,8 +171,14 @@ export function ApiMonitor() {
     getAppSettings().then(setSettings).catch(() => {})
   }, [])
 
+  const range = useMemo(() => periodRange(period, { from, to }), [period, from, to])
+  const days = periodDays(range)
   const totals = useMemo(() => (rows ? summarize(rows) : null), [rows])
   const perUser = useMemo(() => (rows ? costByUser(rows).slice(0, 10) : []), [rows])
+
+  // A linha mais antiga do periodo: se o app comecou a registrar ontem, "7 dias" e
+  // "30 dias" mostram os mesmos numeros -- e isso precisa ficar obvio na tela.
+  const firstRecord = rows?.length ? rows[rows.length - 1].created_at : null
 
   const maxProvider = totals?.byProvider[0]?.costUsd ?? 0
   const maxTask = totals?.byTask[0]?.costUsd ?? 0
@@ -221,6 +228,12 @@ export function ApiMonitor() {
         </div>
       )}
 
+      <p className="text-xs text-content-muted mb-4">
+        Janela: {fmtDate(range.from.toISOString())} a {fmtDate(range.to.toISOString())} ({Math.round(days)} dia
+        {Math.round(days) === 1 ? '' : 's'})
+        {firstRecord && ` • primeiro registro em ${fmtDate(firstRecord)}`}
+      </p>
+
       {rows === null ? (
         <div className="grid place-items-center py-20">
           <Spinner size={24} className="text-accent" />
@@ -260,7 +273,7 @@ export function ApiMonitor() {
             <Kpi
               icon={<DollarSign size={16} />}
               label="Projecao mensal"
-              value={usd(projectMonthly(totals.costUsd, period))}
+              value={usd(projectMonthly(totals.costUsd, days))}
               hint="ritmo atual x 30 dias"
             />
           </div>
@@ -440,9 +453,7 @@ export function ApiMonitor() {
   )
 }
 
-/** Extrapola o gasto do periodo para 30 dias. */
-function projectMonthly(cost: number, period: PeriodKey): number {
-  if (period === 'day') return cost * 30
-  if (period === 'week') return (cost / 7) * 30
-  return cost
+/** Extrapola o gasto do periodo para 30 dias, seja qual for a janela. */
+function projectMonthly(cost: number, days: number): number {
+  return (cost / days) * 30
 }
