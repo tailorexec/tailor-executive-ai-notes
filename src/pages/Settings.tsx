@@ -38,6 +38,36 @@ import { RETENTION_CHOICES, RETENTION_DEFAULT, type RetentionDays } from '../lib
 import { friendsEnabled, unreadCount } from '../lib/friends'
 import { APP_NAME, APP_VERSION } from '../lib/version'
 
+/**
+ * Diagnostico visivel do PWA instalado: mostra os valores REAIS que o navegador reporta para
+ * a area segura (notch/home indicator) e como ele detecta o modo instalado. Sem isto, um bug
+ * de layout no iOS so pode ser investigado por print/descricao — aqui e um numero que da pra
+ * ler e me passar direto, sem interpretacao.
+ */
+function SafeAreaDebug() {
+  const [info, setInfo] = useState('')
+
+  useEffect(() => {
+    const probe = document.createElement('div')
+    probe.style.cssText =
+      'position:fixed;left:-9999px;top:0;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)'
+    document.body.appendChild(probe)
+    const cs = getComputedStyle(probe)
+    const top = cs.paddingTop
+    const bottom = cs.paddingBottom
+    document.body.removeChild(probe)
+
+    const standalone = (window.navigator as unknown as { standalone?: boolean }).standalone === true
+    const displayModeStandalone = window.matchMedia('(display-mode: standalone)').matches
+
+    setInfo(
+      `safe-area top=${top} bottom=${bottom} · navigator.standalone=${standalone} · display-mode=${displayModeStandalone ? 'standalone' : 'browser'}`,
+    )
+  }, [])
+
+  return <p className="text-[9px] text-content-muted/70 mt-0.5">{info}</p>
+}
+
 function Row({
   icon,
   label,
@@ -374,6 +404,7 @@ export function Settings() {
       <div className="flex flex-col items-center gap-2 pb-4 text-content-muted">
         <Logo size="lg" />
         <p className="text-xs">{APP_NAME} • {APP_VERSION}</p>
+        <SafeAreaDebug />
       </div>
     </div>
   )
