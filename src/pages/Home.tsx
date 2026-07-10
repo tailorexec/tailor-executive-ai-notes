@@ -175,8 +175,8 @@ export function Home() {
 
 
   return (
-    <div className="px-5 safe-top md:h-[calc(100dvh-4rem)] md:flex md:flex-col md:overflow-hidden">
-      <header className="mb-4 md:shrink-0">
+    <div className="px-5 safe-top">
+      <header className="mb-4">
         {/* Mobile: logo ANA + "AI NOTES ADVISOR" embaixo (a esquerda); "by [Tailor]" no canto superior direito */}
         <div className="md:hidden flex items-start justify-between gap-3 mb-3">
           <div>
@@ -220,7 +220,7 @@ export function Home() {
 
       <button
         onClick={() => setAskOpen(true)}
-        className="card-featured md:shrink-0 w-full flex items-center gap-3 bg-surface-card border rounded-2xl px-4 py-2.5 mb-3 text-left transition-colors"
+        className="card-featured w-full flex items-center gap-3 bg-surface-card border rounded-2xl px-4 py-2.5 mb-3 text-left transition-colors"
       >
         <span className="grid place-items-center h-9 w-9 rounded-xl bg-brand-solid text-white shrink-0">
           <MessageSquare size={18} />
@@ -232,12 +232,10 @@ export function Home() {
         <ChevronRight size={18} className="text-content-muted shrink-0" />
       </button>
 
-      <div className="md:shrink-0">
-        <UpcomingEvents />
-      </div>
+      <UpcomingEvents />
 
       {/* Busca + filtro de ordenacao (icone a direita, dentro do proprio card) */}
-      <div className="relative mb-3 md:shrink-0" ref={sortRef}>
+      <div className="relative mb-3" ref={sortRef}>
         <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-content-muted" />
         <input
           className="input pl-11 pr-12"
@@ -284,7 +282,7 @@ export function Home() {
       </div>
 
       {folderList.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-2 -mx-1 px-1 md:shrink-0">
+        <div className="flex gap-2 overflow-x-auto pb-2 mb-2 -mx-1 px-1">
           <Chip active={folderFilter === 'all'} onClick={() => setFolderFilter('all')}>
             {t('home.all')}
           </Chip>
@@ -300,7 +298,7 @@ export function Home() {
       )}
 
       {notes && filtered.length > 0 && (
-        <div className="flex items-center justify-between mb-2 px-1 md:shrink-0">
+        <div className="flex items-center justify-between mb-2 px-1">
           {/* A ordenacao vive no icone de filtro dentro da busca. */}
           <span className="text-xs text-content-muted">
             {filtered.length} {filtered.length === 1 ? t('home.noteOne') : t('home.noteMany')}
@@ -308,7 +306,7 @@ export function Home() {
         </div>
       )}
 
-      <div className="md:flex-1 md:min-h-0 md:overflow-y-auto md:-mx-1 md:px-1 pb-2">
+      <div className="pb-2">
       {notes === null ? (
         <ul className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mt-2">
           {Array.from({ length: 4 }).map((_, i) => (

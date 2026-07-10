@@ -19,8 +19,12 @@ export default defineConfig({
         name: 'Tailor Executive AI Notes',
         short_name: 'Tailor Notes',
         description: 'IA de anotacoes, transcricoes e analise de reunioes',
-        theme_color: '#010101',
-        background_color: '#010101',
+        // Claro e o tema padrao do app (ThemeProvider.tsx): a splash screen do PWA instalado
+        // usa ESTA cor fixa (nao a dinamica do <meta theme-color>, que so existe depois que o
+        // JS roda). Deixar preto aqui fazia todo mundo no tema claro (a maioria) ver um flash
+        // preto e a barra de status do Android preta brigando com um app branco.
+        theme_color: '#FFFFFF',
+        background_color: '#FFFFFF',
         display: 'standalone',
         orientation: 'portrait',
         lang: 'pt-BR',
