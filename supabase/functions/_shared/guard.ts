@@ -21,13 +21,30 @@ export function adminClient() {
   return createClient(url, key, { auth: { persistSession: false } })
 }
 
-/** O JWT ja foi verificado pelo gateway; aqui so lemos o `sub` para atribuir o custo. */
-export function callerId(req: Request): string | null {
+/**
+ * Confirma de verdade se o token e valido, perguntando ao proprio servidor de autenticacao
+ * do Supabase (`auth.getUser`) — em vez de so ler o campo `sub` do token sem checar a
+ * assinatura, como este codigo fazia antes.
+ *
+ * Isto e uma SEGUNDA trava (defesa em profundidade): o gateway do Supabase ja verifica o JWT
+ * antes da requisicao chegar aqui, mas essa protecao depende de uma flag de deploy
+ * (verify_jwt) que pode ser desligada por engano numa function futura — e ja aconteceu neste
+ * projeto (o google-oauth rodava assim ate este mesmo commit). Sem esta segunda checagem,
+ * desligar a flag deixaria qualquer um forjar um token com qualquer `sub` e se passar por
+ * outro usuario, drenando o limite diario dele ou sujando a contabilidade de uso.
+ *
+ * Custo: uma chamada de rede ao servidor de autenticacao a cada requisicao. Irrelevante perto
+ * do tempo que as proprias chamadas de IA/transcricao ja levam (segundos).
+ */
+export async function callerId(req: Request): Promise<string | null> {
+  const token = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
+  if (!token) return null
+  const admin = adminClient()
+  if (!admin) return null // sem service role nao da pra confirmar nada: trata como nao autenticado
   try {
-    const token = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
-    if (!token) return null
-    const payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')
-    return JSON.parse(atob(payload)).sub ?? null
+    const { data, error } = await admin.auth.getUser(token)
+    if (error || !data?.user) return null
+    return data.user.id
   } catch {
     return null
   }
@@ -55,23 +72,31 @@ const json = (body: unknown, status: number) =>
 
 export const guardResponse = (g: GuardResult) => json({ error: g.error }, g.status ?? 429)
 
+const BUDGET_UNAVAILABLE: GuardResult = {
+  ok: false,
+  status: 503,
+  error: 'Nao foi possivel verificar o orcamento agora. Tente novamente em instantes.',
+}
+
 /**
- * Roda os freios antes de gastar dinheiro. Se o banco falhar, DEIXA PASSAR:
- * derrubar o app inteiro por causa do medidor seria pior que uma chamada a mais.
+ * Roda os freios antes de gastar dinheiro. Se o medidor falhar, BARRA a chamada (fail-closed):
+ * a alternativa antiga (deixar passar) significa que uma falha do PROPRIO medidor vira gasto
+ * sem teto e sem registro, sem nenhum aviso visivel ate a fatura chegar. Um erro ocasional
+ * numa falha passageira e um preco aceitavel por nunca gastar as cegas.
  */
 export async function checkBudget(userId: string | null): Promise<GuardResult> {
   if (!userId) return { ok: false, status: 401, error: 'Sessao invalida. Entre novamente.' }
 
   const admin = adminClient()
-  if (!admin) return { ok: true }
+  if (!admin) return BUDGET_UNAVAILABLE
 
   let g: Record<string, number | boolean>
   try {
     const { data, error } = await admin.rpc('usage_guard', { p_user: userId })
-    if (error || !data) return { ok: true }
+    if (error || !data) return BUDGET_UNAVAILABLE
     g = data as Record<string, number | boolean>
   } catch (_) {
-    return { ok: true }
+    return BUDGET_UNAVAILABLE
   }
 
   if (g.ai_enabled === false) {

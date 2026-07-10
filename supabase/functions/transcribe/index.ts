@@ -82,7 +82,7 @@ async function assemblyDiarize(file: File): Promise<{ text: string; seconds: num
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   try {
-    const userId = callerId(req)
+    const userId = await callerId(req)
     const guard = await checkBudget(userId)
     if (!guard.ok) return guardResponse(guard)
 

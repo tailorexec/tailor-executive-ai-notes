@@ -18,6 +18,7 @@ import {
   slugify,
 } from '../lib/share'
 import { downloadAudio } from '../lib/audioStore'
+import { useToast } from '../components/Toast'
 
 function WhatsAppIcon({ size = 20 }: { size?: number }) {
   return (
@@ -40,6 +41,7 @@ export function ShareSheet({
 }) {
   const { profile } = useAuth()
   const t = useT()
+  const toast = useToast()
   const [partners, setPartners] = useState<PersonRef[]>([])
   const [term, setTerm] = useState('')
   const [copied, setCopied] = useState(false)
@@ -70,18 +72,32 @@ export function ShareSheet({
 
   async function togglePartner(id: string) {
     setSavingShare(true)
-    const shared = note.shared_with.includes(id)
-      ? note.shared_with.filter((x) => x !== id)
-      : [...note.shared_with, id]
-    const updated = await db.updateNote(note.id, { shared_with: shared })
-    onUpdated(updated)
-    setSavingShare(false)
+    try {
+      // Le a nota "fresca" antes de decidir o toggle: `shared_with` e gravado como array
+      // inteiro, entao duas acoes concorrentes (duas abas, ou dono e convidado mexendo ao
+      // mesmo tempo) fariam uma sobrescrever a outra. Isto reduz a janela da corrida; nao
+      // a elimina por completo (resolver de vez exigiria um RPC atomico no servidor).
+      const fresh = (await db.getNote(note.id)) ?? note
+      const shared = fresh.shared_with.includes(id)
+        ? fresh.shared_with.filter((x) => x !== id)
+        : [...fresh.shared_with, id]
+      const updated = await db.updateNote(note.id, { shared_with: shared })
+      onUpdated(updated)
+    } catch {
+      toast(t('common.error'), 'error')
+    } finally {
+      setSavingShare(false)
+    }
   }
 
   async function onCopy() {
-    await copyToClipboard(note)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
+    try {
+      await copyToClipboard(note)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch {
+      toast(t('common.error'), 'error')
+    }
   }
 
   const channels = [

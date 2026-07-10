@@ -1,8 +1,18 @@
 import { format, formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
+/**
+ * Datas 'YYYY-MM-DD' sem hora (como as de `<input type="date">`, usadas no prazo das
+ * tarefas) sao interpretadas pelo motor JS como meia-noite UTC. Em fuso negativo (Brasil,
+ * UTC-3), isso exibe o dia ANTERIOR ao que o usuario escolheu. Aqui elas viram meia-noite
+ * LOCAL; timestamps completos (com hora) passam direto, sem mudanca de comportamento.
+ */
+function toLocalDate(iso: string): Date {
+  return /^\d{4}-\d{2}-\d{2}$/.test(iso) ? new Date(`${iso}T00:00:00`) : new Date(iso)
+}
+
 export function fmtDate(iso: string): string {
-  return format(new Date(iso), "d 'de' MMM. 'de' yyyy", { locale: ptBR })
+  return format(toLocalDate(iso), "d 'de' MMM. 'de' yyyy", { locale: ptBR })
 }
 
 export function fmtDateTime(iso: string): string {

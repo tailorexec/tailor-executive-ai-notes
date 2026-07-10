@@ -114,3 +114,66 @@ export async function deleteAudio(ref: string | null): Promise<void> {
     await supabase.storage.from(BUCKET).remove([ref])
   }
 }
+
+/**
+ * Rede de seguranca para gravacoes: guarda o audio no IndexedDB do proprio navegador ANTES
+ * de qualquer chamada de rede (transcricao/IA/criar nota). Se o processamento falhar no meio
+ * do caminho, a gravacao continua recuperavel — sempre no IndexedDB local, independente do
+ * modo (mock ou real), porque isto e so uma rede de seguranca, nao o armazenamento final.
+ */
+const PENDING_PREFIX = 'pending:'
+
+export interface PendingRecordingMeta {
+  mode: string
+  type: string
+  title: string
+  template: string
+  context: string
+  diarize: boolean
+  duration: number
+  fallbackTitle: string
+  skipAudioStore: boolean
+  skipActionItems: boolean
+  savedAt: string
+}
+
+const PENDING_META_KEY = 'tailor.pendingRecordings'
+
+function readPendingMetaList(): Record<string, PendingRecordingMeta> {
+  try {
+    return JSON.parse(localStorage.getItem(PENDING_META_KEY) ?? '{}')
+  } catch {
+    return {}
+  }
+}
+
+function writePendingMetaList(list: Record<string, PendingRecordingMeta>): void {
+  try {
+    localStorage.setItem(PENDING_META_KEY, JSON.stringify(list))
+  } catch {
+    /* localStorage indisponivel (modo privado etc.): a rede de seguranca so fica mais fraca */
+  }
+}
+
+export async function savePendingRecording(key: string, blob: Blob, meta: PendingRecordingMeta): Promise<void> {
+  await idbPut(PENDING_PREFIX + key, blob)
+  const list = readPendingMetaList()
+  list[key] = meta
+  writePendingMetaList(list)
+}
+
+export function listPendingRecordings(): Array<{ key: string; meta: PendingRecordingMeta }> {
+  const list = readPendingMetaList()
+  return Object.entries(list).map(([key, meta]) => ({ key, meta }))
+}
+
+export async function getPendingRecordingBlob(key: string): Promise<Blob | null> {
+  return idbGet(PENDING_PREFIX + key)
+}
+
+export async function deletePendingRecording(key: string): Promise<void> {
+  await idbDelete(PENDING_PREFIX + key)
+  const list = readPendingMetaList()
+  delete list[key]
+  writePendingMetaList(list)
+}

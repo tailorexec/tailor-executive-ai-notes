@@ -54,8 +54,43 @@ function isPrivateIPv6(host: string): boolean {
   return false
 }
 
+/**
+ * IPv4 tem formas alternativas que navegadores/fetch aceitam mas o regex dotado acima nao
+ * reconhece: decimal puro (2130706433 = 127.0.0.1), hex (0x7f000001) e octal (017700000001),
+ * inclusive misturados por octeto (0x7f.0.0.1). Nenhum hostname de verdade se parece com isso,
+ * entao bloqueamos a forma inteira em vez de tentar decodificar cada variante.
+ */
+function looksLikeEncodedIp(host: string): boolean {
+  if (/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.test(host)) return false // forma normal, ja tratada
+  if (/^\d+$/.test(host)) return true // decimal puro
+  if (/^0x[0-9a-f]+$/i.test(host)) return true // hex puro
+  if (/^(0x[0-9a-f]+|0[0-7]*|\d+)(\.(0x[0-9a-f]+|0[0-7]*|\d+)){1,3}$/i.test(host)) return true // octetos hex/octal/mistos
+  return false
+}
+
+/**
+ * Resolve o hostname e verifica se ALGUM IP resolvido cai em faixa privada/link-local. Sem
+ * isso, o bloqueio anterior (so a string do host) e furado por DNS rebinding: um dominio
+ * publico (ex.: evil.com) que aponta para 169.254.169.254 passava direto.
+ *
+ * Falha aberta (deixa passar) se `Deno.resolveDns` nao estiver disponivel neste runtime, ou se
+ * o host simplesmente nao resolver — nesses casos o proprio fetch adiante vai falhar ou seguir
+ * normalmente; nao vale quebrar paginas legitimas por causa de uma checagem extra.
+ */
+async function resolvesToPrivateIp(host: string): Promise<boolean> {
+  try {
+    const a = await Deno.resolveDns(host, 'A').catch(() => [] as string[])
+    if (a.some((ip) => isPrivateIPv4(ip))) return true
+    const aaaa = await Deno.resolveDns(host, 'AAAA').catch(() => [] as string[])
+    if (aaaa.some((ip) => isPrivateIPv6(ip))) return true
+  } catch {
+    /* API indisponivel neste runtime: sem essa camada extra, mas as demais continuam valendo */
+  }
+  return false
+}
+
 /** Valida um salto. Retorna a URL segura ou lanca com a razao. */
-function assertSafeUrl(raw: string): URL {
+async function assertSafeUrl(raw: string): Promise<URL> {
   let u: URL
   try {
     u = new URL(raw)
@@ -69,7 +104,10 @@ function assertSafeUrl(raw: string): URL {
   if (BLOCKED_HOSTS.has(host) || host.endsWith('.local') || host.endsWith('.internal')) {
     throw new Error('Este endereco nao pode ser acessado.')
   }
-  if (isPrivateIPv4(host) || isPrivateIPv6(host)) {
+  if (looksLikeEncodedIp(host) || isPrivateIPv4(host) || isPrivateIPv6(host)) {
+    throw new Error('Este endereco nao pode ser acessado.')
+  }
+  if (await resolvesToPrivateIp(host)) {
     throw new Error('Este endereco nao pode ser acessado.')
   }
   return u
@@ -100,7 +138,7 @@ async function readCapped(res: Response): Promise<string> {
 
 /** fetch com redirects manuais: cada Location e revalidado. */
 async function safeFetch(startUrl: string): Promise<Response> {
-  let url = assertSafeUrl(startUrl)
+  let url = await assertSafeUrl(startUrl)
 
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
     const res = await fetch(url.toString(), {
@@ -116,7 +154,7 @@ async function safeFetch(startUrl: string): Promise<Response> {
       const loc = res.headers.get('location')
       await res.body?.cancel().catch(() => {})
       if (!loc) throw new Error('Redirecionamento invalido.')
-      url = assertSafeUrl(new URL(loc, url).toString())
+      url = await assertSafeUrl(new URL(loc, url).toString())
       continue
     }
     return res
@@ -164,7 +202,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   try {
     // Sem usuario autenticado esta funcao viraria um proxy aberto para qualquer um.
-    if (!callerId(req)) return json({ error: 'Sessao invalida. Entre novamente.' }, 401)
+    if (!(await callerId(req))) return json({ error: 'Sessao invalida. Entre novamente.' }, 401)
 
     const { url } = await req.json()
     if (typeof url !== 'string' || !url) return json({ error: 'URL invalida (use http/https).' }, 400)

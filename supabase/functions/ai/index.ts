@@ -164,7 +164,7 @@ function requireJsonObject<T>(text: string, what: string): T {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   try {
-    const userId = callerId(req)
+    const userId = await callerId(req)
     const guard = await checkBudget(userId)
     if (!guard.ok) return guardResponse(guard)
 

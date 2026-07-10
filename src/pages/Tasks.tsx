@@ -88,7 +88,10 @@ export function TasksPage() {
     if (!notes) return
     setBusy(itemId)
     try {
-      const note = notes.find((n) => n.id === noteId)
+      // Le a nota fresca antes de alternar: action_items e gravado como array inteiro, entao
+      // duas abas marcando itens diferentes ao mesmo tempo fariam a ultima gravacao vencedora
+      // apagar a mudanca da outra. Isto reduz a janela da corrida (nao elimina por completo).
+      const note = (await db.getNote(noteId)) ?? notes.find((n) => n.id === noteId)
       if (!note) return
       const items = note.action_items.map((a) => (a.id === itemId ? { ...a, done: !a.done } : a))
       const updated = await db.updateNote(noteId, { action_items: items })

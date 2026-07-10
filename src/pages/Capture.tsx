@@ -21,8 +21,15 @@ import { aiError } from '../lib/aiError'
 import { useAuth } from '../auth/AuthProvider'
 import { useRecorder, canCaptureSystemAudio, supportsTabAudio } from '../lib/useRecorder'
 import { db, config } from '../lib/api'
+import { uid } from '../lib/db'
 import { generateActionItems, generateSummary, summarizeImage, transcribeAudio } from '../lib/ai'
-import { saveAudio } from '../lib/audioStore'
+import {
+  saveAudio,
+  savePendingRecording,
+  listPendingRecordings,
+  getPendingRecordingBlob,
+  deletePendingRecording,
+} from '../lib/audioStore'
 import { isSilentAudio } from '../lib/audioLevel'
 import { currentDevice } from '../lib/device'
 import { fmtClock, fmtDuration } from '../lib/format'
@@ -32,7 +39,7 @@ import { hasRecordingConsent, setRecordingConsent } from '../lib/consent'
 import { takePendingUpload } from '../lib/sharedFile'
 import { bgRecorder, canRecordInBackground } from '../lib/bgRecorder'
 import { TEMPLATES } from '../lib/templates'
-import type { NoteSourceType } from '../lib/types'
+import type { Note, NoteSourceType } from '../lib/types'
 
 type Mode = 'record' | 'meeting' | 'upload' | 'video' | 'file' | 'link' | 'image'
 
@@ -61,6 +68,18 @@ export function Capture() {
   const [step, setStep] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement | null>(null)
+
+  /**
+   * Rede de seguranca contra perder a gravacao se o processamento falhar no meio do caminho
+   * (rede caiu, sessao expirou etc.). Todos os refs abaixo sao por TENTATIVA (um ciclo de
+   * finalize + possiveis retries do mesmo audio) e sao zerados ao iniciar uma nova captura.
+   */
+  const pendingKeyRef = useRef<string | null>(null)
+  const createdNoteRef = useRef<Note | null>(null)
+  const lastFinalizeOptsRef = useRef<Parameters<typeof finalize>[0] | null>(null)
+  // Gravacoes de tentativas ANTERIORES (sessao/aba diferente) que ficaram sem processar.
+  const [pendingRecordings, setPendingRecordings] = useState(() => listPendingRecordings())
+  const [resumingKey, setResumingKey] = useState<string | null>(null)
 
   const autoStoppedRef = useRef(false)
   const isAudioMode = mode === 'record' || mode === 'meeting'
@@ -200,54 +219,92 @@ export function Capture() {
     if (!profile) return
     setProcessing(true)
     setError(null)
-    try {
-      let transcript = opts.transcript ?? ''
-      let language = 'pt-BR'
+    lastFinalizeOptsRef.current = opts
 
-      if (opts.audioBlob) {
-        setStep(0)
-        // Evita transcricao "alucinada" quando a gravacao ficou muda.
-        if (mode !== 'video' && (await isSilentAudio(opts.audioBlob))) {
-          setError(
-            'Nao captamos audio suficiente (gravacao silenciosa). Verifique o microfone e o viva-voz, e tente novamente.',
-          )
-          setProcessing(false)
-          return
-        }
-        await db.logUsage(profile.id, 'recording')
-        const res = await transcribeAudio(opts.audioBlob, { diarize })
-        transcript = res.transcript
-        language = res.language
-        await db.logUsage(profile.id, 'transcription')
+    // Mesma chave durante toda a vida desta tentativa (inclusive em retries): nao persiste
+    // blobs duplicados nem confunde qual gravacao pendente pertence a qual tentativa.
+    if (!pendingKeyRef.current) pendingKeyRef.current = uid('rec_')
+    const pendingKey = pendingKeyRef.current
+
+    try {
+      // Salva o audio no IndexedDB do navegador ANTES de qualquer chamada de rede. Se algo
+      // falhar mais adiante (rede, sessao expirada, IA fora do ar), a gravacao continua
+      // recuperavel: nunca se perde so porque o processamento deu errado.
+      if (opts.audioBlob && !createdNoteRef.current) {
+        await savePendingRecording(pendingKey, opts.audioBlob, {
+          mode,
+          type: opts.type,
+          title,
+          template,
+          context,
+          diarize,
+          duration: opts.duration ?? 0,
+          fallbackTitle: opts.fallbackTitle,
+          skipAudioStore: !!opts.skipAudioStore,
+          skipActionItems: !!opts.skipActionItems,
+          savedAt: new Date().toISOString(),
+        })
       }
 
-      const meta = { template, context }
+      let note = createdNoteRef.current
 
-      setStep(1)
-      let summary = opts.summary
-      if (!summary) {
-        summary = await generateSummary(transcript, meta)
+      // Se uma tentativa anterior desta MESMA gravacao ja criou a nota (e so falhou depois,
+      // ex.: ao salvar o audio), nao criamos outra — vamos direto para o que faltou.
+      if (!note) {
+        let transcript = opts.transcript ?? ''
+        let language = 'pt-BR'
+
+        if (opts.audioBlob) {
+          setStep(0)
+          // Evita transcricao "alucinada" quando a gravacao ficou muda.
+          if (mode !== 'video' && (await isSilentAudio(opts.audioBlob))) {
+            setError(
+              'Nao captamos audio suficiente (gravacao silenciosa). Verifique o microfone e o viva-voz, e tente novamente.',
+            )
+            setProcessing(false)
+            await deletePendingRecording(pendingKey)
+            pendingKeyRef.current = null
+            return
+          }
+          const res = await transcribeAudio(opts.audioBlob, { diarize })
+          transcript = res.transcript
+          language = res.language
+        }
+
+        const meta = { template, context }
+
+        setStep(1)
+        let summary = opts.summary
+        if (!summary) summary = await generateSummary(transcript, meta)
+
+        setStep(2)
+        const actionItems = opts.skipActionItems ? [] : await generateActionItems(transcript, meta)
+
+        setStep(3)
+        note = await db.createNote({
+          user_id: profile.id,
+          title: title.trim() || opts.fallbackTitle,
+          type: opts.type,
+          device: currentDevice(),
+          template,
+          context,
+          duration_seconds: opts.duration ?? 0,
+          language,
+          transcript,
+          summary,
+          action_items: actionItems,
+          status: 'ready',
+        })
+        createdNoteRef.current = note
+
+        // So contabiliza uso DEPOIS que a nota existe de verdade: uma tentativa que falhou
+        // antes disso nao gerou nada e nao deveria custar orcamento na conta do usuario.
+        if (opts.audioBlob) {
+          await db.logUsage(profile.id, 'recording')
+          await db.logUsage(profile.id, 'transcription')
+        }
         await db.logUsage(profile.id, 'ai_summary')
       }
-
-      setStep(2)
-      const actionItems = opts.skipActionItems ? [] : await generateActionItems(transcript, meta)
-
-      setStep(3)
-      let note = await db.createNote({
-        user_id: profile.id,
-        title: title.trim() || opts.fallbackTitle,
-        type: opts.type,
-        device: currentDevice(),
-        template,
-        context,
-        duration_seconds: opts.duration ?? 0,
-        language,
-        transcript,
-        summary,
-        action_items: actionItems,
-        status: 'ready',
-      })
 
       // Persiste o audio (exceto video: o video e descartado apos extrair o audio).
       if (opts.audioBlob && !opts.skipAudioStore) {
@@ -255,11 +312,63 @@ export function Capture() {
         if (ref) note = await db.updateNote(note.id, { audio_url: ref })
       }
 
+      // Sucesso completo: a rede de seguranca nao e mais necessaria para esta gravacao.
+      await deletePendingRecording(pendingKey)
+      pendingKeyRef.current = null
+      createdNoteRef.current = null
+
       navigate(`/nota/${note.id}`, { replace: true })
     } catch (err) {
       setError(aiError(err, 'Falha ao processar. Tente novamente.'))
       setProcessing(false)
+      // NAO apaga a gravacao pendente aqui: e o que permite o botao "Tentar novamente" (e,
+      // numa proxima visita, o banner de recuperacao) reaproveitar o audio em vez de perde-lo.
     }
+  }
+
+  /** Repete a ultima tentativa com o MESMO audio (reaproveita a nota se ela ja foi criada). */
+  async function retryFinalize() {
+    const opts = lastFinalizeOptsRef.current
+    if (opts) await finalize(opts)
+  }
+
+  /** Retoma uma gravacao que ficou sem processar numa tentativa anterior (sessao/aba antiga). */
+  async function resumePending(key: string) {
+    const entry = pendingRecordings.find((p) => p.key === key)
+    if (!entry) return
+    setResumingKey(key)
+    const blob = await getPendingRecordingBlob(key)
+    if (!blob) {
+      // O navegador pode ter limpado o IndexedDB (modo privado, storage cheio etc.): so
+      // sobra a entrada "fantasma", que nao tem mais o que recuperar.
+      await deletePendingRecording(key)
+      setPendingRecordings((list) => list.filter((p) => p.key !== key))
+      setResumingKey(null)
+      return
+    }
+    const { meta } = entry
+    setTitle(meta.title)
+    setTemplate(meta.template)
+    setContext(meta.context)
+    setDiarize(meta.diarize)
+    pendingKeyRef.current = key
+    createdNoteRef.current = null
+    setResumingKey(null)
+    await finalize({
+      type: meta.type as NoteSourceType,
+      audioBlob: blob,
+      duration: meta.duration,
+      fallbackTitle: meta.fallbackTitle,
+      skipAudioStore: meta.skipAudioStore,
+      skipActionItems: meta.skipActionItems,
+    })
+    setPendingRecordings(listPendingRecordings())
+  }
+
+  /** Descarta uma gravacao pendente sem processar (o usuario decide que nao precisa mais dela). */
+  async function discardPending(key: string) {
+    await deletePendingRecording(key)
+    setPendingRecordings((list) => list.filter((p) => p.key !== key))
   }
 
   async function onStopRecording() {
@@ -482,6 +591,36 @@ export function Capture() {
         </h1>
       </header>
 
+      {/* Gravacoes de uma tentativa ANTERIOR que falharam antes de virar nota (rede caiu,
+          sessao expirou etc.). O audio ficou salvo neste navegador; nada foi perdido. */}
+      {!recActive &&
+        pendingRecordings
+          .filter((p) => p.meta.mode === mode)
+          .map(({ key, meta }) => (
+            <div key={key} className="card p-4 mb-4 border-accent/40">
+              <p className="text-sm font-medium">Gravação não processada encontrada</p>
+              <p className="text-xs text-content-muted mt-1">
+                {meta.fallbackTitle} · {new Date(meta.savedAt).toLocaleString('pt-BR')}
+              </p>
+              <div className="flex gap-2 mt-3">
+                <button
+                  className="btn-primary h-9 px-3 text-sm"
+                  onClick={() => resumePending(key)}
+                  disabled={resumingKey === key}
+                >
+                  {resumingKey === key ? <Spinner size={14} /> : 'Retomar'}
+                </button>
+                <button
+                  className="btn-outline h-9 px-3 text-sm"
+                  onClick={() => discardPending(key)}
+                  disabled={resumingKey === key}
+                >
+                  Descartar
+                </button>
+              </div>
+            </div>
+          ))}
+
       {mode !== 'link' && !meetingBlocked && !recActive && (
         <div className="mb-4">
           <label className="label">Título (opcional)</label>
@@ -560,7 +699,14 @@ export function Capture() {
 
       {error && (
         <div className="alert-error mb-4">
-          {error}
+          <p>{error}</p>
+          {/* So aparece quando ha uma gravacao/arquivo salvo para reaproveitar: falhas antes
+              disso (ex.: audio mudo, arquivo invalido) nao tem o que "tentar de novo". */}
+          {lastFinalizeOptsRef.current && (
+            <button className="btn-outline h-9 px-3 text-sm mt-3" onClick={retryFinalize}>
+              Tentar novamente
+            </button>
+          )}
         </div>
       )}
 
