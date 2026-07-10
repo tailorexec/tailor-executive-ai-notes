@@ -100,6 +100,15 @@
   .safe-top {
     padding-top: calc(env(safe-area-inset-top) + 1.5rem);
   }
+  /* No PWA instalado (sem barra de endereco acima) o respiro fixo de 1.5rem fica isolado
+     logo abaixo do notch/status bar e parece um vao sem funcao -- na aba normal do
+     navegador ele senta logo abaixo da barra de enderesso de verdade e passa despercebido.
+     So reduz no modo instalado (display-mode: standalone), onde isso fica visivel. */
+  @media (display-mode: standalone) {
+    .safe-top {
+      padding-top: calc(env(safe-area-inset-top) + 0.5rem);
+    }
+  }
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom);
   }
