@@ -2,10 +2,9 @@
 // (que o mockDb precisa espelhar inteira). Sem Supabase configurado, tudo vira no-op.
 
 import { supabase } from './supabase'
+import { directoryByIds, searchDirectory } from './directory'
 import type { FriendEdge, FriendMessage, Friendship, PersonRef } from './types'
 import { FRIEND_MSG_MAX } from './types'
-
-const PERSON_COLS = 'id, first_name, last_name, email, avatar_url'
 
 function client() {
   if (!supabase) throw new Error('Supabase nao configurado')
@@ -34,9 +33,8 @@ export async function listFriends(me: string): Promise<FriendEdge[]> {
 
   const otherIds = rows.map((f) => (f.requester_id === me ? f.addressee_id : f.requester_id))
 
-  const { data: people, error: pErr } = await c.from('profiles').select(PERSON_COLS).in('id', otherIds)
-  if (pErr) throw pErr
-  const byId = new Map((people ?? []).map((p) => [p.id, p as PersonRef]))
+  // Nome/avatar vem do diretorio: `profiles` nao expoe mais o perfil dos outros.
+  const byId = await directoryByIds(otherIds)
 
   // Nao lidas: tudo que me mandaram e ainda nao marquei como lido.
   const { data: unread } = await c
@@ -71,19 +69,8 @@ export async function listAcceptedFriends(me: string): Promise<PersonRef[]> {
 
 /** Busca por nome ou e-mail, excluindo eu mesmo e quem ja tem vinculo comigo. */
 export async function searchPeople(me: string, term: string, exclude: string[]): Promise<PersonRef[]> {
-  const q = term.trim()
-  if (!supabase || q.length < 2) return []
-
-  const safe = q.replace(/[%,()]/g, ' ')
-  const { data, error } = await client()
-    .from('profiles')
-    .select(PERSON_COLS)
-    .or(`first_name.ilike.%${safe}%,last_name.ilike.%${safe}%,email.ilike.%${safe}%`)
-    .limit(20)
-  if (error) throw error
-
-  const skip = new Set([me, ...exclude])
-  return (data ?? []).filter((p) => !skip.has(p.id)) as PersonRef[]
+  if (!supabase) return []
+  return searchDirectory(me, term, exclude)
 }
 
 export async function invite(me: string, addresseeId: string): Promise<Friendship> {

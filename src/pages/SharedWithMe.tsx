@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, ChevronRight, Share2 } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
 import { db } from '../lib/api'
-import type { Note, Profile } from '../lib/types'
+import { directoryByIds } from '../lib/directory'
+import type { Note, PersonRef } from '../lib/types'
 import { fmtDate } from '../lib/format'
 import { Avatar, EmptyState, NoteCardSkeleton, PriorityBadge } from '../components/ui'
 import { useToast } from '../components/Toast'
@@ -15,18 +16,21 @@ export function SharedWithMePage() {
   const t = useT()
   const toast = useToast()
   const [notes, setNotes] = useState<Note[] | null>(null)
-  const [authors, setAuthors] = useState<Map<string, Profile>>(new Map())
+  const [authors, setAuthors] = useState<Map<string, PersonRef>>(new Map())
 
   useEffect(() => {
     if (!profile) return
     let alive = true
 
     // listNotes ja devolve minhas + as compartilhadas comigo (RLS). Aqui fico so com as dos outros.
-    Promise.all([db.listNotes(profile.id), db.listProfiles()])
-      .then(([all, people]) => {
+    db.listNotes(profile.id)
+      .then(async (all) => {
+        const shared = all.filter((n) => n.user_id !== profile.id)
+        // Nome de quem compartilhou vem do diretorio (profiles nao expoe perfil alheio).
+        const people = await directoryByIds([...new Set(shared.map((n) => n.user_id))])
         if (!alive) return
-        setNotes(all.filter((n) => n.user_id !== profile.id))
-        setAuthors(new Map(people.map((p) => [p.id, p])))
+        setNotes(shared)
+        setAuthors(people)
       })
       .catch(() => {
         if (!alive) return

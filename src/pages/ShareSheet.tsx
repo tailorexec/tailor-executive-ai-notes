@@ -5,6 +5,7 @@ import { useAuth } from '../auth/AuthProvider'
 import type { Note, PersonRef } from '../lib/types'
 import { Avatar, Sheet } from '../components/ui'
 import { listAcceptedFriends } from '../lib/friends'
+import { listDirectory } from '../lib/directory'
 import { useT } from '../lib/i18n'
 import {
   copyToClipboard,
@@ -49,7 +50,7 @@ export function ShareSheet({
   useEffect(() => {
     if (!profile) return
     const me = profile.id
-    Promise.all([listAcceptedFriends(me), db.listProfiles()])
+    Promise.all([listAcceptedFriends(me), listDirectory()])
       .then(([friends, all]) => {
         const known = new Set(friends.map((f) => f.id))
         const legacy = all.filter((p) => note.shared_with.includes(p.id) && !known.has(p.id) && p.id !== me)
