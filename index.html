@@ -16,6 +16,16 @@
         var m = document.querySelector('meta[name="theme-color"]')
         if (m) m.setAttribute('content', dark ? '#010101' : '#FFFFFF')
       } catch (e) {}
+      // App instalado na tela de inicio do iOS: o media query CSS `display-mode: standalone`
+      // nao e confiavel nesse caminho (apple-mobile-web-app-capable e mais antigo que o
+      // suporte a Web App Manifest). `navigator.standalone` e a API real e documentada da
+      // Apple para essa deteccao -- usa uma classe no <html> para o CSS reduzir o respiro
+      // do topo so quando o app roda instalado.
+      try {
+        if (window.navigator && window.navigator.standalone) {
+          document.documentElement.classList.add('ios-standalone')
+        }
+      } catch (e) {}
     </script>
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />

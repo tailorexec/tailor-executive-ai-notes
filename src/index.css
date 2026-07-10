@@ -109,6 +109,12 @@
       padding-top: calc(env(safe-area-inset-top) + 0.5rem);
     }
   }
+  /* iOS: display-mode:standalone nem sempre e reportado no caminho apple-mobile-web-app-
+     capable. `.ios-standalone` vem de navigator.standalone via JS (index.html) -- deteccao
+     mais confiavel especifica da Apple para "app aberto pela tela de inicio". */
+  html.ios-standalone .safe-top {
+    padding-top: calc(env(safe-area-inset-top) + 0.5rem);
+  }
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom);
   }
