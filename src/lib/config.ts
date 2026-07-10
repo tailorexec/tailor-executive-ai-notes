@@ -24,8 +24,8 @@ export const config = {
    */
   recordingBitrate: 24000,
 
-  /** Retencao do audio: excluido apos N dias (a transcricao e mantida). */
-  audioRetentionDays: 14,
+  /** Retencao padrao do audio: excluido apos N dias (a transcricao e mantida). */
+  audioRetentionDays: 3,
 
   /** Client ID (publico) do Google para ler o calendario no navegador. */
   googleClientId: (

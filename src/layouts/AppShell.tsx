@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Home, Phone, Settings as SettingsIcon, Sparkles, Mic, ListChecks, CalendarDays, LogOut, PanelLeft, PanelLeftClose } from 'lucide-react'
+import { Home, Phone, Settings as SettingsIcon, Sparkles, Mic, ListChecks, CalendarDays, LogOut, PanelLeft, PanelLeftClose, Users, Share2, Plug, BarChart3 } from 'lucide-react'
 import { AnaIcon } from '../components/AnaIcon'
 import { useAuth } from '../auth/AuthProvider'
 import { Logo } from '../components/Logo'
@@ -30,6 +30,33 @@ const ITEMS: Item[] = [
   { to: '/agenda', icon: <CalendarDays size={20} />, labelKey: 'nav.agenda' },
   { to: '/discador', icon: <Phone size={20} />, labelKey: 'nav.dialer' },
 ]
+
+/** Mesma secao "Mais funcoes" que existe no Config, atalhada na sidebar do desktop. */
+const MORE_ITEMS: Item[] = [
+  { to: '/amigos', icon: <Users size={20} />, labelKey: 'settings.friends' },
+  { to: '/compartilhados', icon: <Share2 size={20} />, labelKey: 'settings.sharedWithMe' },
+  { to: '/conectores', icon: <Plug size={20} />, labelKey: 'settings.connectors' },
+  { to: '/analytics', icon: <BarChart3 size={20} />, labelKey: 'settings.analytics' },
+]
+
+function SidebarLink({ item, label }: { item: Item; label: string }) {
+  return (
+    <NavLink
+      to={item.to}
+      end
+      className={({ isActive }) =>
+        `flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-colors border ${
+          isActive
+            ? 'bg-accent/10 border-accent/25 text-accent'
+            : 'border-transparent text-content-secondary hover:bg-surface-elevated hover:text-content-primary'
+        }`
+      }
+    >
+      {item.icon}
+      {label}
+    </NavLink>
+  )
+}
 
 /* ---------- Desktop sidebar (SaaS layout) ---------- */
 function Sidebar({ onCollapse }: { onCollapse: () => void }) {
@@ -61,25 +88,25 @@ function Sidebar({ onCollapse }: { onCollapse: () => void }) {
         {t('sidebar.smartRec')}
       </button>
 
-      <p className="px-6 mb-2 text-[11px] font-semibold uppercase tracking-wider text-content-muted">{t('sidebar.menu')}</p>
-      <nav className="flex-1 px-3 space-y-1">
-        {ITEMS.filter((i) => !i.adminOnly || isAdmin).map((i) => (
-          <NavLink
-            key={i.to}
-            to={i.to}
-            end
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-colors border ${
-                isActive
-                  ? 'bg-accent/10 border-accent/25 text-accent'
-                  : 'border-transparent text-content-secondary hover:bg-surface-elevated hover:text-content-primary'
-              }`
-            }
-          >
-            {i.icon}
-            {t(i.labelKey)}
-          </NavLink>
-        ))}
+      {/* Duas secoes: o menu principal e as "Mais funcoes" (as mesmas do Config). */}
+      <nav className="flex-1 min-h-0 overflow-y-auto px-3">
+        <p className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-content-muted">
+          {t('sidebar.menu')}
+        </p>
+        <div className="space-y-1">
+          {ITEMS.filter((i) => !i.adminOnly || isAdmin).map((i) => (
+            <SidebarLink key={i.to} item={i} label={t(i.labelKey)} />
+          ))}
+        </div>
+
+        <p className="px-3 mt-6 mb-2 text-[11px] font-semibold uppercase tracking-wider text-content-muted">
+          {t('settings.more')}
+        </p>
+        <div className="space-y-1 pb-2">
+          {MORE_ITEMS.map((i) => (
+            <SidebarLink key={i.to} item={i} label={t(i.labelKey)} />
+          ))}
+        </div>
       </nav>
 
       {/* "Powered by" a esquerda, logo Tailor colada na direita, alinhadas pela base. */}
@@ -89,7 +116,12 @@ function Sidebar({ onCollapse }: { onCollapse: () => void }) {
       </div>
 
       <div className="p-3 border-t border-surface-border flex items-center gap-2">
-        <button onClick={() => navigate('/config')} className="flex items-center gap-3 flex-1 min-w-0 text-left">
+        {/* A foto leva direto para "Editar perfil"; a engrenagem ao lado abre o Config. */}
+        <button
+          onClick={() => navigate('/perfil')}
+          title={t('settings.editProfile')}
+          className="flex items-center gap-3 flex-1 min-w-0 text-left"
+        >
           {profile && <Avatar first={profile.first_name} last={profile.last_name} size={36} url={profile.avatar_url} />}
           <div className="min-w-0">
             <p className="text-sm font-medium truncate">

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ChevronRight,
@@ -12,7 +12,6 @@ import {
   HelpCircle,
   Trash2,
   LifeBuoy,
-  Camera,
   Pencil,
   Download,
   Languages,
@@ -31,7 +30,6 @@ import { useTheme } from '../theme/ThemeProvider'
 import { Avatar, ConfirmDialog, Sheet, Spinner } from '../components/ui'
 import { useToast } from '../components/Toast'
 import { Logo } from '../components/Logo'
-import { uploadAvatar } from '../lib/avatar'
 import { db } from '../lib/api'
 import { exportNotesMarkdown } from '../lib/share'
 import { langLabel, LANGS } from '../lib/lang'
@@ -72,11 +70,6 @@ export function Settings() {
   const { theme, toggle } = useTheme()
   const navigate = useNavigate()
   const toast = useToast()
-  const [editOpen, setEditOpen] = useState(false)
-  const [first, setFirst] = useState('')
-  const [last, setLast] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [uploading, setUploading] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [langOpen, setLangOpen] = useState(false)
   const [delOpen, setDelOpen] = useState(false)
@@ -87,7 +80,6 @@ export function Settings() {
   const [retLower, setRetLower] = useState<RetentionDays | null>(null)
   const [unread, setUnread] = useState(0)
   const { lang, setLang, t } = useI18n()
-  const fileRef = useRef<HTMLInputElement | null>(null)
 
   const retention: RetentionDays = profile?.audio_retention_days ?? RETENTION_DEFAULT
 
@@ -147,79 +139,31 @@ export function Settings() {
     }
   }
 
-  function openEdit() {
-    setFirst(profile!.first_name)
-    setLast(profile!.last_name)
-    setEditOpen(true)
-  }
-
-  async function onPhoto(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file || !profile) return
-    setUploading(true)
-    try {
-      const url = await uploadAvatar(profile.id, file)
-      if (url) await updateProfile({ avatar_url: url })
-    } finally {
-      setUploading(false)
-    }
-  }
-
-  async function saveProfile() {
-    setSaving(true)
-    try {
-      await updateProfile({ first_name: first.trim(), last_name: last.trim() })
-      setEditOpen(false)
-      toast(t('settings.profileUpdated'))
-    } finally {
-      setSaving(false)
-    }
-  }
-
   return (
     <div className="px-5 safe-top">
       <header className="flex items-center justify-between mb-6">
         <h1 className="font-display text-3xl font-bold">{t('settings.title')}</h1>
       </header>
 
-      <div className="card p-5 flex items-center gap-4 mb-6">
-        <button onClick={() => fileRef.current?.click()} className="relative shrink-0" aria-label="Trocar foto">
-          <Avatar first={profile.first_name} last={profile.last_name} size={56} url={profile.avatar_url} />
-          <span className="absolute -bottom-1 -right-1 grid place-items-center h-6 w-6 rounded-full bg-brand-solid text-white border-2 border-surface-card">
-            {uploading ? <Spinner size={12} /> : <Camera size={12} />}
-          </span>
-        </button>
-        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPhoto} />
+      <button
+        onClick={() => navigate('/perfil')}
+        className="card p-5 w-full flex items-center gap-4 mb-6 text-left hover:border-accent/40 transition-colors"
+      >
+        <Avatar first={profile.first_name} last={profile.last_name} size={56} url={profile.avatar_url} />
         <div className="min-w-0 flex-1">
           <p className="font-display font-semibold text-lg truncate">
             {profile.first_name} {profile.last_name}
           </p>
           <p className="text-content-muted text-sm truncate">{profile.email}</p>
-          <p className="text-content-muted text-sm">{profile.phone}</p>
+          {profile.phone && <p className="text-content-muted text-sm truncate">{profile.phone}</p>}
         </div>
-        <button onClick={openEdit} className="grid place-items-center h-9 w-9 rounded-full bg-surface-elevated border border-surface-border text-content-secondary" aria-label={t('settings.editProfile')}>
+        <span
+          className="grid place-items-center h-9 w-9 rounded-full bg-surface-elevated border border-surface-border text-content-secondary shrink-0"
+          aria-hidden
+        >
           <Pencil size={16} />
-        </button>
-      </div>
-
-      <Sheet open={editOpen} onClose={() => setEditOpen(false)} title={t('settings.editProfile')}>
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <div>
-            <label className="label">{t('settings.firstName')}</label>
-            <input className="input" value={first} onChange={(e) => setFirst(e.target.value)} />
-          </div>
-          <div>
-            <label className="label">{t('settings.lastName')}</label>
-            <input className="input" value={last} onChange={(e) => setLast(e.target.value)} />
-          </div>
-        </div>
-        <button className="btn-outline w-full mb-3" onClick={() => fileRef.current?.click()}>
-          <Camera size={18} /> {t('settings.changePhoto')}
-        </button>
-        <button className="btn-primary w-full" onClick={saveProfile} disabled={saving}>
-          {saving ? <Spinner /> : t('common.save')}
-        </button>
-      </Sheet>
+        </span>
+      </button>
 
       {isAdmin && (
         <div className="card divide-y divide-surface-border mb-6">

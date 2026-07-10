@@ -13,7 +13,7 @@ export interface Folder {
 /** Periodo de auto-delete do audio (Config > Preferencias). */
 export type RetentionDays = 3 | 7 | 14
 export const RETENTION_CHOICES: RetentionDays[] = [3, 7, 14]
-export const RETENTION_DEFAULT: RetentionDays = 14
+export const RETENTION_DEFAULT: RetentionDays = 3
 
 export interface Profile {
   id: string
@@ -23,13 +23,20 @@ export interface Profile {
   phone: string
   role: UserRole
   avatar_url: string | null
+  /** @handle do Instagram, sem o @. */
+  instagram: string | null
+  /** URL do perfil no LinkedIn (ou so o handle). */
+  linkedin: string | null
   audio_retention_days: RetentionDays
   created_at: string
 }
 
 /** Campos que o proprio usuario pode editar no seu perfil. */
 export type ProfilePatch = Partial<
-  Pick<Profile, 'first_name' | 'last_name' | 'avatar_url' | 'audio_retention_days'>
+  Pick<
+    Profile,
+    'first_name' | 'last_name' | 'avatar_url' | 'phone' | 'instagram' | 'linkedin' | 'audio_retention_days'
+  >
 >
 
 /** So o necessario para exibir alguem na busca de amigos e no chat. */

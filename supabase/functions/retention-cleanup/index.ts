@@ -8,7 +8,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const DEFAULT_RETENTION_DAYS = 14 // para quem nunca mexeu na opcao
+const DEFAULT_RETENTION_DAYS = 3 // para quem nunca mexeu na opcao
 const RETENTION_CHOICES = [3, 7, 14]
 const TRASH_DAYS = 7 // lixeira -> exclusao definitiva
 const CHAT_DAYS = 7 // mensagens entre amigos

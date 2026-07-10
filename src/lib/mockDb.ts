@@ -53,6 +53,8 @@ function seed(): void {
     phone: '+55 11 90000-0000',
     role: 'admin',
     avatar_url: null,
+    instagram: null,
+    linkedin: null,
     audio_retention_days: RETENTION_DEFAULT,
     created_at: new Date().toISOString(),
   }
@@ -129,6 +131,8 @@ export const mockDb: Db = {
       phone: input.phone.trim(),
       role: isAdminEmail(email) ? 'admin' : 'member',
       avatar_url: null,
+      instagram: null,
+      linkedin: null,
       audio_retention_days: RETENTION_DEFAULT,
       created_at: new Date().toISOString(),
     }

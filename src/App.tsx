@@ -23,6 +23,7 @@ import { FriendsPage } from './pages/Friends'
 import { SharedWithMePage } from './pages/SharedWithMe'
 import { AnalyticsPage, ConnectorsPage } from './pages/ComingSoon'
 import { About } from './pages/About'
+import { EditProfile } from './pages/EditProfile'
 import { ApiMonitor } from './pages/ApiMonitor'
 import type { ReactNode } from 'react'
 
@@ -89,6 +90,7 @@ export default function App() {
         <Route path="/conectores" element={<ConnectorsPage />} />
         <Route path="/analytics" element={<AnalyticsPage />} />
         <Route path="/sobre" element={<About />} />
+        <Route path="/perfil" element={<EditProfile />} />
         <Route
           path="/admin"
           element={
