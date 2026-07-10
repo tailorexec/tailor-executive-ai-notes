@@ -14,6 +14,30 @@ interface StartOptions {
   system?: boolean
 }
 
+/**
+ * Opcoes do seletor de compartilhamento. Elas existem para o usuario errar menos:
+ *
+ * - `displaySurface: 'browser'` abre o dialogo ja na aba "Guia do Chrome". Compartilhando uma
+ *   guia, o "compartilhar audio" vem MARCADO por padrao; na tela inteira vem desmarcado. Ou
+ *   seja, empurrar para a guia resolve tambem o esquecimento do som.
+ * - `selfBrowserSurface: 'exclude'` tira a propria aba do ANA da lista de escolhas.
+ * - `systemAudio: 'include'` pede o audio do sistema para quem escolher tela/janela mesmo assim.
+ *
+ * Sao dicas: o usuario continua livre para escolher tela inteira e desmarcar o audio — por isso
+ * o `start()` abaixo trata a falta de audio como aviso, nunca como motivo para abortar.
+ */
+const DISPLAY_OPTIONS = {
+  video: { displaySurface: 'browser' },
+  audio: true,
+  systemAudio: 'include',
+  selfBrowserSurface: 'exclude',
+} as unknown as DisplayMediaStreamOptions
+
+/** Silencio digital absoluto por tanto tempo = a fonte escolhida quase certamente esta errada. */
+const SILENCE_MS = 30_000
+/** Acima disto ja consideramos que ouvimos a reuniao (ruido de fundo passa longe do zero). */
+const SILENCE_RMS = 0.002
+
 export function isMobileBrowser(): boolean {
   return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
 }
@@ -43,6 +67,10 @@ export function useRecorder() {
   const [error, setError] = useState<string | null>(null)
   /** Fica true quando a captura termina sozinha (ex.: usuario clicou em "Parar compartilhamento"). */
   const [ended, setEnded] = useState(false)
+  /** Gravando, mas sem o audio da reuniao: so a voz do usuario. Ele pode anexar depois. */
+  const [systemAudioMissing, setSystemAudioMissing] = useState(false)
+  /** O audio da reuniao esta anexado, porem mudo ha mais de 30s: fonte provavelmente errada. */
+  const [systemSilent, setSystemSilent] = useState(false)
 
   const mediaRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
@@ -52,14 +80,20 @@ export function useRecorder() {
   const rafRef = useRef<number | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
   const audioCtxRef = useRef<AudioContext | null>(null)
+  /** Destino da mistura mic + reuniao. Existe so no modo reuniao, para dar pra anexar o audio depois. */
+  const destRef = useRef<MediaStreamAudioDestinationNode | null>(null)
+  /** Analyser exclusivo da reuniao: o do nivel mistura o microfone e nunca ficaria mudo. */
+  const sysAnalyserRef = useRef<AnalyserNode | null>(null)
+  const sysSilentSinceRef = useRef<number | null>(null)
+  const sysHeardRef = useRef(false)
+  /** Ja existe audio da reuniao na mistura? Uma troca de fonte que falha nao pode desmentir isso. */
+  const sysAttachedRef = useRef(false)
   const resolveRef = useRef<((r: RecorderResult) => void) | null>(null)
   const startedAtRef = useRef<number>(0)
   const elapsedBeforePauseRef = useRef<number>(0)
   const mimeRef = useRef<string>('audio/webm')
 
-  const tickLevel = useCallback(() => {
-    const analyser = analyserRef.current
-    if (!analyser) return
+  const rms = (analyser: AnalyserNode) => {
     const data = new Uint8Array(analyser.frequencyBinCount)
     analyser.getByteTimeDomainData(data)
     let sum = 0
@@ -67,9 +101,93 @@ export function useRecorder() {
       const v = (data[i] - 128) / 128
       sum += v * v
     }
-    setLevel(Math.min(1, Math.sqrt(sum / data.length) * 3))
-    rafRef.current = requestAnimationFrame(tickLevel)
+    return Math.sqrt(sum / data.length)
+  }
+
+  /**
+   * Vigia o audio da reuniao. Nenhuma reuniao fica em silencio absoluto por 30s, entao isso
+   * denuncia a aba errada ou o audio desmarcado. So avisa; nunca interrompe a gravacao.
+   */
+  const watchSilence = useCallback(() => {
+    const sys = sysAnalyserRef.current
+    if (!sys || sysHeardRef.current) return
+    // Pausado nao conta como silencio.
+    if (mediaRef.current?.state !== 'recording') {
+      sysSilentSinceRef.current = null
+      return
+    }
+    if (rms(sys) > SILENCE_RMS) {
+      sysHeardRef.current = true
+      sysSilentSinceRef.current = null
+      setSystemSilent(false)
+      return
+    }
+    const since = sysSilentSinceRef.current ?? Date.now()
+    sysSilentSinceRef.current = since
+    if (Date.now() - since >= SILENCE_MS) setSystemSilent(true)
   }, [])
+
+  const tickLevel = useCallback(() => {
+    const analyser = analyserRef.current
+    if (!analyser) return
+    setLevel(Math.min(1, rms(analyser) * 3))
+    watchSilence()
+    rafRef.current = requestAnimationFrame(tickLevel)
+  }, [watchSilence])
+
+  /**
+   * Liga o audio da reuniao na mistura que ja esta sendo gravada. Devolve false quando o
+   * usuario compartilhou algo sem marcar a caixa de audio (o caso comum): ai a gravacao segue
+   * so com o microfone e a tela avisa, em vez de jogar fora o que ja foi gravado.
+   */
+  const attachDisplay = useCallback((display: MediaStream): boolean => {
+    const ctx = audioCtxRef.current
+    const dest = destRef.current
+    const analyser = analyserRef.current
+    const sysTracks = display.getAudioTracks()
+
+    if (!ctx || !dest || !analyser || sysTracks.length === 0) {
+      display.getTracks().forEach((t) => t.stop())
+      // Numa troca de fonte que deu errado, a fonte anterior continua valendo.
+      if (!sysAttachedRef.current) setSystemAudioMissing(true)
+      return false
+    }
+
+    // Trocando de fonte: descarta a captura anterior.
+    displayStreamRef.current?.getTracks().forEach((t) => t.stop())
+    displayStreamRef.current = display
+    // Nao precisamos do video: encerra a faixa de video.
+    display.getVideoTracks().forEach((t) => t.stop())
+
+    const sysSource = ctx.createMediaStreamSource(new MediaStream(sysTracks))
+    sysSource.connect(dest)
+    sysSource.connect(analyser)
+
+    const sysAnalyser = ctx.createAnalyser()
+    sysAnalyser.fftSize = 512
+    sysSource.connect(sysAnalyser)
+    sysAnalyserRef.current = sysAnalyser
+    sysHeardRef.current = false
+    sysSilentSinceRef.current = null
+    sysAttachedRef.current = true
+    setSystemSilent(false)
+    setSystemAudioMissing(false)
+
+    // Se o usuario parar o compartilhamento pelo navegador, encerramos.
+    sysTracks[0].onended = () => setEnded(true)
+    return true
+  }, [])
+
+  /** Anexa (ou troca) o audio da reuniao com a gravacao ja rolando. */
+  const addSystemAudio = useCallback(async (): Promise<boolean> => {
+    if (!destRef.current) return false
+    try {
+      const display = await navigator.mediaDevices.getDisplayMedia(DISPLAY_OPTIONS)
+      return attachDisplay(display)
+    } catch {
+      return false // usuario fechou o dialogo
+    }
+  }, [attachDisplay])
 
   const startTimer = useCallback(() => {
     startedAtRef.current = Date.now()
@@ -83,6 +201,11 @@ export function useRecorder() {
     async (opts?: StartOptions) => {
       setError(null)
       setEnded(false)
+      setSystemAudioMissing(false)
+      setSystemSilent(false)
+      sysHeardRef.current = false
+      sysSilentSinceRef.current = null
+      sysAttachedRef.current = false
       try {
         const AudioCtx =
           window.AudioContext ||
@@ -109,35 +232,23 @@ export function useRecorder() {
         let recordStream: MediaStream = mic
 
         if (opts?.system) {
-          // Audio da aba/sistema (a outra ponta da reuniao)
-          const display = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
-          displayStreamRef.current = display
-          const sysTracks = display.getAudioTracks()
-          if (sysTracks.length === 0) {
-            display.getTracks().forEach((t) => t.stop())
-            mic.getTracks().forEach((t) => t.stop())
-            ctx.close().catch(() => {})
-            setError(
-              'Voce precisa marcar "Compartilhar audio" no dialogo (compartilhe a aba da reuniao ou a tela toda). Tente novamente.',
-            )
-            setState('idle')
-            return
-          }
-          // Nao precisamos do video: encerra a faixa de video.
-          display.getVideoTracks().forEach((t) => t.stop())
-
-          // Mistura microfone + audio do sistema numa unica faixa MONO (voz nao precisa de estereo).
+          // A gravacao sai sempre do destino da mistura, mesmo antes de existir audio da reuniao.
+          // E o que permite anexar a reuniao no meio da gravacao, sem trocar a faixa do recorder.
           const dest = ctx.createMediaStreamDestination()
           dest.channelCount = 1
           dest.channelCountMode = 'explicit'
           ctx.createMediaStreamSource(mic).connect(dest)
-          const sysSource = ctx.createMediaStreamSource(new MediaStream(sysTracks))
-          sysSource.connect(dest)
-          sysSource.connect(analyser)
+          destRef.current = dest
           recordStream = dest.stream
 
-          // Se o usuario parar o compartilhamento pelo navegador, encerramos.
-          sysTracks[0].onended = () => setEnded(true)
+          // Audio da aba/sistema (a outra ponta da reuniao). Se o usuario nao marcar a caixa de
+          // audio, ou fechar o dialogo, seguimos gravando so a voz dele: perder a reuniao
+          // inteira seria pior. A tela avisa e oferece anexar o audio depois.
+          try {
+            attachDisplay(await navigator.mediaDevices.getDisplayMedia(DISPLAY_OPTIONS))
+          } catch {
+            setSystemAudioMissing(true)
+          }
         }
 
         rafRef.current = requestAnimationFrame(tickLevel)
@@ -182,7 +293,7 @@ export function useRecorder() {
         setState('idle')
       }
     },
-    [startTimer, tickLevel],
+    [attachDisplay, startTimer, tickLevel],
   )
 
   const pause = useCallback(() => {
@@ -210,6 +321,9 @@ export function useRecorder() {
     micStreamRef.current?.getTracks().forEach((t) => t.stop())
     displayStreamRef.current?.getTracks().forEach((t) => t.stop())
     audioCtxRef.current?.close().catch(() => {})
+    destRef.current = null
+    sysAnalyserRef.current = null
+    sysAttachedRef.current = false
     setLevel(0)
   }, [])
 
@@ -231,5 +345,18 @@ export function useRecorder() {
     })
   }, [cleanup, seconds])
 
-  return { state, seconds, level, error, ended, start, pause, resume, stop }
+  return {
+    state,
+    seconds,
+    level,
+    error,
+    ended,
+    systemAudioMissing,
+    systemSilent,
+    start,
+    addSystemAudio,
+    pause,
+    resume,
+    stop,
+  }
 }

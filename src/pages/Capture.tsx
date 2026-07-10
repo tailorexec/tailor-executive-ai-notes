@@ -296,6 +296,11 @@ export function Capture() {
     await recorder.start({ system: true })
   }
 
+  /** Anexa o audio da reuniao com a gravacao ja em andamento (ou troca a aba compartilhada). */
+  async function onAddSystemAudio() {
+    await recorder.addSystemAudio()
+  }
+
   async function onUploadAudio(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -681,7 +686,9 @@ export function Capture() {
                 {recState === 'paused'
                   ? 'Pausado'
                   : mode === 'meeting'
-                    ? 'Gravando reuniao (aba + microfone)...'
+                    ? recorder.systemAudioMissing
+                      ? 'Gravando so o seu microfone...'
+                      : 'Gravando reuniao (aba + microfone)...'
                     : 'Gravando...'}
               </p>
               {(() => {
@@ -693,6 +700,33 @@ export function Capture() {
                   </p>
                 )
               })()}
+
+              {/* A gravacao NAO para por causa disto: ela continua com o microfone enquanto o
+                  usuario decide. Anexar o audio da reuniao no meio do caminho e possivel. */}
+              {mode === 'meeting' && recorder.systemAudioMissing && (
+                <div className="alert-error text-sm mt-3 max-w-sm text-left">
+                  <p>
+                    <span className="font-medium">Estou gravando só a sua voz.</span> O áudio da reunião não veio —
+                    no diálogo do navegador, escolha a <span className="font-medium">aba da reunião</span> e deixe
+                    marcado <span className="font-medium">"Compartilhar áudio da guia"</span>.
+                  </p>
+                  <button className="btn-primary w-full mt-3" onClick={onAddSystemAudio}>
+                    <Headphones size={16} /> Adicionar áudio da reunião
+                  </button>
+                </div>
+              )}
+
+              {mode === 'meeting' && !recorder.systemAudioMissing && recorder.systemSilent && (
+                <div className="alert-error text-sm mt-3 max-w-sm text-left">
+                  <p>
+                    <span className="font-medium">Não estou ouvindo a reunião</span> há mais de 30 segundos. Pode ser
+                    a aba errada. Sua voz continua sendo gravada normalmente.
+                  </p>
+                  <button className="btn-outline w-full mt-3" onClick={onAddSystemAudio}>
+                    <Headphones size={16} /> Trocar a aba compartilhada
+                  </button>
+                </div>
+              )}
 
               <p className="text-xs text-content-muted mt-2 max-w-xs text-center">
                 {mode === 'meeting'
