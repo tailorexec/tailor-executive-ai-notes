@@ -17,8 +17,12 @@ export const config = {
   /** Limite inicial de duracao de gravacao (2 horas). */
   recordingMaxSeconds: 2 * 60 * 60,
 
-  /** Bitrate do audio gravado (voz). Menor = menos storage. ~48 kbps e otimo p/ transcricao. */
-  recordingBitrate: 48000,
+  /**
+   * Bitrate do audio gravado (voz). 24 kbps mono em Opus basta para fala — o Whisper
+   * reamostra tudo para 16 kHz de qualquer jeito. Corta pela METADE o storage e o egress,
+   * que sao os dois primeiros limites que estouramos no Supabase.
+   */
+  recordingBitrate: 24000,
 
   /** Retencao do audio: excluido apos N dias (a transcricao e mantida). */
   audioRetentionDays: 14,

@@ -74,8 +74,9 @@ public class BgRecorderPlugin extends Plugin {
             recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
             recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
             recorder.setAudioChannels(1);
-            recorder.setAudioSamplingRate(44100);
-            recorder.setAudioEncodingBitRate(48000); // ~21 MB/h, bom para fala
+            // 16 kHz e exatamente a taxa que o Whisper usa; 44.1 kHz so gastaria banda.
+            recorder.setAudioSamplingRate(16000);
+            recorder.setAudioEncodingBitRate(24000); // ~11 MB/h, suficiente para fala
             recorder.setOutputFile(outFile.getAbsolutePath());
             recorder.prepare();
 

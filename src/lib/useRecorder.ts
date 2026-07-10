@@ -93,8 +93,16 @@ export function useRecorder() {
         analyser.fftSize = 512
         analyserRef.current = analyser
 
-        // Microfone (sua voz)
-        const mic = await navigator.mediaDevices.getUserMedia({ audio: true })
+        // Microfone (sua voz). Mono: um mic estereo gastaria metade do bitrate com um canal
+        // redundante. Os filtros de fala tambem ajudam o Whisper.
+        const mic = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            channelCount: 1,
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        })
         micStreamRef.current = mic
         ctx.createMediaStreamSource(mic).connect(analyser)
 
@@ -118,8 +126,10 @@ export function useRecorder() {
           // Nao precisamos do video: encerra a faixa de video.
           display.getVideoTracks().forEach((t) => t.stop())
 
-          // Mistura microfone + audio do sistema numa unica faixa.
+          // Mistura microfone + audio do sistema numa unica faixa MONO (voz nao precisa de estereo).
           const dest = ctx.createMediaStreamDestination()
+          dest.channelCount = 1
+          dest.channelCountMode = 'explicit'
           ctx.createMediaStreamSource(mic).connect(dest)
           const sysSource = ctx.createMediaStreamSource(new MediaStream(sysTracks))
           sysSource.connect(dest)
