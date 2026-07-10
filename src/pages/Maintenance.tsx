@@ -6,7 +6,7 @@ import type { AppSettings } from '../lib/types'
 export function Maintenance({ settings }: { settings: AppSettings }) {
   const { signOut } = useAuth()
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center text-center px-6 safe-top">
+    <div className="min-h-dvh flex flex-col items-center justify-center text-center px-6 safe-top">
       <Logo size="md" className="mb-10" />
       <div className="grid place-items-center h-20 w-20 rounded-full bg-brand-solid text-white mb-6">
         <Wrench size={34} />

@@ -100,13 +100,13 @@ export function NoteDetail() {
 
   if (note === undefined)
     return (
-      <div className="min-h-screen grid place-items-center">
+      <div className="min-h-dvh grid place-items-center">
         <Spinner size={26} className="text-accent" />
       </div>
     )
   if (note === null)
     return (
-      <div className="min-h-screen grid place-items-center px-6 text-center">
+      <div className="min-h-dvh grid place-items-center px-6 text-center">
         <div>
           <p className="text-content-secondary mb-4">{t('note.notFound')}</p>
           <button className="btn-primary" onClick={() => navigate('/')}>{t('note.back')}</button>
@@ -276,7 +276,7 @@ export function NoteDetail() {
   ]
 
   return (
-    <div className="min-h-screen flex flex-col overflow-x-hidden">
+    <div className="min-h-dvh flex flex-col overflow-x-hidden">
       <header className="sticky top-0 z-20 bg-surface-bg/90 backdrop-blur px-5 pb-3 safe-top">
         <div className="flex items-center justify-between mb-3">
           <button

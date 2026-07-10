@@ -60,13 +60,13 @@ export function MindMapPage() {
 
   if (note === undefined)
     return (
-      <div className="min-h-screen grid place-items-center">
+      <div className="min-h-dvh grid place-items-center">
         <Spinner size={26} className="text-accent" />
       </div>
     )
   if (note === null)
     return (
-      <div className="min-h-screen grid place-items-center px-6 text-center">
+      <div className="min-h-dvh grid place-items-center px-6 text-center">
         <div>
           <p className="text-content-secondary mb-4">{t('note.notFound')}</p>
           <button className="btn-primary" onClick={() => navigate('/')}>{t('note.back')}</button>

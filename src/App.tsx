@@ -29,7 +29,7 @@ import type { ReactNode } from 'react'
 
 function FullscreenLoader() {
   return (
-    <div className="min-h-screen grid place-items-center bg-surface-bg">
+    <div className="min-h-dvh grid place-items-center bg-surface-bg">
       <Spinner size={28} className="text-accent" />
     </div>
   )

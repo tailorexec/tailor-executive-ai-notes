@@ -547,7 +547,7 @@ export function Capture() {
 
   if (processing) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-8 text-center safe-top">
+      <div className="min-h-dvh flex flex-col items-center justify-center px-8 text-center safe-top">
         <div className="relative mb-8">
           <div className="absolute inset-0 rounded-full bg-accent/30 animate-pulse-ring" />
           <div className="grid place-items-center h-20 w-20 rounded-full bg-brand-solid text-white relative">
@@ -571,7 +571,7 @@ export function Capture() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col px-5 safe-top safe-bottom-2">
+    <div className="min-h-dvh flex flex-col px-5 safe-top safe-bottom-2">
       <header className="flex items-center gap-3 mb-6">
         <button
           onClick={() => navigate(-1)}
