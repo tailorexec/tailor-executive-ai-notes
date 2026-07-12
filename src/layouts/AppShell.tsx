@@ -283,7 +283,7 @@ export function AppShell() {
   }
 
   return (
-    <div className="min-h-dvh bg-surface-bg overflow-x-hidden">
+    <div className="min-h-dvh bg-surface-bg">
       {!collapsed && <Sidebar onCollapse={toggleSidebar} />}
 
       {/* Com a sidebar recolhida, o botao de reabrir fica no canto superior esquerdo. */}

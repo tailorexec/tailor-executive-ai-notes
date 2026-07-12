@@ -73,19 +73,26 @@
     background-color: rgb(var(--surface-bg));
   }
 
-  /* Trava o "puxar" para os lados/cima/baixo (pull-to-refresh e bounce) + arrasto horizontal.
-     overflow-x apenas em html/body (nao no #root, p/ nao criar scroller aninhado). */
+  /*
+   * NENHUM overflow-x aqui de proposito (nem em html/body/#root). Definir overflow-x sem
+   * tambem definir overflow-y faz o navegador converter o overflow-y implicito (visible)
+   * para auto (regra da spec de CSS) -- ou seja, o elemento vira um scroller proprio em vez
+   * do documento ser o unico scroller. No Safari do iOS isso e um gatilho classico e bem
+   * documentado de bugs de `position: fixed` (o elemento fixo passa a se posicionar
+   * relativo ao scroller aninhado, nao ao viewport real -- exatamente o tipo de "quase
+   * colado mas nao 100%" que a bottom nav mostrava). O Nectar Finance (mesmo dono, PWA
+   * comprovadamente 100% colado no iOS) nao tem NENHUMA regra de overflow em html/body/
+   * root -- deixa o documento ser o unico scroller, do jeito que o iOS espera.
+   */
   html,
   body {
     overscroll-behavior: none;
-    overflow-x: hidden;
     max-width: 100%;
   }
 
   body {
     @apply bg-surface-bg text-content-primary font-sans antialiased;
     overscroll-behavior: none;
-    overflow-x: hidden;
     position: relative;
     width: 100%;
   }
