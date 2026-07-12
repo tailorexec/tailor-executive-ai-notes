@@ -98,7 +98,7 @@
    O padding base de 1.5rem (equivalente ao antigo pt-6) ja vem embutido. */
 @layer utilities {
   .safe-top {
-    padding-top: calc(env(safe-area-inset-top) + 1.5rem);
+    padding-top: calc(env(safe-area-inset-top, 0px) + 1.5rem);
   }
   /* No PWA instalado (sem barra de endereco acima) o respiro fixo de 1.5rem fica isolado
      logo abaixo do notch/status bar e parece um vao sem funcao -- na aba normal do
@@ -106,21 +106,21 @@
      So reduz no modo instalado (display-mode: standalone), onde isso fica visivel. */
   @media (display-mode: standalone) {
     .safe-top {
-      padding-top: calc(env(safe-area-inset-top) + 0.5rem);
+      padding-top: calc(env(safe-area-inset-top, 0px) + 0.5rem);
     }
   }
   /* iOS: display-mode:standalone nem sempre e reportado no caminho apple-mobile-web-app-
      capable. `.ios-standalone` vem de navigator.standalone via JS (index.html) -- deteccao
      mais confiavel especifica da Apple para "app aberto pela tela de inicio". */
   html.ios-standalone .safe-top {
-    padding-top: calc(env(safe-area-inset-top) + 0.5rem);
+    padding-top: calc(env(safe-area-inset-top, 0px) + 0.5rem);
   }
   .safe-bottom {
-    padding-bottom: env(safe-area-inset-bottom);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
   /*
    * Rede de seguranca contra o "vazamento de fundo" abaixo da bottom nav no PWA instalado
-   * do iOS (relatado mesmo apos a correcao de env(safe-area-inset-bottom) via min-h-dvh).
+   * do iOS (relatado mesmo apos a correcao de env(safe-area-inset-bottom, 0px) via min-h-dvh).
    * Estende visualmente o fundo do nav bem alem da propria caixa com um box-shadow SOLIDO
    * (sem blur/spread): cobre qualquer gap de renderizacao logo abaixo dela, seja qual for a
    * causa exata (uma particularidade do WebKit que nao reproduzo fora de um iPhone real).
@@ -132,12 +132,12 @@
   }
   /* Respiro extra acima do indicador de home (iPhone) */
   .safe-bottom-2 {
-    padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
   }
   /* FAB da ANA: precisa ficar ACIMA da bottom nav (4rem) + area segura,
      senao a nav cobre o botao e ele fica "travado" (taps caem na nav). */
   .fab-above-nav {
-    bottom: calc(5.25rem + env(safe-area-inset-bottom));
+    bottom: calc(5.25rem + env(safe-area-inset-bottom, 0px));
   }
   @media (min-width: 768px) {
     .fab-above-nav {
@@ -147,7 +147,7 @@
   /* Espaco reservado para a bottom nav fixa + area segura inferior (mobile).
      No desktop nao ha bottom nav: volta ao respiro normal. */
   .pb-nav {
-    padding-bottom: calc(6.5rem + env(safe-area-inset-bottom));
+    padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
   }
   @media (min-width: 768px) {
     .pb-nav {
