@@ -29,6 +29,7 @@ import {
   listPendingRecordings,
   getPendingRecordingBlob,
   deletePendingRecording,
+  prunePendingRecordings,
 } from '../lib/audioStore'
 import { isSilentAudio } from '../lib/audioLevel'
 import { currentDevice } from '../lib/device'
@@ -80,6 +81,12 @@ export function Capture() {
   // Gravacoes de tentativas ANTERIORES (sessao/aba diferente) que ficaram sem processar.
   const [pendingRecordings, setPendingRecordings] = useState(() => listPendingRecordings())
   const [resumingKey, setResumingKey] = useState<string | null>(null)
+
+  // Descarta sozinho pendencias velhas (3 dias, mesma janela do retencao padrao de audio) antes
+  // de mostrar a lista: sem isto, uma gravacao que falhou de vez fica poluindo a tela para sempre.
+  useEffect(() => {
+    prunePendingRecordings().then(() => setPendingRecordings(listPendingRecordings()))
+  }, [])
 
   const autoStoppedRef = useRef(false)
   const isAudioMode = mode === 'record' || mode === 'meeting'

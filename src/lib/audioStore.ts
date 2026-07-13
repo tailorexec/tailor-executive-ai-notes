@@ -177,3 +177,20 @@ export async function deletePendingRecording(key: string): Promise<void> {
   delete list[key]
   writePendingMetaList(list)
 }
+
+/** Mesma janela do retencao padrao de audio (RETENTION_DEFAULT em types.ts): depois disso, uma
+ *  gravacao pendente que ninguem retomou vira lixo esquecido, nao uma rede de seguranca ativa. */
+const PENDING_MAX_AGE_DAYS = 3
+
+/**
+ * Descarta sozinho gravacoes pendentes velhas (o usuario nunca voltou para Retomar/Descartar).
+ * Sem isto, uma gravacao com falha permanente (ex.: audio realmente mudo) fica ocupando espaco
+ * e poluindo a tela de "gravacao nao processada" para sempre. Chamado ao abrir a tela de
+ * captura, antes de listar — silencioso, sem exigir acao do usuario.
+ */
+export async function prunePendingRecordings(): Promise<void> {
+  const cutoff = Date.now() - PENDING_MAX_AGE_DAYS * 24 * 60 * 60 * 1000
+  const list = readPendingMetaList()
+  const stale = Object.entries(list).filter(([, meta]) => new Date(meta.savedAt).getTime() < cutoff)
+  for (const [key] of stale) await deletePendingRecording(key)
+}
