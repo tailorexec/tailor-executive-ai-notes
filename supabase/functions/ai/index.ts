@@ -176,6 +176,21 @@ Deno.serve(async (req) => {
 
     const meta = { task, userId }
 
+    /**
+     * Sem isto, uma transcricao vazia (audio que falhou na transcricao, mas cuja nota ja foi
+     * criada) chegava aqui do mesmo jeito; a IA "alucinava" uma explicacao em portugues
+     * dizendo que nao recebeu dados, e essa explicacao era salva como se fosse o resumo/
+     * detalhado de verdade -- sem erro nenhum visivel para o usuario. Barra aqui, ANTES de
+     * gastar uma chamada, com um erro claro e reconhecivel.
+     */
+    const NEEDS_TRANSCRIPT = new Set(['summary', 'detailed', 'action_items', 'analysis', 'mindmap', 'feedback'])
+    if (NEEDS_TRANSCRIPT.has(task) && !transcript.trim()) {
+      return new Response(JSON.stringify({ error: 'A transcricao esta vazia. Nao ha o que processar.' }), {
+        status: 422,
+        headers: { ...cors, 'content-type': 'application/json' },
+      })
+    }
+
     /** Tarefa livre (sem transcript): system proprio, sem cache. */
     const ask = (model: string, system: string, content: unknown[], maxTokens = 1500) =>
       anthropic(model, system, content, maxTokens, meta)

@@ -14,6 +14,7 @@ const FRIENDLY = [
   'Sessao invalida',
   'nao conseguiu gerar',
   'verificar o orcamento',
+  'transcricao esta vazia',
 ]
 
 export function aiError(err: unknown, fallback: string): string {
