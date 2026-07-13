@@ -21,7 +21,7 @@ const PRICE_PER_SEC: Record<string, number> = {
   assemblyai: 0.37 / 3600, // com speaker labels
 }
 
-async function whisper(file: File): Promise<{ text: string; seconds: number }> {
+async function whisperOnce(file: File): Promise<{ text: string; seconds: number }> {
   const endpoint =
     PROVIDER === 'openai'
       ? 'https://api.openai.com/v1/audio/transcriptions'
@@ -38,6 +38,27 @@ async function whisper(file: File): Promise<{ text: string; seconds: number }> {
   if (!res.ok) throw new Error(`${PROVIDER} ${res.status}: ${await res.text()}`)
   const data = await res.json()
   return { text: data.text ?? '', seconds: Math.round(Number(data.duration) || 0) }
+}
+
+/**
+ * Achado investigando uma nota do usuario: um audio de 25min voltou com texto vazio (200 OK,
+ * sem erro), e o MESMO arquivo, reenviado depois pelo mesmo codigo, transcreveu perfeitamente
+ * (22 mil caracteres). Ou seja, o provedor as vezes devolve sucesso com texto vazio de forma
+ * transitoria -- nao e o audio que esta ruim. Para audio com duracao real, isso quase certamente
+ * NAO e silencio de verdade (quem chega aqui ja passou pelo filtro de audio silencioso no
+ * cliente); tenta de novo antes de desistir.
+ */
+async function whisper(file: File): Promise<{ text: string; seconds: number }> {
+  const MIN_SECONDS_TO_EXPECT_TEXT = 3
+  const MAX_ATTEMPTS = 3
+  let last: { text: string; seconds: number } | null = null
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const result = await whisperOnce(file)
+    last = result
+    if (result.text.trim() || result.seconds < MIN_SECONDS_TO_EXPECT_TEXT) return result
+    if (attempt < MAX_ATTEMPTS) await new Promise((r) => setTimeout(r, 1500 * attempt))
+  }
+  return last!
 }
 
 async function assemblyDiarize(file: File): Promise<{ text: string; seconds: number } | null> {
