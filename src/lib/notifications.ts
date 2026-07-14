@@ -1,3 +1,5 @@
+import { logClientError } from './auditLog'
+
 export interface NotifPrefs {
   shared: boolean // nova transcricao compartilhada comigo
   announcements: boolean // novidades e avisos
@@ -35,8 +37,14 @@ export function notify(title: string, body: string): void {
   if (notifSupported() && Notification.permission === 'granted') {
     try {
       new Notification(title, { body, icon: '/pwa-192.png' })
-    } catch {
-      /* ignore */
+    } catch (err) {
+      // O usuario nunca ve o popup nem sabe por que -- so aparece "sem lembrete".
+      logClientError({
+        severity: 'warning',
+        category: 'silent',
+        source: 'client:notifications',
+        message: err instanceof Error ? err.message : String(err),
+      })
     }
   }
 }

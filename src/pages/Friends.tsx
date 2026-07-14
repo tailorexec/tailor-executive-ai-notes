@@ -17,6 +17,7 @@ import { FRIEND_MSG_MAX, type FriendEdge, type FriendMessage, type PersonRef } f
 import { Avatar, ConfirmDialog, EmptyState, Sheet, Spinner } from '../components/ui'
 import { useToast } from '../components/Toast'
 import { useT } from '../lib/i18n'
+import { logSilentError } from '../lib/auditLog'
 
 const fullName = (p: PersonRef) => `${p.first_name} ${p.last_name}`.trim()
 
@@ -71,7 +72,8 @@ function ChatSheet({
       const m = await sendMessage(me, friend.id, body)
       setMsgs((prev) => [...(prev ?? []), m])
       setText('')
-    } catch {
+    } catch (err) {
+      logSilentError('client:Friends.send', err)
       toast(t('common.error'), 'error')
     } finally {
       setSending(false)
@@ -202,7 +204,8 @@ function AddFriendSheet({
       setResults(null)
       onInvited()
       onClose()
-    } catch {
+    } catch (err) {
+      logSilentError('client:Friends.add', err)
       toast(t('common.error'), 'error')
     } finally {
       setBusy(null)
@@ -275,8 +278,9 @@ export function FriendsPage() {
     if (!me) return
     listFriends(me)
       .then(setEdges)
-      .catch(() => {
+      .catch((err) => {
         setEdges([])
+        logSilentError('client:Friends.refresh', err)
         toast(t('common.error'), 'error')
       })
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -298,7 +302,8 @@ export function FriendsPage() {
       await fn()
       if (okMsg) toast(okMsg)
       refresh()
-    } catch {
+    } catch (err) {
+      logSilentError('client:Friends.run', err)
       toast(t('common.error'), 'error')
     } finally {
       setBusy(null)

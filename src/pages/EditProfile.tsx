@@ -6,6 +6,7 @@ import { Avatar, Spinner } from '../components/ui'
 import { useToast } from '../components/Toast'
 import { uploadAvatar } from '../lib/avatar'
 import { useT } from '../lib/i18n'
+import { logSilentError } from '../lib/auditLog'
 
 /** Aceita URL completa ou so o handle; guarda sempre a URL canonica. */
 function normalizeLinkedin(raw: string): string | null {
@@ -49,7 +50,8 @@ export function EditProfile() {
     try {
       const url = await uploadAvatar(profile.id, file)
       if (url) await updateProfile({ avatar_url: url })
-    } catch {
+    } catch (err) {
+      logSilentError('client:EditProfile.onPhoto', err)
       toast(t('common.error'), 'error')
     } finally {
       setUploading(false)
@@ -73,7 +75,8 @@ export function EditProfile() {
       })
       toast(t('profile.saved'))
       navigate('/config')
-    } catch {
+    } catch (err) {
+      logSilentError('client:EditProfile.save', err)
       toast(t('common.error'), 'error')
     } finally {
       setSaving(false)

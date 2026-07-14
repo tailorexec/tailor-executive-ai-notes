@@ -36,6 +36,7 @@ import { langLabel, LANGS } from '../lib/lang'
 import { useI18n } from '../lib/i18n'
 import { RETENTION_CHOICES, RETENTION_DEFAULT, type RetentionDays } from '../lib/types'
 import { friendsEnabled, unreadCount } from '../lib/friends'
+import { logSilentError } from '../lib/auditLog'
 import { APP_NAME, APP_VERSION } from '../lib/version'
 
 /**
@@ -124,7 +125,8 @@ export function Settings() {
     try {
       await updateProfile({ audio_retention_days: days })
       toast(t('settings.autoDeleteSaved'))
-    } catch {
+    } catch (err) {
+      logSilentError('client:Settings.applyRetention', err)
       toast(t('common.error'), 'error')
     }
   }

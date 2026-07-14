@@ -10,6 +10,37 @@ import { SettingsProvider } from './app/SettingsProvider'
 import { ToastProvider } from './components/Toast'
 import { I18nProvider } from './lib/i18n'
 import { initLang } from './lib/lang'
+import { ErrorBoundary } from './components/ErrorBoundary'
+import { logClientError } from './lib/auditLog'
+
+/**
+ * Hoje nao existe NENHUM catch-all de erro no cliente: um throw fora de um try/catch, ou uma
+ * promise rejeitada sem .catch, simplesmente desaparece (o usuario ve o sintoma -- tela travada,
+ * botao que nao faz nada -- sem que ninguem, nem o admin, saiba que aconteceu). Os `.catch(() =>
+ * {})` dentro de logClientError garantem que ESTES listeners nunca disparam um ao outro (senao
+ * seria um loop: falha ao logar -> unhandledrejection -> tenta logar de novo -> falha de novo).
+ */
+function setupGlobalErrorLogging() {
+  window.addEventListener('error', (event) => {
+    logClientError({
+      severity: 'error',
+      category: 'silent',
+      source: 'client:window',
+      message: event.message || 'Erro de script sem mensagem',
+      detail: { filename: event.filename, lineno: event.lineno },
+    })
+  })
+  window.addEventListener('unhandledrejection', (event) => {
+    const reason = event.reason
+    logClientError({
+      severity: 'error',
+      category: 'silent',
+      source: 'client:window',
+      message: reason instanceof Error ? reason.message : String(reason ?? 'unhandledrejection sem motivo'),
+      detail: reason instanceof Error ? { stack: reason.stack?.slice(0, 2000) } : undefined,
+    })
+  })
+}
 
 /**
  * O registro que a Vite injeta sozinha so escuta 'load' e nunca mais checa por uma versao
@@ -66,28 +97,37 @@ function sanitizeAuthStorage() {
       }
       if (corrupted) localStorage.removeItem(key)
     }
-  } catch {
-    /* ignore */
+  } catch (err) {
+    // Raro (localStorage bloqueado/indisponivel), mas ai a limpeza nem roda -- vale saber.
+    logClientError({
+      severity: 'warning',
+      category: 'silent',
+      source: 'client:bootstrap',
+      message: `sanitizeAuthStorage falhou: ${String(err)}`,
+    })
   }
 }
 
 sanitizeAuthStorage()
+setupGlobalErrorLogging()
 initLang()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ThemeProvider>
-      <BrowserRouter>
-        <AuthProvider>
-          <SettingsProvider>
-            <I18nProvider>
-              <ToastProvider>
-                <App />
-              </ToastProvider>
-            </I18nProvider>
-          </SettingsProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <SettingsProvider>
+              <I18nProvider>
+                <ToastProvider>
+                  <App />
+                </ToastProvider>
+              </I18nProvider>
+            </SettingsProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </ThemeProvider>
+    </ErrorBoundary>
   </StrictMode>,
 )

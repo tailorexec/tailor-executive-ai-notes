@@ -45,6 +45,8 @@ import { TranslateSheet } from './TranslateSheet'
 import { FolderSheet } from './FolderSheet'
 import { Sheet } from '../components/ui'
 import type { Folder } from '../lib/types'
+import { logSilentError } from '../lib/auditLog'
+import { stripInlineMd } from '../lib/textPreview'
 
 type Tab = 'summary' | 'detailed' | 'analysis' | 'transcript'
 
@@ -256,7 +258,8 @@ export function NoteDetail() {
       setNote(updated)
       setMenuOpen(false)
       toast(t('note.saved'))
-    } catch {
+    } catch (err) {
+      logSilentError('client:NoteDetail.setPriority', err)
       toast(t('common.error'), 'error')
     }
   }
@@ -747,17 +750,17 @@ function ProseBlock({ text, empty, mono }: { text: string; empty?: string; mono?
         const t = line.trim()
         if (!t) return <div key={i} className="h-2" />
         if (t.startsWith('## '))
-          return <h3 key={i} className="font-display font-semibold text-lg text-accent mt-4">{t.slice(3)}</h3>
+          return <h3 key={i} className="font-display font-semibold text-lg text-accent mt-4">{stripInlineMd(t.slice(3))}</h3>
         if (t.startsWith('# '))
-          return <h2 key={i} className="font-display font-bold text-xl mt-4">{t.slice(2)}</h2>
+          return <h2 key={i} className="font-display font-bold text-xl mt-4">{stripInlineMd(t.slice(2))}</h2>
         if (t.startsWith('- '))
           return (
             <div key={i} className="flex gap-2">
               <span className="text-accent mt-1.5 h-1.5 w-1.5 rounded-full bg-brand-solid shrink-0" />
-              <span>{t.slice(2)}</span>
+              <span>{stripInlineMd(t.slice(2))}</span>
             </div>
           )
-        return <p key={i}>{t}</p>
+        return <p key={i}>{stripInlineMd(t)}</p>
       })}
     </div>
   )

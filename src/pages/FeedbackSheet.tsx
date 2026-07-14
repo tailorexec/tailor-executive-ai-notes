@@ -8,6 +8,7 @@ import { useAuth } from '../auth/AuthProvider'
 import { useT } from '../lib/i18n'
 import { useToast } from '../components/Toast'
 import type { Note } from '../lib/types'
+import { logSilentError } from '../lib/auditLog'
 
 const AUDIENCES: { v: FeedbackAudience; label: string }[] = [
   { v: 'cliente', label: 'Cliente' },
@@ -56,7 +57,8 @@ export function FeedbackSheet({
       })
       setText(fb)
       if (profile) await db.logUsage(profile.id, 'ai_feedback', note.id)
-    } catch {
+    } catch (err) {
+      logSilentError('client:FeedbackSheet.generate', err)
       toast(t('common.error'), 'error')
     } finally {
       setLoading(false)

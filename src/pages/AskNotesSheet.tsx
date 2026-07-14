@@ -5,6 +5,7 @@ import { askAllNotes } from '../lib/ai'
 import { useT } from '../lib/i18n'
 import { useToast } from '../components/Toast'
 import type { Note } from '../lib/types'
+import { logSilentError } from '../lib/auditLog'
 
 export function AskNotesSheet({
   open,
@@ -34,7 +35,8 @@ export function AskNotesSheet({
         notes.map((n) => ({ title: n.title, created_at: n.created_at, summary: n.summary })),
       )
       setAnswer(a)
-    } catch {
+    } catch (err) {
+      logSilentError('client:AskNotesSheet.ask', err)
       toast(t('common.error'), 'error')
     } finally {
       setLoading(false)

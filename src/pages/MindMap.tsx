@@ -9,6 +9,7 @@ import { Spinner } from '../components/ui'
 import { MindMapView } from '../components/MindMapView'
 import { useToast } from '../components/Toast'
 import { useT } from '../lib/i18n'
+import { logClientError, logSilentError } from '../lib/auditLog'
 
 /** Pagina do mapa mental de uma nota. Gera na primeira vez e salva; nas proximas abre o salvo. */
 export function MindMapPage() {
@@ -23,7 +24,14 @@ export function MindMapPage() {
 
   useEffect(() => {
     if (!id) return
-    db.getNote(id).then(setNote).catch(() => setNote(null))
+    db.getNote(id)
+      .then(setNote)
+      .catch((err) => {
+        // Uma falha de rede vira exatamente a mesma tela de "nota nao encontrada" -- indistinguivel
+        // do caso real, sem isto.
+        logSilentError('client:MindMap.getNote', err)
+        setNote(null)
+      })
   }, [id])
 
   async function generate(current: Note) {
@@ -36,13 +44,21 @@ export function MindMapPage() {
       })
       // Um mapa sem ramos so serviria para travar a nota num mapa vazio: nao salva, deixa repetir.
       if (!hasMindMap(mindmap)) {
+        logClientError({
+          severity: 'warning',
+          category: 'system',
+          source: 'client:MindMap.generate',
+          message: 'IA devolveu mapa mental vazio (sem branches)',
+          note_id: current.id,
+        })
         toast(t('common.error'), 'error')
         return
       }
       const updated = await db.updateNote(current.id, { mindmap })
       if (profile) await db.logUsage(profile.id, 'ai_analysis', current.id)
       setNote(updated)
-    } catch {
+    } catch (err) {
+      logSilentError('client:MindMap.generate', err)
       toast(t('common.error'), 'error')
     } finally {
       setGenerating(false)

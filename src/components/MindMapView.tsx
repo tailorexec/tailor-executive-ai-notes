@@ -16,10 +16,33 @@ const W_C = 216, H_C = 66
 const W_B = 190, H_B = 58
 const W_CH = 178, H_CH = 60
 const COL_GAP = 94
-const SLOT = 78
+/** Banda vertical minima reservada por ramo (usada so quando ele nao tem filhos, ou como piso
+ *  geral) -- mesmo valor do antigo SLOT fixo, para manter a proporcao visual de mapas curtos. */
+const MIN_BAND = 78
+/** Espaco vertical entre filhos empilhados dentro do mesmo ramo. */
+const CHILD_GAP = 18
 
-type NodeBox = { kind: 'central' | 'branch' | 'child'; text: string; x: number; y: number; w: number; h: number; color: string }
+type Kind = 'central' | 'branch' | 'child'
+type NodeBox = { kind: Kind; text: string; lines: string[]; x: number; y: number; w: number; h: number; color: string }
 type Link = { x1: number; y1: number; x2: number; y2: number; color: string; dir: 'l' | 'r' }
+
+/**
+ * Cards tinham altura FIXA e cortavam o texto com "…" quando nao cabia. Em vez de truncar,
+ * o card cresce em altura para caber o texto (a IA ja e instruida a ser concisa; isto e so a
+ * rede de seguranca para quando um ponto realmente precisa de mais espaco). maxLines aqui e uma
+ * folga generosa, nao o limite normal -- so um texto MUITO fora do comum ainda seria cortado.
+ */
+const FS: Record<Kind, number> = { central: 15, branch: 13.5, child: 12 }
+const MAX_CHARS: Record<Kind, number> = { central: 22, branch: 24, child: 26 }
+const MAX_LINES: Record<Kind, number> = { central: 3, branch: 4, child: 6 }
+const PAD_V: Record<Kind, number> = { central: 30, branch: 25.6, child: 16.8 }
+const BASE_H: Record<Kind, number> = { central: H_C, branch: H_B, child: H_CH }
+
+function measureNode(kind: Kind, text: string): { lines: string[]; h: number } {
+  const lines = wrapLines(text, MAX_CHARS[kind], MAX_LINES[kind])
+  const h = Math.max(BASE_H[kind], PAD_V[kind] + lines.length * FS[kind] * 1.2)
+  return { lines, h }
+}
 
 function buildLayout(map: MindMap) {
   const branches = map.branches ?? []
@@ -27,10 +50,20 @@ function buildLayout(map: MindMap) {
   const left: { b: MindMap['branches'][number]; ci: number }[] = []
   branches.forEach((b, i) => (i % 2 === 0 ? right : left).push({ b, ci: i }))
 
-  const bandH = (b: MindMap['branches'][number]) => Math.max(1, b.children.length) * SLOT
+  // Banda reservada para o ramo: cabe a pilha de filhos (cada um com sua altura real) OU a
+  // altura do proprio titulo do ramo, o que for maior -- nunca menos que MIN_BAND sem filhos.
+  function bandH(b: MindMap['branches'][number]): number {
+    const branchH = measureNode('branch', b.title).h
+    if (!b.children.length) return Math.max(branchH, MIN_BAND)
+    const contentH =
+      b.children.reduce((s, c) => s + measureNode('child', c).h, 0) + (b.children.length - 1) * CHILD_GAP
+    return Math.max(branchH, contentH)
+  }
+
   const rH = right.reduce((s, x) => s + bandH(x.b), 0)
   const lH = left.reduce((s, x) => s + bandH(x.b), 0)
-  const totalH = Math.max(rH, lH, H_C + SLOT)
+  const cm = measureNode('central', map.central)
+  const totalH = Math.max(rH, lH, cm.h + MIN_BAND)
 
   const leftHasKids = left.some((x) => x.b.children.length > 0)
   const rightHasKids = right.some((x) => x.b.children.length > 0)
@@ -45,7 +78,16 @@ function buildLayout(map: MindMap) {
   const cCenterY = P + totalH / 2
 
   const nodes: NodeBox[] = [
-    { kind: 'central', text: map.central, x: cLeftX, y: cCenterY - H_C / 2, w: W_C, h: H_C, color: CENTRAL_COLOR },
+    {
+      kind: 'central',
+      text: map.central,
+      lines: cm.lines,
+      x: cLeftX,
+      y: cCenterY - cm.h / 2,
+      w: W_C,
+      h: cm.h,
+      color: CENTRAL_COLOR,
+    },
   ]
   const links: Link[] = []
 
@@ -58,7 +100,8 @@ function buildLayout(map: MindMap) {
       const branchY = bandTop + h / 2
       const color = PALETTE[ci % PALETTE.length]
       const branchX = side === 'r' ? cRightX + COL_GAP : cLeftX - COL_GAP - W_B
-      nodes.push({ kind: 'branch', text: b.title, x: branchX, y: branchY - H_B / 2, w: W_B, h: H_B, color })
+      const bm = measureNode('branch', b.title)
+      nodes.push({ kind: 'branch', text: b.title, lines: bm.lines, x: branchX, y: branchY - bm.h / 2, w: W_B, h: bm.h, color })
 
       links.push({
         x1: side === 'r' ? cRightX : cLeftX,
@@ -69,10 +112,17 @@ function buildLayout(map: MindMap) {
         dir: side,
       })
 
-      b.children.forEach((c, i) => {
-        const childY = bandTop + i * SLOT + SLOT / 2
-        const childX = side === 'r' ? branchX + W_B + COL_GAP : branchX - COL_GAP - W_CH
-        nodes.push({ kind: 'child', text: c, x: childX, y: childY - H_CH / 2, w: W_CH, h: H_CH, color })
+      // Filhos empilhados com altura propria, centralizados na banda (que pode ser maior que a
+      // soma deles, quando quem manda no tamanho da banda e o titulo do ramo).
+      const childMeasures = b.children.map((c) => measureNode('child', c))
+      const childrenContentH =
+        childMeasures.reduce((s, m) => s + m.h, 0) + Math.max(0, childMeasures.length - 1) * CHILD_GAP
+      const childX = side === 'r' ? branchX + W_B + COL_GAP : branchX - COL_GAP - W_CH
+      let cursor = bandTop + (h - childrenContentH) / 2
+      childMeasures.forEach((m, i) => {
+        const childY = cursor + m.h / 2
+        cursor += m.h + CHILD_GAP
+        nodes.push({ kind: 'child', text: b.children[i], lines: m.lines, x: childX, y: childY - m.h / 2, w: W_CH, h: m.h, color })
         links.push({
           x1: side === 'r' ? branchX + W_B : branchX,
           y1: branchY,
@@ -127,14 +177,11 @@ function wrapLines(text: string, maxChars: number, maxLines: number): string[] {
 
 function Card({ n }: { n: NodeBox }) {
   const isChild = n.kind === 'child'
-  const fs = n.kind === 'central' ? 15 : n.kind === 'branch' ? 13.5 : 12
-  const maxChars = n.kind === 'central' ? 22 : n.kind === 'branch' ? 24 : 26
-  const maxLines = isChild ? 3 : 2
-  const lines = wrapLines(n.text, maxChars, maxLines)
+  const fs = FS[n.kind]
   const lh = fs * 1.2
   const rx = n.kind === 'central' ? 16 : n.kind === 'branch' ? 12 : 10
   const cy = n.y + n.h / 2
-  const startY = cy - ((lines.length - 1) * lh) / 2
+  const startY = cy - ((n.lines.length - 1) * lh) / 2
   const tx = isChild ? n.x + 14 : n.x + n.w / 2
   const anchor = isChild ? 'start' : 'middle'
   return (
@@ -149,7 +196,7 @@ function Card({ n }: { n: NodeBox }) {
         stroke={isChild ? n.color : 'none'}
         strokeWidth={isChild ? 2 : 0}
       />
-      {lines.map((ln, i) => (
+      {n.lines.map((ln, i) => (
         <text
           key={i}
           x={tx}

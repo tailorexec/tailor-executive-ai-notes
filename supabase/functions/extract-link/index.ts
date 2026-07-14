@@ -12,7 +12,7 @@
 
 // @ts-nocheck  (ambiente Deno)
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
-import { callerId, cors } from '../_shared/guard.ts'
+import { callerId, cors, logAuditServer } from '../_shared/guard.ts'
 
 const MAX_REDIRECTS = 3
 const TIMEOUT_MS = 8000
@@ -83,8 +83,15 @@ async function resolvesToPrivateIp(host: string): Promise<boolean> {
     if (a.some((ip) => isPrivateIPv4(ip))) return true
     const aaaa = await Deno.resolveDns(host, 'AAAA').catch(() => [] as string[])
     if (aaaa.some((ip) => isPrivateIPv6(ip))) return true
-  } catch {
-    /* API indisponivel neste runtime: sem essa camada extra, mas as demais continuam valendo */
+  } catch (err) {
+    // Sem esta camada extra a protecao contra IP privado degrada silenciosamente -- e um
+    // evento raro que vale o admin saber, mesmo sem atribuir a um usuario especifico.
+    await logAuditServer({
+      severity: 'warning',
+      category: 'security',
+      source: 'edge:extract-link',
+      message: `Guard de SSRF: Deno.resolveDns indisponivel (${String(err).slice(0, 200)})`,
+    })
   }
   return false
 }
@@ -200,9 +207,11 @@ function htmlToText(html: string): string {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
+  let userId: string | null = null
   try {
     // Sem usuario autenticado esta funcao viraria um proxy aberto para qualquer um.
-    if (!(await callerId(req))) return json({ error: 'Sessao invalida. Entre novamente.' }, 401)
+    userId = await callerId(req)
+    if (!userId) return json({ error: 'Sessao invalida. Entre novamente.' }, 401)
 
     const { url } = await req.json()
     if (typeof url !== 'string' || !url) return json({ error: 'URL invalida (use http/https).' }, 400)
@@ -233,6 +242,13 @@ Deno.serve(async (req) => {
     if (!text) return json({ error: 'Nao consegui extrair texto desta pagina.' }, 400)
     return json({ text, title })
   } catch (err) {
+    await logAuditServer({
+      severity: 'error',
+      category: 'system',
+      source: 'edge:extract-link',
+      message: String(err).slice(0, 500),
+      user_id: userId,
+    })
     return json({ error: `Falha ao buscar o link: ${String(err)}` }, 500)
   }
 })

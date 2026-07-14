@@ -5,6 +5,7 @@ import { translateText } from '../lib/ai'
 import { useT } from '../lib/i18n'
 import { useToast } from '../components/Toast'
 import type { Note } from '../lib/types'
+import { logSilentError } from '../lib/auditLog'
 
 export function TranslateSheet({
   note,
@@ -35,7 +36,8 @@ export function TranslateSheet({
     setText('')
     try {
       setText(await translateText(source, lang))
-    } catch {
+    } catch (err) {
+      logSilentError('client:TranslateSheet.run', err)
       toast(t('common.error'), 'error')
     } finally {
       setLoading(false)

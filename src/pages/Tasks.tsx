@@ -10,6 +10,7 @@ import { fmtDate } from '../lib/format'
 import { ConfirmDialog, EmptyState, NoteCardSkeleton, Chip, Sheet, Spinner } from '../components/ui'
 import { useToast } from '../components/Toast'
 import { useT } from '../lib/i18n'
+import { logSilentError } from '../lib/auditLog'
 
 /** Uma linha da lista: item de acao de uma nota, ou tarefa avulsa (note = null). */
 type Row = { key: string; item: ActionItem; note: Note | null; task: Task | null }
@@ -41,8 +42,9 @@ export function TasksPage() {
     if (!profile) return
     db.listNotes(profile.id)
       .then(setNotes)
-      .catch(() => {
+      .catch((err) => {
         setNotes([])
+        logSilentError('client:Tasks.listNotes', err)
         toast(t('common.error'), 'error')
       })
 
@@ -96,7 +98,8 @@ export function TasksPage() {
       const items = note.action_items.map((a) => (a.id === itemId ? { ...a, done: !a.done } : a))
       const updated = await db.updateNote(noteId, { action_items: items })
       setNotes(notes.map((n) => (n.id === noteId ? updated : n)))
-    } catch {
+    } catch (err) {
+      logSilentError('client:Tasks.toggleNoteItem', err)
       toast(t('common.error'), 'error')
     } finally {
       setBusy(null)
@@ -108,7 +111,8 @@ export function TasksPage() {
     try {
       const updated = await setTaskDone(tk.id, !tk.done)
       setTasks((prev) => prev.map((x) => (x.id === tk.id ? updated : x)))
-    } catch {
+    } catch (err) {
+      logSilentError('client:Tasks.toggleTask', err)
       toast(t('common.error'), 'error')
     } finally {
       setBusy(null)
@@ -121,7 +125,8 @@ export function TasksPage() {
       await deleteTask(id)
       setTasks((prev) => prev.filter((x) => x.id !== id))
       toast(t('tasks.deleted'))
-    } catch {
+    } catch (err) {
+      logSilentError('client:Tasks.removeTask', err)
       toast(t('common.error'), 'error')
     } finally {
       setBusy(null)
@@ -139,7 +144,8 @@ export function TasksPage() {
       setDue('')
       setNewOpen(false)
       toast(t('tasks.created'))
-    } catch {
+    } catch (err) {
+      logSilentError('client:Tasks.submitTask', err)
       toast(t('common.error'), 'error')
     } finally {
       setSaving(false)

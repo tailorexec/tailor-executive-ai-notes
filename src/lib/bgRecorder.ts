@@ -1,4 +1,5 @@
 import { Capacitor, registerPlugin } from '@capacitor/core'
+import { logClientError } from './auditLog'
 
 interface StopResult {
   path: string
@@ -55,7 +56,16 @@ export const bgRecorder = {
       parts.push(b64ToBuffer(data))
       offset += read
     }
-    await BgRecorder.discard({ path: info.path }).catch(() => {})
+    // Falhar aqui deixa um arquivo temporario orfao no dispositivo (vazamento de storage aos
+    // poucos) -- raro, mas ninguem fica sabendo hoje.
+    await BgRecorder.discard({ path: info.path }).catch((err) =>
+      logClientError({
+        severity: 'warning',
+        category: 'silent',
+        source: 'client:bgRecorder',
+        message: err instanceof Error ? err.message : String(err),
+      }),
+    )
     return {
       blob: new Blob(parts, { type: info.mimeType || 'audio/mp4' }),
       durationSeconds: info.durationSeconds,

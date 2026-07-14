@@ -5,7 +5,7 @@
 
 // @ts-nocheck  (ambiente Deno)
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
-import { callerId, checkBudget, cors, guardResponse, logUsage } from '../_shared/guard.ts'
+import { callerId, checkBudget, cors, guardResponse, logAuditServer, logUsage } from '../_shared/guard.ts'
 
 const PROVIDER = Deno.env.get('TRANSCRIPTION_PROVIDER') ?? 'groq'
 const ASSEMBLYAI_API_KEY = Deno.env.get('ASSEMBLYAI_API_KEY')
@@ -102,8 +102,9 @@ async function assemblyDiarize(file: File): Promise<{ text: string; seconds: num
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
+  let userId: string | null = null
   try {
-    const userId = await callerId(req)
+    userId = await callerId(req)
     const guard = await checkBudget(userId)
     if (!guard.ok) return guardResponse(guard)
 
@@ -151,6 +152,13 @@ Deno.serve(async (req) => {
       headers: { ...cors, 'content-type': 'application/json' },
     })
   } catch (err) {
+    await logAuditServer({
+      severity: 'error',
+      category: 'system',
+      source: 'edge:transcribe',
+      message: String(err).slice(0, 500),
+      user_id: userId,
+    })
     return new Response(JSON.stringify({ error: String(err) }), {
       status: 500,
       headers: { ...cors, 'content-type': 'application/json' },

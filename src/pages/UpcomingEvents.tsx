@@ -5,7 +5,7 @@ import {
   startCalendarConnect,
   finishCalendarConnect,
   disconnectCalendar,
-  isCalendarConnected,
+  disconnectCalendarServer,
   listUpcomingEvents,
   type CalEvent,
   type CalError,
@@ -23,7 +23,10 @@ const PAGE_MODE_MAX = 50
 export function UpcomingEvents({ mode = 'card' }: { mode?: 'card' | 'page' }) {
   const isPage = mode === 'page'
   const [events, setEvents] = useState<CalEvent[]>([])
-  const [needsAuth, setNeedsAuth] = useState(!isCalendarConnected())
+  // Otimista: comeca "conectado" mesmo sem token local -- o efeito abaixo sempre tenta renovar
+  // em silencio via servidor (refresh_token e por CONTA, nao por navegador/dispositivo) antes
+  // de decidir que precisa mesmo pedir para conectar de novo.
+  const [needsAuth, setNeedsAuth] = useState(false)
   const [loading, setLoading] = useState(false)
   const [eventsOpen, setEventsOpen] = useState(false)
   const [error, setError] = useState<CalError | null>(null)
@@ -67,14 +70,14 @@ export function UpcomingEvents({ mode = 'card' }: { mode?: 'card' | 'page' }) {
           toast('Google Calendar conectado')
           refresh()
         } else {
+          setNeedsAuth(true)
           setError({ key: 'common.errorGeneric', detail: res.error })
         }
         return
       }
-      if (isCalendarConnected()) {
-        setNeedsAuth(false)
-        refresh()
-      }
+      // Sempre tenta: mesmo sem token local, o servidor pode renovar sozinho via refresh_token
+      // salvo de uma conexao anterior (outro navegador/dispositivo, ou so o token de 1h expirou).
+      refresh()
     })()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -89,7 +92,10 @@ export function UpcomingEvents({ mode = 'card' }: { mode?: 'card' | 'page' }) {
     }
   }
 
-  function disconnect() {
+  async function disconnect() {
+    // A limpeza local acontece de qualquer forma; o servidor (revoga + apaga o refresh_token)
+    // e melhor esforco -- sem isto o Calendario voltaria sozinho na proxima vez.
+    await disconnectCalendarServer()
     disconnectCalendar()
     setNeedsAuth(true)
     setEvents([])
@@ -291,7 +297,7 @@ export function UpcomingEvents({ mode = 'card' }: { mode?: 'card' | 'page' }) {
           )}
 
           {errorBlock && <div className="mb-3">{errorBlock}</div>}
-          <button className="btn-primary w-full" onClick={() => setEventsOpen(true)}>
+          <button className="btn-primary w-full" onClick={() => navigate('/agenda')}>
             <CalendarDays size={18} /> {t('events.see')}
           </button>
         </>

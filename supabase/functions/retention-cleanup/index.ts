@@ -1,7 +1,7 @@
 // Edge Function: limpeza de audio por retencao (executada diariamente pelo pg_cron).
 // Remove o audio de notas com keep_audio=false e mais de N dias, mantendo a transcricao.
 // N vem do "Periodo de auto-delete" do usuario (profiles.audio_retention_days: 3, 7 ou 14).
-// Tambem esvazia a lixeira e o chat efemero entre amigos.
+// Tambem esvazia a lixeira, o chat efemero entre amigos e poda o log de auditoria.
 // Protegida por header x-cron-secret == CRON_SECRET. Deploy com --no-verify-jwt.
 
 // @ts-nocheck  (ambiente Deno)
@@ -12,6 +12,8 @@ const DEFAULT_RETENTION_DAYS = 3 // para quem nunca mexeu na opcao
 const RETENTION_CHOICES = [3, 7, 14]
 const TRASH_DAYS = 7 // lixeira -> exclusao definitiva
 const CHAT_DAYS = 7 // mensagens entre amigos
+const AUDIT_LOG_SHORT_DAYS = 30 // audit_log: info/warning (volume alto, valor baixo com o tempo)
+const AUDIT_LOG_LONG_DAYS = 90 // audit_log: error/critical (vale manter mais tempo pra revisao)
 const BUCKET = 'recordings'
 
 const daysAgo = (d: number) => new Date(Date.now() - d * 86400000).toISOString()
@@ -94,7 +96,28 @@ Deno.serve(async (req) => {
     .delete({ count: 'exact' })
     .lt('created_at', daysAgo(CHAT_DAYS))
 
-  return new Response(JSON.stringify({ ok: true, removed, purged, chatPurged: chatPurged ?? 0 }), {
-    headers: { 'content-type': 'application/json' },
-  })
+  // Log de auditoria: sem isto a tabela cresce sem limite (mesmo problema que api_usage tem
+  // hoje). Severidade baixa (info/warning) some rapido; error/critical fica mais tempo, pois
+  // e o que realmente importa revisitar depois.
+  const { count: auditPurgedLow } = await admin
+    .from('audit_log')
+    .delete({ count: 'exact' })
+    .in('severity', ['info', 'warning'])
+    .lt('created_at', daysAgo(AUDIT_LOG_SHORT_DAYS))
+  const { count: auditPurgedHigh } = await admin
+    .from('audit_log')
+    .delete({ count: 'exact' })
+    .in('severity', ['error', 'critical'])
+    .lt('created_at', daysAgo(AUDIT_LOG_LONG_DAYS))
+
+  return new Response(
+    JSON.stringify({
+      ok: true,
+      removed,
+      purged,
+      chatPurged: chatPurged ?? 0,
+      auditPurged: (auditPurgedLow ?? 0) + (auditPurgedHigh ?? 0),
+    }),
+    { headers: { 'content-type': 'application/json' } },
+  )
 })

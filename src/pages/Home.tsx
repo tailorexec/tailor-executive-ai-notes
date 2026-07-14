@@ -20,6 +20,7 @@ import {
   Image as ImageIcon,
 } from 'lucide-react'
 import { AnaIcon } from '../components/AnaIcon'
+import { logSilentError } from '../lib/auditLog'
 import { useAuth } from '../auth/AuthProvider'
 import { db } from '../lib/api'
 import type { Note, Folder } from '../lib/types'
@@ -92,7 +93,8 @@ export function Home() {
       await db.deleteNote(target.id)
       setNotes((prev) => (prev ? prev.filter((x) => x.id !== target.id) : prev))
       toast(t('home.deleted'))
-    } catch {
+    } catch (err) {
+      logSilentError('client:Home.confirmDelete', err)
       toast(t('common.error'), 'error')
     }
   }
@@ -116,8 +118,9 @@ export function Home() {
       } catch {
         /* ignore */
       }
-    }).catch(() => {
+    }).catch((err) => {
       setNotes([])
+      logSilentError('client:Home.listNotes', err)
       toast(t('common.error'), 'error')
     })
     db.listFolders(profile.id).then(setFolderList).catch(() => {})

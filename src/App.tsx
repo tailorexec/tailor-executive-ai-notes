@@ -25,6 +25,7 @@ import { AnalyticsPage, ConnectorsPage } from './pages/ComingSoon'
 import { About } from './pages/About'
 import { EditProfile } from './pages/EditProfile'
 import { ApiMonitor } from './pages/ApiMonitor'
+import { AuditLogPage } from './pages/AuditLog'
 import type { ReactNode } from 'react'
 
 function FullscreenLoader() {
@@ -104,6 +105,14 @@ export default function App() {
           element={
             <AdminOnly>
               <ApiMonitor />
+            </AdminOnly>
+          }
+        />
+        <Route
+          path="/admin/audit"
+          element={
+            <AdminOnly>
+              <AuditLogPage />
             </AdminOnly>
           }
         />

@@ -2,8 +2,9 @@
 // (PWA sem push server-side: os lembretes disparam com o app aberto/em segundo plano.)
 
 import { getNotifPrefs, notify } from './notifications'
-import { isCalendarConnected, listUpcomingEvents } from './googleCalendar'
+import { listUpcomingEvents } from './googleCalendar'
 import { getLang } from './lang'
+import { logClientError } from './auditLog'
 
 const REMIND_WINDOW_MIN = 15 // avisa quando faltar entre 0 e 15 min para o evento
 const POLL_MS = 3 * 60 * 1000 // reconsulta a cada 3 min
@@ -34,12 +35,17 @@ function texts(title: string, mins: number): { t: string; b: string } {
 /** Inicia o verificador de lembretes. Retorna funcao de limpeza. */
 export function startCalendarReminders(): () => void {
   let stopped = false
+  let lastFailureLogged = false // evita logar a mesma falha recorrente a cada 3min
 
   async function tick() {
     if (stopped) return
     try {
-      if (!isCalendarConnected() || !getNotifPrefs().calendar) return
-      const { events } = await listUpcomingEvents(10)
+      if (!getNotifPrefs().calendar) return
+      // listUpcomingEvents ja tenta renovar o token sozinho (refresh_token no servidor); se
+      // mesmo assim precisar de reconexao, needsAuth vem true e so pulamos este ciclo.
+      const { needsAuth, events } = await listUpcomingEvents(10)
+      if (needsAuth) return
+      lastFailureLogged = false
       const now = Date.now()
       const seen = getSeen()
       let changed = false
@@ -57,8 +63,18 @@ export function startCalendarReminders(): () => void {
         }
       }
       if (changed) saveSeen(seen)
-    } catch {
-      /* ignore (falha de rede/quota nao deve quebrar o app) */
+    } catch (err) {
+      // Falha de rede/quota nao deve quebrar o app (por isso engolida aqui) -- mas o usuario
+      // fica sem lembretes sem saber por que; loga uma vez por falha, nao a cada 3min.
+      if (!lastFailureLogged) {
+        lastFailureLogged = true
+        logClientError({
+          severity: 'warning',
+          category: 'silent',
+          source: 'client:calendarReminders',
+          message: err instanceof Error ? err.message : String(err),
+        })
+      }
     }
   }
 

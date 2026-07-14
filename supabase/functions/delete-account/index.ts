@@ -1,6 +1,7 @@
 // Exclusao definitiva da propria conta (exigida pela Google Play e pela Apple).
 // O usuario so pode excluir a SI MESMO: o id vem do JWT, nunca do body.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { logAuditServer } from '../_shared/guard.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -64,6 +65,15 @@ Deno.serve(async (req) => {
 
     return json({ ok: true })
   } catch (e) {
+    // Falha aqui pode deixar dados orfaos no meio de uma exclusao (storage/tabelas ja
+    // parcialmente apagados) -- vale severidade alta, nao um erro comum de request.
+    await logAuditServer({
+      severity: 'critical',
+      category: 'system',
+      source: 'edge:delete-account',
+      message: (e instanceof Error ? e.message : String(e)).slice(0, 500),
+      user_id: userId,
+    })
     return json({ error: e instanceof Error ? e.message : 'falha ao excluir conta' }, 500)
   }
 })

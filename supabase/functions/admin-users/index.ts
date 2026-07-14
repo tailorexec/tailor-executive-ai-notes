@@ -5,6 +5,7 @@
 // @ts-nocheck  (ambiente Deno)
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { logAuditServer } from '../_shared/guard.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -21,6 +22,7 @@ function json(body: unknown, status = 200) {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
+  let callerId: string | null = null
   try {
     const url = Deno.env.get('SUPABASE_URL')!
     const service = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -32,6 +34,7 @@ Deno.serve(async (req) => {
     const { data: userData } = await admin.auth.getUser(jwt)
     const caller = userData?.user
     if (!caller) return json({ error: 'Nao autenticado.' }, 401)
+    callerId = caller.id
 
     const { data: prof } = await admin.from('profiles').select('role,email').eq('id', caller.id).single()
     const isAdmin = prof?.role === 'admin' || (prof?.email ?? '').toLowerCase() === ADMIN_EMAIL
@@ -67,6 +70,13 @@ Deno.serve(async (req) => {
 
     return json({ error: 'Acao invalida.' }, 400)
   } catch (err) {
+    await logAuditServer({
+      severity: 'error',
+      category: 'system',
+      source: 'edge:admin-users',
+      message: String(err).slice(0, 500),
+      user_id: callerId,
+    })
     return json({ error: String(err) }, 500)
   }
 })

@@ -48,6 +48,9 @@ const MAX_VIDEO_MB = 25
 
 const STEPS = ['Transcrevendo audio', 'Gerando resumo', 'Extraindo action items', 'Finalizando'] as const
 
+/** Intervalo dos checkpoints de gravacao em andamento (ver useEffect de checkpoint abaixo). */
+const CHECKPOINT_MS = 20_000
+
 export function Capture() {
   const [params] = useSearchParams()
   const mode = (params.get('mode') as Mode) || 'record'
@@ -191,6 +194,57 @@ export function Capture() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recorder.ended])
+
+  /**
+   * Rede de seguranca contra perder a gravacao INTEIRA se o navegador travar, a aba fechar
+   * sozinha ou o computador desligar ANTES do usuario clicar em Encerrar: sem isto, o audio
+   * so existe em memoria (o MediaRecorder so entrega dados no stop()) e some com a aba.
+   * So roda na gravacao pelo navegador (nativo no Android ja grava direto em arquivo, em
+   * disco, sobrevivendo a app fechar).
+   */
+  const lastCheckpointSizeRef = useRef(0)
+  useEffect(() => {
+    if (useNative || (recState !== 'recording' && recState !== 'paused')) return
+    if (!pendingKeyRef.current) pendingKeyRef.current = uid('rec_')
+    const pendingKey = pendingKeyRef.current
+    const today = new Date().toLocaleDateString('pt-BR')
+
+    const tick = async () => {
+      const blob = recorder.snapshot()
+      // So regrava quando ha audio novo desde o ultimo checkpoint (evita gravar o mesmo
+      // blob repetidas vezes no IndexedDB enquanto pausado ou sem novidade).
+      if (!blob || blob.size === 0 || blob.size === lastCheckpointSizeRef.current) return
+      lastCheckpointSizeRef.current = blob.size
+      await savePendingRecording(pendingKey, blob, {
+        mode,
+        type: 'recording',
+        title,
+        template,
+        context,
+        diarize,
+        duration: recSeconds,
+        fallbackTitle: mode === 'meeting' ? `Reuniao ${today}` : `Gravacao ${today}`,
+        skipAudioStore: false,
+        skipActionItems: false,
+        savedAt: new Date().toISOString(),
+      })
+    }
+    const id = window.setInterval(tick, CHECKPOINT_MS)
+    return () => window.clearInterval(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [useNative, recState])
+
+  // Avisa antes de fechar/recarregar a aba durante uma gravacao: reduz a causa mais comum de
+  // "gravacao interrompida" (fechar sem querer). Os checkpoints acima cobrem o que passar disso.
+  useEffect(() => {
+    if (useNative || (recState !== 'recording' && recState !== 'paused')) return
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [useNative, recState])
 
   // Arquivo vindo do menu "Compartilhar" do Android: processa direto, sem o usuario
   // precisar escolher de novo. Nao mostra o aviso de gravacao (nos nao gravamos nada aqui).

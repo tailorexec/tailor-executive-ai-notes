@@ -61,6 +61,55 @@ export async function logUsage(row: Record<string, unknown>) {
   }
 }
 
+const AUDIT_DETAIL_MAX_CHARS = 4000
+
+/** Corta o `detail` pra caber sem quebrar o JSON (nunca trunca a string bruta no meio de um objeto). */
+function capDetail(detail?: Record<string, unknown> | null): Record<string, unknown> | null {
+  if (!detail) return null
+  try {
+    const json = JSON.stringify(detail)
+    if (json.length <= AUDIT_DETAIL_MAX_CHARS) return detail
+    return { truncated: true, preview: json.slice(0, AUDIT_DETAIL_MAX_CHARS - 200) }
+  } catch {
+    return { truncated: true, preview: String(detail).slice(0, 500) }
+  }
+}
+
+export interface AuditLogRow {
+  severity: 'info' | 'warning' | 'error' | 'critical'
+  category: 'system' | 'user' | 'silent' | 'security'
+  source: string
+  message: string
+  detail?: Record<string, unknown> | null
+  user_id?: string | null
+  note_id?: string | null
+  route?: string | null
+  user_agent?: string | null
+}
+
+/**
+ * So para uso SERVER-TO-SERVER (a propria edge function, que ja tem adminClient() aberto) --
+ * grava direto no Postgres, sem round-trip HTTP. Chamada no catch de TODAS as edge functions,
+ * entao um insert pendurado (rede lenta, Postgres ocupado) NAO PODE virar um request pendurado
+ * em qualquer caminho de erro do app -- daí o timeout via Promise.race, diferente de logUsage
+ * (que so grava uma vez, no caminho feliz). Nunca lanca: uma falha aqui nunca deve piorar o
+ * erro original que estava sendo registrado.
+ */
+export async function logAuditServer(row: AuditLogRow): Promise<void> {
+  try {
+    const admin = adminClient()
+    if (!admin) return
+    const insert = admin.from('audit_log').insert({
+      ...row,
+      message: String(row.message ?? '').slice(0, 2000),
+      detail: capDetail(row.detail),
+    })
+    await Promise.race([insert, new Promise((resolve) => setTimeout(resolve, 1500))])
+  } catch (_) {
+    /* nunca derruba quem chamou */
+  }
+}
+
 export interface GuardResult {
   ok: boolean
   status?: number
@@ -79,6 +128,22 @@ const BUDGET_UNAVAILABLE: GuardResult = {
 }
 
 /**
+ * O medidor de gasto quebrando e, por definicao, um erro que NINGUEM ve hoje (o usuario so
+ * recebe "tente de novo"; nenhum admin sabe que a contabilidade parou de funcionar). Loga como
+ * 'critical'/'silent' antes de devolver o sentinela, pra nao repetir a mesma logica 3x.
+ */
+async function budgetUnavailable(userId: string | null, reason: string): Promise<GuardResult> {
+  await logAuditServer({
+    severity: 'critical',
+    category: 'silent',
+    source: 'edge:guard.checkBudget',
+    message: `Medidor de orcamento indisponivel: ${reason}`,
+    user_id: userId,
+  })
+  return BUDGET_UNAVAILABLE
+}
+
+/**
  * Roda os freios antes de gastar dinheiro. Se o medidor falhar, BARRA a chamada (fail-closed):
  * a alternativa antiga (deixar passar) significa que uma falha do PROPRIO medidor vira gasto
  * sem teto e sem registro, sem nenhum aviso visivel ate a fatura chegar. Um erro ocasional
@@ -88,15 +153,15 @@ export async function checkBudget(userId: string | null): Promise<GuardResult> {
   if (!userId) return { ok: false, status: 401, error: 'Sessao invalida. Entre novamente.' }
 
   const admin = adminClient()
-  if (!admin) return BUDGET_UNAVAILABLE
+  if (!admin) return budgetUnavailable(userId, 'service role indisponivel')
 
   let g: Record<string, number | boolean>
   try {
     const { data, error } = await admin.rpc('usage_guard', { p_user: userId })
-    if (error || !data) return BUDGET_UNAVAILABLE
+    if (error || !data) return budgetUnavailable(userId, error?.message ?? 'RPC usage_guard sem dados')
     g = data as Record<string, number | boolean>
-  } catch (_) {
-    return BUDGET_UNAVAILABLE
+  } catch (err) {
+    return budgetUnavailable(userId, String(err))
   }
 
   if (g.ai_enabled === false) {

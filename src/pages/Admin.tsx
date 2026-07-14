@@ -13,6 +13,7 @@ import {
   Trash2,
   LifeBuoy,
   Activity,
+  ScrollText,
   ChevronRight,
 } from 'lucide-react'
 import { db } from '../lib/api'
@@ -322,6 +323,21 @@ export function Admin() {
             <span className="min-w-0 flex-1">
               <span className="block font-medium">Monitoramento da API</span>
               <span className="block text-sm text-content-muted">Tokens, custo em USD e KPIs por periodo</span>
+            </span>
+            <ChevronRight size={18} className="text-content-muted shrink-0" />
+          </button>
+
+          {/* Log de auditoria: erros gerais, silenciosos, de usuario e de seguranca (somente admin) */}
+          <button
+            onClick={() => navigate('/admin/audit')}
+            className="card w-full mt-3 flex items-center gap-3 px-4 py-4 text-left hover:border-accent/40 transition-colors"
+          >
+            <span className="grid place-items-center h-10 w-10 rounded-xl bg-accent/10 text-accent shrink-0">
+              <ScrollText size={18} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-medium">Log de auditoria</span>
+              <span className="block text-sm text-content-muted">Erros gerais, silenciosos, de usuario e de seguranca</span>
             </span>
             <ChevronRight size={18} className="text-content-muted shrink-0" />
           </button>

@@ -36,6 +36,52 @@ export function disconnectCalendar(): void {
   localStorage.removeItem(STORE)
 }
 
+/**
+ * Desconecta de verdade: revoga o refresh_token guardado no servidor e apaga o registro (sem
+ * isto, o Calendario voltaria sozinho na proxima vez, ja que o refresh_token e por CONTA, nao
+ * por navegador). Melhor esforco -- o disconnectCalendar() local sempre acontece de qualquer
+ * forma, entao uma falha aqui nao deixa o usuario preso no fluxo de desconectar.
+ */
+export async function disconnectCalendarServer(): Promise<void> {
+  if (!supabase) return
+  try {
+    await supabase.functions.invoke('google-oauth', { body: { action: 'disconnect' } })
+  } catch {
+    /* melhor esforco */
+  }
+}
+
+/**
+ * Renova o access_token em silencio (sem reabrir a tela do Google), usando o refresh_token
+ * guardado no servidor desde a ultima vez que o usuario autorizou -- em qualquer navegador
+ * ou dispositivo, ja que o refresh_token e salvo por conta.
+ */
+async function refreshAccessToken(): Promise<string | null> {
+  if (!supabase) return null
+  try {
+    const { data, error } = await supabase.functions.invoke('google-oauth', { body: { action: 'refresh' } })
+    if (error) return null
+    const d = data as { access_token?: string; expires_in?: number }
+    if (!d.access_token) return null
+    localStorage.setItem(
+      STORE,
+      JSON.stringify({ token: d.access_token, exp: Date.now() + (d.expires_in ? d.expires_in * 1000 : 3300000) }),
+    )
+    return d.access_token
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Token valido para usar AGORA: o do navegador (se ainda nao expirou) ou, senao, um novo via
+ * refresh_token no servidor. So volta null (pedindo reconexao) se nem isso funcionar -- ex.:
+ * o usuario nunca conectou, ou revogou o acesso direto no Google.
+ */
+async function getValidToken(): Promise<string | null> {
+  return storedToken() ?? (await refreshAccessToken())
+}
+
 /* ---------------------------------------------------------------------------
  * Fluxo AUTHORIZATION CODE por redirect (funciona no celular e no PWA).
  * 1) startCalendarConnect() manda a pagina para o Google (response_type=code).
@@ -65,7 +111,10 @@ export function startCalendarConnect(): { ok: boolean; error?: string } {
     response_type: 'code',
     scope: SCOPE,
     include_granted_scopes: 'true',
-    access_type: 'online',
+    // 'offline' + prompt=consent (abaixo): o Google emite um refresh_token, guardado no
+    // servidor (google-oauth) para renovar o access_token em silencio depois -- sem isto, so
+    // dava pra ter um access_token de ~1h, sem jeito de renovar sem reabrir esta tela.
+    access_type: 'offline',
     state,
     // Permite escolher/trocar a conta e reexibe o consentimento.
     prompt: 'select_account consent',
@@ -145,7 +194,7 @@ async function fetchWithTimeout(url: string, init: RequestInit): Promise<Respons
 export async function listUpcomingEvents(
   max = 5,
 ): Promise<{ needsAuth: boolean; events: CalEvent[]; error?: CalError }> {
-  const token = storedToken()
+  const token = await getValidToken()
   if (!token) return { needsAuth: true, events: [] }
 
   // O navegador ja sabe que nao ha rede: nem tenta (e evita o "TypeError: Load failed").

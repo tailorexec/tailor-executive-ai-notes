@@ -18,6 +18,7 @@ import {
   slugify,
 } from '../lib/share'
 import { downloadAudio } from '../lib/audioStore'
+import { logSilentError } from '../lib/auditLog'
 import { useToast } from '../components/Toast'
 
 function WhatsAppIcon({ size = 20 }: { size?: number }) {
@@ -83,7 +84,8 @@ export function ShareSheet({
         : [...fresh.shared_with, id]
       const updated = await db.updateNote(note.id, { shared_with: shared })
       onUpdated(updated)
-    } catch {
+    } catch (err) {
+      logSilentError('client:ShareSheet.togglePartner', err)
       toast(t('common.error'), 'error')
     } finally {
       setSavingShare(false)
@@ -95,7 +97,8 @@ export function ShareSheet({
       await copyToClipboard(note)
       setCopied(true)
       setTimeout(() => setCopied(false), 1500)
-    } catch {
+    } catch (err) {
+      logSilentError('client:ShareSheet.onCopy', err)
       toast(t('common.error'), 'error')
     }
   }

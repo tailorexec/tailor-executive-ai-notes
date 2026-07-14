@@ -10,7 +10,7 @@
 
 // @ts-nocheck  (ambiente Deno; tipos resolvidos no runtime do Supabase)
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
-import { callerId, checkBudget, cors, guardResponse, logUsage } from '../_shared/guard.ts'
+import { callerId, checkBudget, cors, guardResponse, logAuditServer, logUsage } from '../_shared/guard.ts'
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!
 const HAIKU = 'claude-haiku-4-5-20251001'
@@ -49,6 +49,8 @@ const GUARD =
 const BASE_SYSTEM =
   'Voce e um assistente executivo que trabalha sobre transcricoes de reunioes, em portugues do Brasil.' +
   ' Nunca invente informacoes: use apenas o material fornecido. Siga exatamente o formato pedido na instrucao.' +
+  ' Formatacao: texto plano, sem negrito, italico ou codigo (nunca use **, __, * ou `); o unico markdown aceito' +
+  ' e o pedido explicitamente na instrucao (titulos com # ou ##, bullets comecando com "- ").' +
   GUARD
 
 function wrap(transcript: string): string {
@@ -163,13 +165,16 @@ function requireJsonObject<T>(text: string, what: string): T {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
+  // Fora do try: usados no catch para o log de auditoria saber quem/o que estava rodando.
+  let userId: string | null = null
+  let task = ''
   try {
-    const userId = await callerId(req)
+    userId = await callerId(req)
     const guard = await checkBudget(userId)
     if (!guard.ok) return guardResponse(guard)
 
     const body = await req.json()
-    const task = String(body.task ?? '')
+    task = String(body.task ?? '')
     const transcript = (body.transcript as string) ?? ''
     const hint = themeHint(body.template as string, body.context as string)
     let out: Record<string, unknown> = {}
@@ -210,7 +215,9 @@ Deno.serve(async (req) => {
     if (task === 'summary') {
       const text = await askOnTranscript(
         HAIKU,
-        `Resuma a reuniao em 5 a 8 bullets objetivos comecando com "- ", destacando decisoes e proximos passos.${hint}`,
+        `Resuma a reuniao em 5 a 8 bullets curtos e objetivos comecando com "- ", destacando decisoes e proximos passos.` +
+          ' Este e o resumo rapido: va direto ao ponto, uma ideia por bullet, sem elaborar ou justificar' +
+          ` (o detalhamento fica para outro campo, gerado separadamente).${hint}`,
         800,
       )
       out = { summary: text.trim() }
@@ -241,7 +248,10 @@ Foque em: tom, perguntas feitas e sugeridas, ritmo/andamento, pontos fortes, mel
     } else if (task === 'mindmap') {
       const text = await askOnTranscript(
         HAIKU,
-        `Crie um mapa mental do conteudo. Responda APENAS com JSON no formato exato: {"central":string,"branches":[{"title":string,"children":string[]}]}. Use de 3 a 6 branches, cada uma com 2 a 5 filhos curtos.${hint}`,
+        `Crie um mapa mental do conteudo. Responda APENAS com JSON no formato exato: {"central":string,"branches":[{"title":string,"children":string[]}]}.` +
+          ' Use de 3 a 6 branches, cada uma com 2 a 5 filhos. Va direto ao ponto, sem repetir palavras do titulo' +
+          ' do ramo dentro dos filhos: "central" ate 4 palavras, "title" de cada branch ate 5 palavras, cada item' +
+          ` de "children" uma frase curta (ate 10 palavras) com uma unica ideia.${hint}`,
         1500,
       )
       out = { mindmap: requireJsonObject(text, 'o mapa mental') }
@@ -378,6 +388,14 @@ Foque em: tom, perguntas feitas e sugeridas, ritmo/andamento, pontos fortes, mel
       headers: { ...cors, 'content-type': 'application/json' },
     })
   } catch (err) {
+    await logAuditServer({
+      severity: 'error',
+      category: 'system',
+      source: 'edge:ai',
+      message: String(err).slice(0, 500),
+      detail: { task },
+      user_id: userId,
+    })
     return new Response(JSON.stringify({ error: String(err) }), {
       status: 500,
       headers: { ...cors, 'content-type': 'application/json' },

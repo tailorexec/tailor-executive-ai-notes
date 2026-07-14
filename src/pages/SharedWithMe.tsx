@@ -9,6 +9,8 @@ import { fmtDate } from '../lib/format'
 import { Avatar, EmptyState, NoteCardSkeleton, PriorityBadge } from '../components/ui'
 import { useToast } from '../components/Toast'
 import { useT } from '../lib/i18n'
+import { logSilentError } from '../lib/auditLog'
+import { toPreviewText } from '../lib/textPreview'
 
 export function SharedWithMePage() {
   const { profile } = useAuth()
@@ -32,9 +34,10 @@ export function SharedWithMePage() {
         setNotes(shared)
         setAuthors(people)
       })
-      .catch(() => {
+      .catch((err) => {
         if (!alive) return
         setNotes([])
+        logSilentError('client:SharedWithMe', err)
         toast(t('common.error'), 'error')
       })
 
@@ -74,7 +77,7 @@ export function SharedWithMePage() {
               <li key={n.id}>
                 <button
                   onClick={() => navigate(`/nota/${n.id}`)}
-                  className="note-card w-full text-left p-4 flex flex-col gap-3"
+                  className="note-card card w-full text-left p-4 flex flex-col gap-3 hover:shadow-hover transition-all"
                 >
                   <div className="flex items-start gap-2 min-w-0">
                     <p className="font-display font-semibold flex-1 min-w-0 truncate">{n.title}</p>
@@ -83,7 +86,9 @@ export function SharedWithMePage() {
                   </div>
 
                   {n.summary && (
-                    <p className="text-sm text-content-secondary line-clamp-2 leading-snug">{n.summary}</p>
+                    <p className="text-sm text-content-secondary line-clamp-2 leading-snug">
+                      {toPreviewText(n.summary)}
+                    </p>
                   )}
 
                   <div className="flex items-center gap-2 min-w-0 border-t border-surface-border pt-2.5">

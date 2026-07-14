@@ -3,6 +3,7 @@ import { db } from '../lib/api'
 import type { SignUpInput } from '../lib/db'
 import type { Profile, ProfilePatch } from '../lib/types'
 import { isAdminEmail } from '../lib/config'
+import { logClientError } from '../lib/auditLog'
 
 interface AuthCtx {
   profile: Profile | null
@@ -23,6 +24,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     db.getCurrentProfile()
       .then(setProfile)
+      .catch((err) => {
+        // Sem isto, uma falha aqui deixava profile=null em silencio -- o usuario parece
+        // deslogado sem nenhuma explicacao, e nem o admin ficava sabendo.
+        logClientError({
+          severity: 'error',
+          category: 'silent',
+          source: 'client:auth',
+          message: err instanceof Error ? err.message : String(err),
+        })
+      })
       .finally(() => setLoading(false))
   }, [])
 

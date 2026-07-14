@@ -277,7 +277,11 @@ export function useRecorder() {
           })
         }
         mediaRef.current = recorder
-        recorder.start()
+        // Timeslice de 1s: sem isso, o MediaRecorder so entrega dados no stop() -- se o
+        // navegador travar/fechar/perder energia antes do usuario clicar em Encerrar, a
+        // gravacao inteira se perderia (nada existe em memoria para salvar). Com o timeslice,
+        // `snapshot()` sempre tem o audio capturado ate agora, permitindo checkpoints.
+        recorder.start(1000)
 
         elapsedBeforePauseRef.current = 0
         setSeconds(0)
@@ -327,6 +331,13 @@ export function useRecorder() {
     setLevel(0)
   }, [])
 
+  /** Retrata o audio capturado ATE AGORA, sem parar a gravacao -- usado para checkpoints
+   *  periodicos (a gravacao so vira Blob final de verdade no stop()). */
+  const snapshot = useCallback((): Blob | null => {
+    if (!chunksRef.current.length) return null
+    return new Blob(chunksRef.current, { type: mimeRef.current })
+  }, [])
+
   const stop = useCallback((): Promise<RecorderResult> => {
     return new Promise((resolve) => {
       if (mediaRef.current && mediaRef.current.state !== 'inactive') {
@@ -358,5 +369,6 @@ export function useRecorder() {
     pause,
     resume,
     stop,
+    snapshot,
   }
 }
