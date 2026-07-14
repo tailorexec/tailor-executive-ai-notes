@@ -20,19 +20,30 @@ function client() {
   return supabase
 }
 
-/** Remove sessao persistida (auto-recuperacao de estado corrompido no navegador). */
+/** Remove sessao persistida (auto-recuperacao de estado corrompido no navegador). A sessao
+ *  pode estar em localStorage OU sessionStorage (ver "manter conectado" em lib/supabase.ts). */
 function purgeAuthStorage() {
-  try {
-    Object.keys(localStorage)
-      .filter((k) => k.startsWith('sb-'))
-      .forEach((k) => localStorage.removeItem(k))
-  } catch {
-    /* ignore */
+  for (const store of [localStorage, sessionStorage]) {
+    try {
+      Object.keys(store)
+        .filter((k) => k.startsWith('sb-'))
+        .forEach((k) => store.removeItem(k))
+    } catch {
+      /* ignore */
+    }
   }
 }
 
-function isFetchHeaderError(e: unknown): boolean {
-  return e instanceof TypeError || /ISO-8859-1|headers|fetch/i.test((e as Error)?.message ?? '')
+/**
+ * So a corrupcao especifica ja vista (residuo de sessao antiga com bytes fora de ISO-8859-1 no
+ * header) justifica apagar a sessao. ANTES isto tambem casava com `e instanceof TypeError` --
+ * ou seja, QUALQUER falha de rede passageira (comum ao abrir o app Windows/PWA logo apos o
+ * dispositivo acordar, antes da rede subir de vez) apagava um token perfeitamente valido e
+ * derrubava o login sem motivo real. Uma falha de rede deve so falhar esta tentativa, nunca
+ * apagar a sessao.
+ */
+function isCorruptedSessionError(e: unknown): boolean {
+  return /ISO-8859-1/i.test((e as Error)?.message ?? '')
 }
 
 function rowToProfile(r: Record<string, unknown>): Profile {
@@ -55,17 +66,30 @@ function rowToProfile(r: Record<string, unknown>): Profile {
 export const supabaseDb: Db = {
   async getCurrentProfile() {
     const sb = client()
-    try {
-      const { data: auth } = await sb.auth.getUser()
-      if (!auth.user) return null
-      const { data, error } = await sb.from('profiles').select('*').eq('id', auth.user.id).single()
-      if (error || !data) return null
-      return rowToProfile(data)
-    } catch (e) {
-      // Sessao corrompida no navegador -> limpa e recomeca sem sessao.
-      if (isFetchHeaderError(e)) purgeAuthStorage()
-      return null
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const { data: auth } = await sb.auth.getUser()
+        if (!auth.user) return null
+        const { data, error } = await sb.from('profiles').select('*').eq('id', auth.user.id).single()
+        if (error || !data) return null
+        return rowToProfile(data)
+      } catch (e) {
+        // Sessao com residuo corrompido (bug ja visto) -> limpa e recomeca sem sessao.
+        if (isCorruptedSessionError(e)) {
+          purgeAuthStorage()
+          return null
+        }
+        // Falha de rede passageira (ex.: app Windows/PWA abrindo logo apos o dispositivo
+        // acordar, antes da rede subir): tenta mais uma vez antes de desistir. O token
+        // continua guardado -- so a rede ainda nao respondeu, nao ha motivo pra deslogar.
+        if (attempt === 0) {
+          await new Promise((r) => setTimeout(r, 800))
+          continue
+        }
+        return null
+      }
     }
+    return null
   },
 
   async signIn(email, password) {
@@ -90,7 +114,7 @@ export const supabaseDb: Db = {
       if (!profile) throw new Error('Perfil nao encontrado.')
       return profile
     } catch (e) {
-      if (isFetchHeaderError(e)) {
+      if (isCorruptedSessionError(e)) {
         purgeAuthStorage()
         throw new Error(
           'Nao foi possivel conectar ao servidor. Verifique sua conexao e as chaves do Supabase no ambiente de deploy.',
@@ -128,7 +152,7 @@ export const supabaseDb: Db = {
       if (res.error) throw new Error(res.error.message)
       data = res.data
     } catch (e) {
-      if (isFetchHeaderError(e)) {
+      if (isCorruptedSessionError(e)) {
         purgeAuthStorage()
         throw new Error('Nao foi possivel conectar ao servidor. Verifique sua conexao e as chaves do Supabase.')
       }

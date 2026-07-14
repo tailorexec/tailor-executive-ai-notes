@@ -74,28 +74,31 @@ function setupServiceWorkerUpdates() {
 
 setupServiceWorkerUpdates()
 
-// Remove sessoes corrompidas no localStorage (residuo de tentativas antigas) que
-// causavam "String contains non ISO-8859-1 code point" ao montar headers do fetch.
+// Remove sessoes corrompidas (residuo de tentativas antigas) que causavam "String contains
+// non ISO-8859-1 code point" ao montar headers do fetch. A sessao pode estar em localStorage
+// OU sessionStorage, dependendo do "manter conectado" (ver lib/supabase.ts).
 function sanitizeAuthStorage() {
   try {
-    for (const key of Object.keys(localStorage)) {
-      if (!key.startsWith('sb-')) continue
-      const value = localStorage.getItem(key) ?? ''
-      let corrupted = false
-      for (let i = 0; i < value.length; i++) {
-        if (value.codePointAt(i)! > 255) {
-          corrupted = true
-          break
+    for (const store of [localStorage, sessionStorage]) {
+      for (const key of Object.keys(store)) {
+        if (!key.startsWith('sb-')) continue
+        const value = store.getItem(key) ?? ''
+        let corrupted = false
+        for (let i = 0; i < value.length; i++) {
+          if (value.codePointAt(i)! > 255) {
+            corrupted = true
+            break
+          }
         }
-      }
-      if (!corrupted) {
-        try {
-          JSON.parse(value)
-        } catch {
-          corrupted = true
+        if (!corrupted) {
+          try {
+            JSON.parse(value)
+          } catch {
+            corrupted = true
+          }
         }
+        if (corrupted) store.removeItem(key)
       }
-      if (corrupted) localStorage.removeItem(key)
     }
   } catch (err) {
     // Raro (localStorage bloqueado/indisponivel), mas ai a limpeza nem roda -- vale saber.

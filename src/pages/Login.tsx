@@ -20,6 +20,7 @@ import { useT } from '../lib/i18n'
 import { Logo } from '../components/Logo'
 import { Spinner } from '../components/ui'
 import { config } from '../lib/config'
+import { setRememberMe } from '../lib/supabase'
 import { WINDOWS_APP_DOWNLOAD_URL } from '../lib/windowsApp'
 
 /** Os 4 pilares da referencia. */
@@ -64,6 +65,7 @@ export function Login() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [downloadOpen, setDownloadOpen] = useState(false)
+  const [keepSignedIn, setKeepSignedIn] = useState(true)
 
   // A tela de login tem MODO UNICO (escuro). Forca o tema enquanto ela existe e
   // devolve o tema do usuario ao sair. Por isso nao ha botao de light/dark aqui.
@@ -81,6 +83,7 @@ export function Login() {
     setError(null)
     setLoading(true)
     try {
+      setRememberMe(keepSignedIn)
       await signIn(email, password)
       navigate('/', { replace: true })
     } catch (err) {
@@ -230,6 +233,16 @@ export function Login() {
                   </button>
                 </div>
               </div>
+
+              <label className="flex items-center gap-2.5 text-sm text-white/75 select-none cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={keepSignedIn}
+                  onChange={(e) => setKeepSignedIn(e.target.checked)}
+                  className="h-4 w-4 rounded border-white/30 bg-white/[0.04] accent-brand-solid"
+                />
+                {t('login.keepSignedIn')}
+              </label>
 
               {error && (
                 <div className="text-sm text-white bg-brand-solid/20 border border-brand-solid/50 rounded-xl px-4 py-3">

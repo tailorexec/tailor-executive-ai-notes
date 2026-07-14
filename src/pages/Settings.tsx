@@ -177,6 +177,9 @@ export function Settings() {
     <div className="px-5 safe-top">
       <header className="flex items-center justify-between mb-6">
         <h1 className="font-display text-3xl font-bold">{t('settings.title')}</h1>
+        <span className="text-xs font-medium text-content-muted bg-surface-elevated border border-surface-border rounded-full px-2.5 py-1 shrink-0">
+          {APP_VERSION}
+        </span>
       </header>
 
       <button
