@@ -5,10 +5,11 @@
 /* ---- Theme tokens (light default, dark override) ---- */
 @layer base {
   :root {
-    --surface-bg: 255 255 255;      /* branco puro */
+    --surface-bg: 247 248 250;      /* cinza bem claro: pagina (branco puro deixava tudo achatado) */
     --surface-card: 255 255 255;    /* cards brancos: destacam do fundo pela sombra (shadow-card) + borda */
     --surface-elevated: 244 245 247;/* cinza bem claro: inputs, botoes secundarios, chips e icones */
     --surface-border: 228 228 232;  /* borda sutil, um pouco mais definida sobre o branco */
+    --surface-sidebar: 238 239 242; /* sidebar/bottom nav: levemente mais escuro que o fundo da pagina */
 
     --content-primary: 10 10 11;    /* near-ink text */
     --content-secondary: 74 74 78;
@@ -30,6 +31,7 @@
     --surface-card: 22 22 25;       /* #161619 cards, menu */
     --surface-elevated: 30 30 34;   /* #1E1E22 inputs, busca, botoes */
     --surface-border: 54 54 61;     /* #36363D */
+    --surface-sidebar: 22 22 25;    /* igual ao card no escuro -- so o modo claro precisava separar */
 
     --content-primary: 255 255 255;
     --content-secondary: 200 200 206;/* #C8C8CE */
@@ -135,7 +137,7 @@
    * a causa real for outra.
    */
   .nav-bg-bleed {
-    box-shadow: 0 100px 0 0 rgb(var(--surface-card) / 0.95);
+    box-shadow: 0 100px 0 0 rgb(var(--surface-sidebar) / 0.95);
   }
   /* Respiro extra acima do indicador de home (iPhone) */
   .safe-bottom-2 {

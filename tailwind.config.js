@@ -31,6 +31,7 @@ export default {
           card: 'rgb(var(--surface-card) / <alpha-value>)',
           elevated: 'rgb(var(--surface-elevated) / <alpha-value>)',
           border: 'rgb(var(--surface-border) / <alpha-value>)',
+          sidebar: 'rgb(var(--surface-sidebar) / <alpha-value>)',
         },
         content: {
           primary: 'rgb(var(--content-primary) / <alpha-value>)',

@@ -66,7 +66,7 @@ function Sidebar({ onCollapse }: { onCollapse: () => void }) {
   const [newOpen, setNewOpen] = useState(false)
 
   return (
-    <aside className="hidden md:flex fixed inset-y-0 left-0 w-64 flex-col overflow-y-auto border-r border-surface-border bg-surface-card z-40">
+    <aside className="hidden md:flex fixed inset-y-0 left-0 w-64 flex-col overflow-y-auto border-r border-surface-border bg-surface-sidebar z-40">
       <button
         onClick={onCollapse}
         aria-label={t('sidebar.hide')}
@@ -189,7 +189,7 @@ function BottomNav() {
   const [newOpen, setNewOpen] = useState(false)
 
   return (
-    <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 safe-bottom nav-bg-bleed bg-surface-card/95 backdrop-blur border-t border-surface-border">
+    <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 safe-bottom nav-bg-bleed bg-surface-sidebar/95 backdrop-blur border-t border-surface-border">
       <div className="mx-auto max-w-2xl">
         <div className="relative flex items-center h-16 px-2">
           <NavItem to="/" icon={<Home size={20} />} label={t('nav.notes')} />

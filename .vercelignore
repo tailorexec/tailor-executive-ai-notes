@@ -1,0 +1,12 @@
+# O deploy web so precisa do codigo-fonte (Vite builda dentro do proprio Vercel). Nada abaixo
+# entra no site -- sao artefatos/pastas de OUTRAS frentes (Windows/Android) que, sem isto, o
+# Vercel tenta subir junto e estoura o limite de 100MB por arquivo.
+release/
+build/
+android/
+electron/
+assets/
+apk-out/
+*.exe
+*.apk
+*.aab
