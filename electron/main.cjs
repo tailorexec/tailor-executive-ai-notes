@@ -14,110 +14,137 @@ const ICON_PATH = path.join(__dirname, '..', 'build', 'icon.ico')
 let mainWindow = null
 let tray = null
 
-function createWindow() {
-  mainWindow = new BrowserWindow({
-    width: 1280,
-    height: 860,
-    minWidth: 960,
-    minHeight: 640,
-    icon: ICON_PATH,
-    autoHideMenuBar: true,
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.cjs'),
-      contextIsolation: true,
-      nodeIntegration: false,
-    },
+/**
+ * Sem isto, clicar no atalho do app de novo enquanto ele ja esta rodando (minimizado na
+ * bandeja -- o usuario so achou que tinha fechado) abre um SEGUNDO processo, que disputa com o
+ * primeiro o mesmo arquivo de sessao local no disco. O segundo processo perde essa disputa e
+ * abre "deslogado" mesmo com uma sessao valida gravada -- e exatamente o bug de "fechar o app
+ * desconecta a conta" relatado, so que o gatilho real e abrir de novo, nao fechar.
+ * requestSingleInstanceLock() garante que so existe UM processo: uma segunda tentativa de
+ * abrir so foca a janela do processo original, sem nunca competir pelo mesmo storage.
+ */
+const gotSingleInstanceLock = app.requestSingleInstanceLock()
+
+if (!gotSingleInstanceLock) {
+  app.quit()
+} else {
+  // Uma segunda tentativa de abrir (usuario clicou no atalho de novo) so foca a janela que ja
+  // existe -- nunca cria um segundo processo.
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore()
+      mainWindow.show()
+      mainWindow.focus()
+    } else {
+      createWindow()
+    }
   })
 
-  mainWindow.loadURL(APP_URL)
-
-  // Fechar a janela minimiza pra bandeja em vez de encerrar o processo -- e o que permite o
-  // atalho global funcionar mesmo com a janela "fechada" (o usuario so quis tirar da tela).
-  mainWindow.on('close', (event) => {
-    if (app.isQuitting) return
-    event.preventDefault()
-    mainWindow.hide()
-  })
-
-  mainWindow.on('closed', () => {
-    mainWindow = null
-  })
-}
-
-/** Traz a janela pra frente e avisa o site (via preload) que o atalho de gravar foi pressionado. */
-function triggerRecordHotkey() {
-  if (!mainWindow) {
-    createWindow()
-    mainWindow.webContents.once('did-finish-load', () => mainWindow.webContents.send('ana:hotkey-record'))
-    return
-  }
-  if (mainWindow.isMinimized()) mainWindow.restore()
-  mainWindow.show()
-  mainWindow.focus()
-  mainWindow.webContents.send('ana:hotkey-record')
-}
-
-function createTray() {
-  let icon = nativeImage.createFromPath(ICON_PATH)
-  if (!icon.isEmpty()) icon = icon.resize({ width: 16, height: 16 })
-  tray = new Tray(icon)
-  tray.setToolTip('ANA by Tailor')
-  tray.setContextMenu(
-    Menu.buildFromTemplate([
-      { label: 'Abrir ANA', click: () => (mainWindow ? mainWindow.show() : createWindow()) },
-      { label: 'Gravar reunião (Ctrl+Shift+G)', click: triggerRecordHotkey },
-      { type: 'separator' },
-      {
-        label: 'Sair',
-        click: () => {
-          app.isQuitting = true
-          app.quit()
-        },
+  function createWindow() {
+    mainWindow = new BrowserWindow({
+      width: 1280,
+      height: 860,
+      minWidth: 960,
+      minHeight: 640,
+      icon: ICON_PATH,
+      autoHideMenuBar: true,
+      webPreferences: {
+        preload: path.join(__dirname, 'preload.cjs'),
+        contextIsolation: true,
+        nodeIntegration: false,
       },
-    ]),
-  )
-  tray.on('click', () => (mainWindow ? mainWindow.show() : createWindow()))
-}
+    })
 
-app.whenReady().then(() => {
-  // Autoriza getDisplayMedia() (usado pelo "Gravar Meet" do site) SEM o dialogo de escolha
-  // do sistema operacional: grava a tela toda + audio do sistema (loopback) direto. Resolve o
-  // maior ponto de atrito da gravacao de reuniao (escolher a aba certa, lembrar de marcar
-  // "compartilhar audio") -- so acontece aqui dentro do app nativo, um navegador comum sempre
-  // exige esse dialogo por seguranca.
-  session.defaultSession.setDisplayMediaRequestHandler(
-    (_request, callback) => {
-      desktopCapturer
-        .getSources({ types: ['screen'] })
-        .then((sources) => callback({ video: sources[0], audio: 'loopback' }))
-        .catch(() => callback({}))
-    },
-    { useSystemPicker: false },
-  )
+    mainWindow.loadURL(APP_URL)
 
-  createWindow()
-  createTray()
+    // Fechar a janela minimiza pra bandeja em vez de encerrar o processo -- e o que permite o
+    // atalho global funcionar mesmo com a janela "fechada" (o usuario so quis tirar da tela).
+    mainWindow.on('close', (event) => {
+      if (app.isQuitting) return
+      event.preventDefault()
+      mainWindow.hide()
+    })
 
-  const registered = globalShortcut.register(RECORD_HOTKEY, triggerRecordHotkey)
-  if (!registered) {
-    // Outro programa ja usa este atalho no Windows do usuario -- nao trava o app por isso,
-    // so fica sem o atalho global (a bandeja/menu ainda funcionam).
-    console.warn(`Nao foi possivel registrar o atalho ${RECORD_HOTKEY} (em uso por outro app).`)
+    mainWindow.on('closed', () => {
+      mainWindow = null
+    })
   }
 
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+  /** Traz a janela pra frente e avisa o site (via preload) que o atalho de gravar foi pressionado. */
+  function triggerRecordHotkey() {
+    if (!mainWindow) {
+      createWindow()
+      mainWindow.webContents.once('did-finish-load', () => mainWindow.webContents.send('ana:hotkey-record'))
+      return
+    }
+    if (mainWindow.isMinimized()) mainWindow.restore()
+    mainWindow.show()
+    mainWindow.focus()
+    mainWindow.webContents.send('ana:hotkey-record')
+  }
+
+  function createTray() {
+    let icon = nativeImage.createFromPath(ICON_PATH)
+    if (!icon.isEmpty()) icon = icon.resize({ width: 16, height: 16 })
+    tray = new Tray(icon)
+    tray.setToolTip('ANA by Tailor')
+    tray.setContextMenu(
+      Menu.buildFromTemplate([
+        { label: 'Abrir ANA', click: () => (mainWindow ? mainWindow.show() : createWindow()) },
+        { label: 'Gravar reunião (Ctrl+Shift+G)', click: triggerRecordHotkey },
+        { type: 'separator' },
+        {
+          label: 'Sair',
+          click: () => {
+            app.isQuitting = true
+            app.quit()
+          },
+        },
+      ]),
+    )
+    tray.on('click', () => (mainWindow ? mainWindow.show() : createWindow()))
+  }
+
+  app.whenReady().then(() => {
+    // Autoriza getDisplayMedia() (usado pelo "Gravar Meet" do site) SEM o dialogo de escolha
+    // do sistema operacional: grava a tela toda + audio do sistema (loopback) direto. Resolve o
+    // maior ponto de atrito da gravacao de reuniao (escolher a aba certa, lembrar de marcar
+    // "compartilhar audio") -- so acontece aqui dentro do app nativo, um navegador comum sempre
+    // exige esse dialogo por seguranca.
+    session.defaultSession.setDisplayMediaRequestHandler(
+      (_request, callback) => {
+        desktopCapturer
+          .getSources({ types: ['screen'] })
+          .then((sources) => callback({ video: sources[0], audio: 'loopback' }))
+          .catch(() => callback({}))
+      },
+      { useSystemPicker: false },
+    )
+
+    createWindow()
+    createTray()
+
+    const registered = globalShortcut.register(RECORD_HOTKEY, triggerRecordHotkey)
+    if (!registered) {
+      // Outro programa ja usa este atalho no Windows do usuario -- nao trava o app por isso,
+      // so fica sem o atalho global (a bandeja/menu ainda funcionam).
+      console.warn(`Nao foi possivel registrar o atalho ${RECORD_HOTKEY} (em uso por outro app).`)
+    }
+
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    })
   })
-})
 
-app.on('before-quit', () => {
-  app.isQuitting = true
-})
+  app.on('before-quit', () => {
+    app.isQuitting = true
+  })
 
-app.on('will-quit', () => {
-  globalShortcut.unregisterAll()
-})
+  app.on('will-quit', () => {
+    globalShortcut.unregisterAll()
+  })
 
-// Continua rodando na bandeja no Windows mesmo com todas as janelas fechadas -- so encerra
-// mesmo via "Sair" no menu da bandeja (app.isQuitting).
-app.on('window-all-closed', () => {})
+  // Continua rodando na bandeja no Windows mesmo com todas as janelas fechadas -- so encerra
+  // mesmo via "Sair" no menu da bandeja (app.isQuitting).
+  app.on('window-all-closed', () => {})
+}

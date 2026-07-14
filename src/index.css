@@ -29,7 +29,7 @@
     /* Referencia de design (2026-07-09): pagina preta, cards grafite, vermelho VIVO.
        Pagina clareada em 2026-07-14 (nao mais preto absoluto), continua mais escura que a
        sidebar/cards (--surface-sidebar / --surface-card, ambos 22 22 25). */
-    --surface-bg: 16 16 18;         /* #101012 pagina */
+    --surface-bg: 20 20 22;         /* #141416 pagina */
     --surface-card: 22 22 25;       /* #161619 cards, menu */
     --surface-elevated: 30 30 34;   /* #1E1E22 inputs, busca, botoes */
     --surface-border: 54 54 61;     /* #36363D */
