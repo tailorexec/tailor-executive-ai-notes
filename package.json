@@ -1,14 +1,21 @@
 {
   "name": "tailor-executive-ai-notes",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.16.0",
+  "author": "Tailor Executive",
   "type": "module",
   "description": "Tailor Executive AI Notes - IA de anotacoes e transcricoes de reunioes",
+  "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "preelectron:dev": "node electron/build-icon.mjs",
+    "electron:dev": "electron .",
+    "electron:icon": "node electron/build-icon.mjs",
+    "predist:win": "node electron/build-icon.mjs",
+    "dist:win": "electron-builder --win"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.1",
@@ -33,11 +40,40 @@
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.2",
     "autoprefixer": "^10.4.20",
+    "electron": "^43.1.1",
+    "electron-builder": "^26.15.3",
+    "png-to-ico": "^3.0.2",
     "postcss": "^8.4.47",
     "sharp": "^0.35.3",
     "tailwindcss": "^3.4.13",
     "typescript": "^5.6.2",
     "vite": "^5.4.8",
     "vite-plugin-pwa": "^0.20.5"
+  },
+  "build": {
+    "appId": "br.com.tailorexec.tena.desktop",
+    "productName": "ANA by Tailor",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**/*",
+      "!electron/build-icon.mjs"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
   }
 }

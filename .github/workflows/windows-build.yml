@@ -1,0 +1,31 @@
+name: Build Windows App
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Build installer
+        # O app Windows e um wrapper fino (carrega o site publicado ao vivo, mesmo padrao do
+        # APK Android) -- nao precisa do `npm run build` do site aqui, so empacotar o Electron.
+        run: npm run dist:win
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: ana-windows-setup
+          path: release/*.exe
+          if-no-files-found: error

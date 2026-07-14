@@ -1,4 +1,5 @@
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from './auth/AuthProvider'
 import { Spinner } from './components/ui'
 import { AppShell } from './layouts/AppShell'
@@ -26,6 +27,7 @@ import { About } from './pages/About'
 import { EditProfile } from './pages/EditProfile'
 import { ApiMonitor } from './pages/ApiMonitor'
 import { AuditLogPage } from './pages/AuditLog'
+import { isElectron } from './lib/electron'
 import type { ReactNode } from 'react'
 
 function FullscreenLoader() {
@@ -53,6 +55,15 @@ function AdminOnly({ children }: { children: ReactNode }) {
 
 export default function App() {
   const { profile, loading } = useAuth()
+  const navigate = useNavigate()
+
+  // App Windows (Electron): o atalho global (Ctrl+Shift+G) traz a janela pra frente e cai
+  // direto na tela de gravar reuniao -- so falta 1 clique em "Iniciar" (getUserMedia exige um
+  // gesto real do usuario, entao nao da pra automatizar esse ultimo passo).
+  useEffect(() => {
+    if (!isElectron() || !profile) return
+    return window.anaElectron!.onRecordHotkey(() => navigate('/capturar?mode=meeting'))
+  }, [profile, navigate])
 
   return (
     <Routes>

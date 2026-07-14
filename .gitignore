@@ -23,3 +23,12 @@ apk-out/
 *.jks
 *.keystore
 keystore.properties
+
+# Instalador Windows gerado pelo electron-builder (nao versionar binario)
+release/
+# Icone .ico gerado a partir de assets/icon.png (`npm run electron:icon`) -- nao versionar
+build/
+
+# Certificado de assinatura de codigo Windows (NUNCA versionar)
+*.pfx
+*.p12
