@@ -13,6 +13,7 @@ import {
   Cloud,
   Download,
   Monitor,
+  Smartphone,
   ChevronDown,
 } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
@@ -22,6 +23,7 @@ import { Spinner } from '../components/ui'
 import { config } from '../lib/config'
 import { setRememberMe } from '../lib/supabase'
 import { WINDOWS_APP_DOWNLOAD_URL } from '../lib/windowsApp'
+import { ANDROID_APK_DOWNLOAD_URL } from '../lib/androidApp'
 
 /** Os 4 pilares da referencia. */
 const PILLARS = [
@@ -129,6 +131,19 @@ export function Login() {
                     <span>
                       <span className="block font-medium">{t('login.downloadWindows')}</span>
                       <span className="block text-xs text-white/50 mt-0.5">{t('login.downloadWindowsSub')}</span>
+                    </span>
+                  </a>
+                  <a
+                    href={ANDROID_APK_DOWNLOAD_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={() => setDownloadOpen(false)}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-left text-white hover:bg-white/10 border-t border-white/10"
+                  >
+                    <Smartphone size={17} className="text-accent shrink-0" />
+                    <span>
+                      <span className="block font-medium">{t('login.downloadAndroid')}</span>
+                      <span className="block text-xs text-white/50 mt-0.5">{t('login.downloadAndroidSub')}</span>
                     </span>
                   </a>
                 </div>

@@ -24,6 +24,7 @@ import {
   Timer,
   Info,
   Monitor,
+  Smartphone,
 } from 'lucide-react'
 import { deleteMyAccount } from '../lib/account'
 import { useAuth } from '../auth/AuthProvider'
@@ -40,6 +41,7 @@ import { friendsEnabled, unreadCount } from '../lib/friends'
 import { logSilentError } from '../lib/auditLog'
 import { APP_NAME, APP_VERSION } from '../lib/version'
 import { WINDOWS_APP_DOWNLOAD_URL } from '../lib/windowsApp'
+import { ANDROID_APK_DOWNLOAD_URL } from '../lib/androidApp'
 
 /**
  * Diagnostico visivel do PWA instalado: mostra os valores REAIS que o navegador reporta para
@@ -410,6 +412,11 @@ export function Settings() {
           icon={<Monitor size={20} />}
           label={t('settings.downloadWindows')}
           onClick={() => window.open(WINDOWS_APP_DOWNLOAD_URL, '_blank')}
+        />
+        <Row
+          icon={<Smartphone size={20} />}
+          label={t('settings.downloadAndroid')}
+          onClick={() => window.open(ANDROID_APK_DOWNLOAD_URL, '_blank')}
         />
       </div>
 
