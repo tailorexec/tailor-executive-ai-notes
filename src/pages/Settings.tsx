@@ -23,6 +23,7 @@ import {
   Share2,
   Timer,
   Info,
+  Monitor,
 } from 'lucide-react'
 import { deleteMyAccount } from '../lib/account'
 import { useAuth } from '../auth/AuthProvider'
@@ -38,6 +39,7 @@ import { RETENTION_CHOICES, RETENTION_DEFAULT, type RetentionDays } from '../lib
 import { friendsEnabled, unreadCount } from '../lib/friends'
 import { logSilentError } from '../lib/auditLog'
 import { APP_NAME, APP_VERSION } from '../lib/version'
+import { WINDOWS_APP_DOWNLOAD_URL } from '../lib/windowsApp'
 
 /**
  * Diagnostico visivel do PWA instalado: mostra os valores REAIS que o navegador reporta para
@@ -399,8 +401,13 @@ export function Settings() {
       </Sheet>
 
       <p className="text-xs uppercase tracking-wide text-content-muted mb-2 px-1">{t('about.title')}</p>
-      <div className="card mb-8">
+      <div className="card divide-y divide-surface-border mb-8">
         <Row icon={<Info size={20} />} label={t('about.title')} onClick={() => navigate('/sobre')} />
+        <Row
+          icon={<Monitor size={20} />}
+          label={t('settings.downloadWindows')}
+          onClick={() => window.open(WINDOWS_APP_DOWNLOAD_URL, '_blank')}
+        />
       </div>
 
       <div className="flex flex-col items-center gap-2 pb-4 text-content-muted">
