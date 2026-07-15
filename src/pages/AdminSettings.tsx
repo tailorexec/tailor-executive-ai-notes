@@ -37,9 +37,10 @@ export function AdminSettings() {
   }
 
   return (
-    <div className="mb-8">
+    // Sem margem/largura propria: o layout (lado a lado com os KPIs) e decidido por quem chama.
+    <div className="h-full">
       {/* Manutencao. Faixa de avisos foi pra /admin/dicas, junto com as Dicas. */}
-      <div className="card p-5 max-w-md">
+      <div className="card p-5 h-full">
         <div className="flex items-center justify-between mb-4">
           <h3 className="flex items-center gap-2 font-display font-semibold">
             <Wrench size={18} className="text-accent" /> Modo manutencao

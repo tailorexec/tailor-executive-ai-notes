@@ -145,15 +145,20 @@ export function Admin() {
         </div>
       ) : (
         <>
-          <AdminSettings />
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
-            <StatCard icon={<Users size={16} />} label="Usuarios" value={totals.users} />
-            <StatCard icon={<NotebookPen size={16} />} label="Notas" value={totals.notes} />
-            <StatCard icon={<Mic size={16} />} label="Gravacoes" value={totals.recordings} />
-            <StatCard icon={<FileText size={16} />} label="Transcricoes" value={totals.transcriptions} />
-            <StatCard icon={<Sparkles size={16} />} label="Sugestoes IA" value={totals.ai} />
-            <StatCard icon={<Volume2 size={16} />} label="Narracoes" value={totals.tts} />
+          {/* Manutencao ao lado dos KPIs (empilha no mobile) -- tudo que da uma visao geral
+              rapida do estado do app junto, em vez de espalhado pela pagina. */}
+          <div className="flex flex-col lg:flex-row gap-4 mb-6">
+            <div className="lg:w-72 lg:shrink-0">
+              <AdminSettings />
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 flex-1 content-start">
+              <StatCard icon={<Users size={16} />} label="Usuarios" value={totals.users} />
+              <StatCard icon={<NotebookPen size={16} />} label="Notas" value={totals.notes} />
+              <StatCard icon={<Mic size={16} />} label="Gravacoes" value={totals.recordings} />
+              <StatCard icon={<FileText size={16} />} label="Transcricoes" value={totals.transcriptions} />
+              <StatCard icon={<Sparkles size={16} />} label="Sugestoes IA" value={totals.ai} />
+              <StatCard icon={<Volume2 size={16} />} label="Narracoes" value={totals.tts} />
+            </div>
           </div>
 
           <div className="relative mb-4">
