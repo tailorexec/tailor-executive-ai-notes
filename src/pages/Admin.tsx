@@ -145,13 +145,12 @@ export function Admin() {
         </div>
       ) : (
         <>
-          {/* Manutencao ao lado dos KPIs (empilha no mobile) -- tudo que da uma visao geral
-              rapida do estado do app junto, em vez de espalhado pela pagina. */}
-          <div className="flex flex-col lg:flex-row gap-4 mb-6">
-            <div className="lg:w-72 lg:shrink-0">
-              <AdminSettings />
-            </div>
-            <div className="grid grid-cols-3 gap-3 flex-1 content-start max-w-md">
+          {/* Manutencao e KPIs dividem a largura da pagina meio a meio (empilha no mobile) --
+              tudo que da uma visao geral rapida do estado do app junto, sem apertar nenhum
+              dos dois lados. */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+            <AdminSettings />
+            <div className="grid grid-cols-3 gap-3 content-start">
               <StatCard icon={<Users size={16} />} label="Usuarios" value={totals.users} />
               <StatCard icon={<NotebookPen size={16} />} label="Notas" value={totals.notes} />
               <StatCard icon={<Mic size={16} />} label="Gravacoes" value={totals.recordings} />
