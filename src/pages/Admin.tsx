@@ -14,7 +14,6 @@ import {
   LifeBuoy,
   Activity,
   ScrollText,
-  ChevronRight,
   Lightbulb,
 } from 'lucide-react'
 import { db } from '../lib/api'
@@ -158,6 +157,49 @@ export function Admin() {
               <StatCard icon={<Sparkles size={16} />} label="Sugestoes IA" value={totals.ai} />
               <StatCard icon={<Volume2 size={16} />} label="Narracoes" value={totals.tts} />
             </div>
+          </div>
+
+          {/* Atalhos de admin logo abaixo dos KPIs -- tamanho compacto pra caber lado a lado
+              nessa mesma largura, em vez de cards largos e altos la embaixo da pagina. */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
+            <button
+              onClick={() => navigate('/admin/api')}
+              className="card p-4 flex items-center gap-3 text-left hover:border-accent/40 transition-colors"
+            >
+              <span className="grid place-items-center h-10 w-10 rounded-xl bg-accent/10 text-accent shrink-0">
+                <Activity size={18} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block font-medium text-sm">Monitoramento da API</span>
+                <span className="block text-xs text-content-muted truncate">Tokens, custo e KPIs</span>
+              </span>
+            </button>
+
+            <button
+              onClick={() => navigate('/admin/audit')}
+              className="card p-4 flex items-center gap-3 text-left hover:border-accent/40 transition-colors"
+            >
+              <span className="grid place-items-center h-10 w-10 rounded-xl bg-accent/10 text-accent shrink-0">
+                <ScrollText size={18} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block font-medium text-sm">Log de auditoria</span>
+                <span className="block text-xs text-content-muted truncate">Erros gerais e de segurança</span>
+              </span>
+            </button>
+
+            <button
+              onClick={() => navigate('/admin/dicas')}
+              className="card p-4 flex items-center gap-3 text-left hover:border-accent/40 transition-colors"
+            >
+              <span className="grid place-items-center h-10 w-10 rounded-xl bg-accent/10 text-accent shrink-0">
+                <Lightbulb size={18} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block font-medium text-sm">Avisos e Dicas</span>
+                <span className="block text-xs text-content-muted truncate">Faixa de avisos e dicas da Home</span>
+              </span>
+            </button>
           </div>
 
           <div className="relative mb-4">
@@ -320,51 +362,6 @@ export function Admin() {
             onConfirm={() => pendingDelete && deleteUser(pendingDelete)}
             onClose={() => setPendingDelete(null)}
           />
-
-          {/* Monitoramento de consumo/custo das APIs pagas (somente admin) */}
-          <button
-            onClick={() => navigate('/admin/api')}
-            className="card w-full mt-8 flex items-center gap-3 px-4 py-4 text-left hover:border-accent/40 transition-colors"
-          >
-            <span className="grid place-items-center h-10 w-10 rounded-xl bg-accent/10 text-accent shrink-0">
-              <Activity size={18} />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block font-medium">Monitoramento da API</span>
-              <span className="block text-sm text-content-muted">Tokens, custo em USD e KPIs por periodo</span>
-            </span>
-            <ChevronRight size={18} className="text-content-muted shrink-0" />
-          </button>
-
-          {/* Log de auditoria: erros gerais, silenciosos, de usuario e de seguranca (somente admin) */}
-          <button
-            onClick={() => navigate('/admin/audit')}
-            className="card w-full mt-3 flex items-center gap-3 px-4 py-4 text-left hover:border-accent/40 transition-colors"
-          >
-            <span className="grid place-items-center h-10 w-10 rounded-xl bg-accent/10 text-accent shrink-0">
-              <ScrollText size={18} />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block font-medium">Log de auditoria</span>
-              <span className="block text-sm text-content-muted">Erros gerais, silenciosos, de usuario e de seguranca</span>
-            </span>
-            <ChevronRight size={18} className="text-content-muted shrink-0" />
-          </button>
-
-          {/* Dicas mostradas na Home (somente admin) */}
-          <button
-            onClick={() => navigate('/admin/dicas')}
-            className="card w-full mt-3 flex items-center gap-3 px-4 py-4 text-left hover:border-accent/40 transition-colors"
-          >
-            <span className="grid place-items-center h-10 w-10 rounded-xl bg-accent/10 text-accent shrink-0">
-              <Lightbulb size={18} />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block font-medium">Avisos e Dicas</span>
-              <span className="block text-sm text-content-muted">Faixa de avisos, dicas da tela inicial e rotação automática</span>
-            </span>
-            <ChevronRight size={18} className="text-content-muted shrink-0" />
-          </button>
 
           {/* Chamados de suporte recebidos (somente admin) */}
           <div className="mt-8 mb-10">
