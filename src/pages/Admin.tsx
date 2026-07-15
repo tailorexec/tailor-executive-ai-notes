@@ -15,6 +15,7 @@ import {
   Activity,
   ScrollText,
   ChevronRight,
+  Lightbulb,
 } from 'lucide-react'
 import { db } from '../lib/api'
 import { useAuth } from '../auth/AuthProvider'
@@ -342,6 +343,21 @@ export function Admin() {
             <span className="min-w-0 flex-1">
               <span className="block font-medium">Log de auditoria</span>
               <span className="block text-sm text-content-muted">Erros gerais, silenciosos, de usuario e de seguranca</span>
+            </span>
+            <ChevronRight size={18} className="text-content-muted shrink-0" />
+          </button>
+
+          {/* Dicas mostradas na Home (somente admin) */}
+          <button
+            onClick={() => navigate('/admin/dicas')}
+            className="card w-full mt-3 flex items-center gap-3 px-4 py-4 text-left hover:border-accent/40 transition-colors"
+          >
+            <span className="grid place-items-center h-10 w-10 rounded-xl bg-accent/10 text-accent shrink-0">
+              <Lightbulb size={18} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-medium">Dicas</span>
+              <span className="block text-sm text-content-muted">Criar e publicar dicas mostradas na tela inicial</span>
             </span>
             <ChevronRight size={18} className="text-content-muted shrink-0" />
           </button>

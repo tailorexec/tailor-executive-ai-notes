@@ -90,6 +90,44 @@ export interface FriendMessage {
   created_at: string
 }
 
+export interface Tip {
+  id: string
+  title: string | null
+  body: string
+  active: boolean
+  electron_only: boolean
+  created_by: string | null
+  created_at: string
+}
+
+export type TeamLinkStatus = 'pending' | 'accepted'
+
+export interface TeamLink {
+  id: string
+  manager_id: string
+  member_id: string
+  status: TeamLinkStatus
+  group_id: string | null
+  created_at: string
+}
+
+export interface TeamGroup {
+  id: string
+  owner_id: string
+  name: string
+  color: string
+  created_at: string
+}
+
+/** Um vinculo de equipe ja resolvido do ponto de vista de quem chama. */
+export interface TeamEdge {
+  link: TeamLink
+  /** O outro lado do vinculo (o membro, do ponto de vista do manager). */
+  person: PersonRef
+  /** Convite que chegou pra mim (sou o member) e ainda nao respondi. */
+  incoming: boolean
+}
+
 export type TicketTopic = 'financeiro' | 'tecnico' | 'feedback' | 'outros'
 export interface SupportTicket {
   id: string

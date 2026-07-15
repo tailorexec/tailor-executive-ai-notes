@@ -27,7 +27,8 @@ import { logSilentError } from '../lib/auditLog'
 import { isElectron } from '../lib/electron'
 import { useAuth } from '../auth/AuthProvider'
 import { db } from '../lib/api'
-import type { Note, Folder } from '../lib/types'
+import type { Note, Folder, Tip } from '../lib/types'
+import { tipsEnabled, listActiveTips } from '../lib/tips'
 import { fmtDate, fmtDuration, fmtTime } from '../lib/format'
 import { Avatar, EmptyState, Chip, NoteCardSkeleton, PriorityBadge, ConfirmDialog } from '../components/ui'
 import { ThemeToggle } from '../components/ThemeToggle'
@@ -69,50 +70,62 @@ const SORT_OPTIONS: { key: SortKey; labelKey: string }[] = [
 const PRIO_RANK: Record<string, number> = { alta: 3, media: 2, baixa: 1 }
 const prioOf = (n: Note) => (n.priority ? PRIO_RANK[n.priority] ?? 0 : 0)
 
-const SHORTCUT_TIP_KEY = 'tailor.tip.shortcutDismissed'
+const TIPS_DISMISSED_KEY = 'tailor.tips.dismissed'
 
-/** Tecla estilo "key cap" pra ficar bonito escrever o atalho, sem depender so de texto. */
-function KeyCap({ children }: { children: React.ReactNode }) {
-  return (
-    <kbd className="inline-block px-1.5 py-0.5 rounded-md bg-surface-card border border-surface-border text-[11px] font-semibold shadow-sm">
-      {children}
-    </kbd>
-  )
+function readDismissedTips(): string[] {
+  try {
+    const raw = localStorage.getItem(TIPS_DISMISSED_KEY)
+    return raw ? (JSON.parse(raw) as string[]) : []
+  } catch {
+    return []
+  }
 }
 
-/** So existe no app Windows (o atalho global e nativo, Ctrl+Shift+G nao faz nada no navegador
- *  comum) -- some pra sempre assim que o usuario fechar, sem voltar a incomodar. */
-function ShortcutTip() {
-  const [dismissed, setDismissed] = useState(() => {
-    try {
-      return localStorage.getItem(SHORTCUT_TIP_KEY) === '1'
-    } catch {
-      return false
-    }
-  })
+/** Dicas publicadas pelo admin (/admin/dicas). Mostra uma por vez, na ordem de criacao; ao
+ *  dispensar, guarda o id em localStorage e a proxima nao-dispensada aparece na visita seguinte. */
+function HomeTip() {
+  const t = useT()
+  const [tips, setTips] = useState<Tip[] | null>(null)
+  const [dismissed, setDismissed] = useState<string[]>(readDismissedTips)
 
-  if (!isElectron() || dismissed) return null
+  useEffect(() => {
+    if (!tipsEnabled()) return
+    let alive = true
+    listActiveTips()
+      .then((t) => alive && setTips(t))
+      .catch(() => alive && setTips([]))
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  const next = (tips ?? [])
+    .filter((t) => !t.electron_only || isElectron())
+    .find((t) => !dismissed.includes(t.id))
+
+  if (!next) return null
 
   function dismiss() {
+    if (!next) return
+    const list = [...dismissed, next.id]
+    setDismissed(list)
     try {
-      localStorage.setItem(SHORTCUT_TIP_KEY, '1')
+      localStorage.setItem(TIPS_DISMISSED_KEY, JSON.stringify(list))
     } catch {
       /* ignore */
     }
-    setDismissed(true)
   }
 
   return (
     <div className="flex items-center gap-2.5 rounded-2xl border border-accent/20 bg-accent/5 px-4 py-2.5 mb-3">
       <Lightbulb size={16} className="text-accent shrink-0" />
       <p className="flex-1 min-w-0 text-sm text-content-secondary">
-        <span className="font-medium text-content-primary">Dica:</span> utilize o comando{' '}
-        <KeyCap>Ctrl</KeyCap> + <KeyCap>Shift</KeyCap> + <KeyCap>G</KeyCap> para iniciar uma
-        gravação rápida de reunião.
+        {next.title && <span className="font-medium text-content-primary">{next.title}: </span>}
+        {next.body}
       </p>
       <button
         onClick={dismiss}
-        aria-label="Fechar dica"
+        aria-label={t('home.tip.dismiss')}
         className="shrink-0 text-content-muted hover:text-content-primary"
       >
         <X size={16} />
@@ -358,7 +371,7 @@ export function Home() {
         </div>
       </header>
 
-      <ShortcutTip />
+      <HomeTip />
 
       <button
         onClick={() => setAskOpen(true)}

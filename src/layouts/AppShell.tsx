@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Home, Phone, Settings as SettingsIcon, Sparkles, Mic, ListChecks, CalendarDays, LogOut, PanelLeft, PanelLeftClose, Users, Share2, Plug, BarChart3 } from 'lucide-react'
+import { Home, Phone, Settings as SettingsIcon, Sparkles, Mic, ListChecks, CalendarDays, LogOut, PanelLeft, PanelLeftClose, Users, Share2, Plug, BarChart3, Crown } from 'lucide-react'
 import { AnaIcon } from '../components/AnaIcon'
 import { useAuth } from '../auth/AuthProvider'
 import { Logo } from '../components/Logo'
 import { Avatar } from '../components/ui'
 import { AnnouncementBanner } from '../components/AnnouncementBanner'
 import { NewNoteSheet } from '../components/NewNoteSheet'
+import { NavTag } from '../components/NavTag'
 import { startCalendarReminders } from '../lib/calendarReminders'
 import { canReceiveSharedFiles, consumeSharedFile, onSharedFile, setPendingUpload } from '../lib/sharedFile'
 import { useAppSettings } from '../app/SettingsProvider'
@@ -21,6 +22,8 @@ interface Item {
   icon: React.ReactNode
   labelKey: string
   adminOnly?: boolean
+  tagKey?: string
+  tagVariant?: 'muted' | 'accent'
 }
 
 /** Menu da sidebar (desktop). "Config" nao entra aqui: virou a engrenagem no rodape. */
@@ -28,7 +31,14 @@ const ITEMS: Item[] = [
   { to: '/', icon: <Home size={20} />, labelKey: 'nav.notes' },
   { to: '/tarefas', icon: <ListChecks size={20} />, labelKey: 'nav.tasks' },
   { to: '/agenda', icon: <CalendarDays size={20} />, labelKey: 'nav.agenda' },
-  { to: '/discador', icon: <Phone size={20} />, labelKey: 'nav.dialer' },
+  {
+    to: '/discador',
+    icon: <Phone size={20} />,
+    labelKey: 'nav.dialer',
+    adminOnly: true,
+    tagKey: 'nav.unavailable',
+    tagVariant: 'muted',
+  },
 ]
 
 /** Mesma secao "Mais funcoes" que existe no Config, atalhada na sidebar do desktop. */
@@ -37,9 +47,17 @@ const MORE_ITEMS: Item[] = [
   { to: '/compartilhados', icon: <Share2 size={20} />, labelKey: 'settings.sharedWithMe' },
   { to: '/conectores', icon: <Plug size={20} />, labelKey: 'settings.connectors' },
   { to: '/analytics', icon: <BarChart3 size={20} />, labelKey: 'settings.analytics' },
+  {
+    to: '/gerente',
+    icon: <Crown size={20} />,
+    labelKey: 'settings.manager',
+    adminOnly: true,
+    tagKey: 'nav.pro',
+    tagVariant: 'accent',
+  },
 ]
 
-function SidebarLink({ item, label }: { item: Item; label: string }) {
+function SidebarLink({ item, label, tag }: { item: Item; label: string; tag?: string }) {
   return (
     <NavLink
       to={item.to}
@@ -53,7 +71,8 @@ function SidebarLink({ item, label }: { item: Item; label: string }) {
       }
     >
       {item.icon}
-      {label}
+      <span className="flex-1">{label}</span>
+      {tag && <NavTag variant={item.tagVariant ?? 'muted'}>{tag}</NavTag>}
     </NavLink>
   )
 }
@@ -98,7 +117,7 @@ function Sidebar({ onCollapse }: { onCollapse: () => void }) {
         </p>
         <div className="space-y-1">
           {ITEMS.filter((i) => !i.adminOnly || isAdmin).map((i) => (
-            <SidebarLink key={i.to} item={i} label={t(i.labelKey)} />
+            <SidebarLink key={i.to} item={i} label={t(i.labelKey)} tag={i.tagKey ? t(i.tagKey) : undefined} />
           ))}
         </div>
 
@@ -106,8 +125,8 @@ function Sidebar({ onCollapse }: { onCollapse: () => void }) {
           {t('settings.more')}
         </p>
         <div className="space-y-1 pb-2">
-          {MORE_ITEMS.map((i) => (
-            <SidebarLink key={i.to} item={i} label={t(i.labelKey)} />
+          {MORE_ITEMS.filter((i) => !i.adminOnly || isAdmin).map((i) => (
+            <SidebarLink key={i.to} item={i} label={t(i.labelKey)} tag={i.tagKey ? t(i.tagKey) : undefined} />
           ))}
         </div>
       </nav>
@@ -186,6 +205,7 @@ function NavItem({ to, icon, label }: { to: string; icon: React.ReactNode; label
 
 function BottomNav() {
   const t = useT()
+  const { isAdmin } = useAuth()
   const [newOpen, setNewOpen] = useState(false)
 
   return (
@@ -193,7 +213,7 @@ function BottomNav() {
       <div className="mx-auto max-w-2xl">
         <div className="relative flex items-center h-16 px-2">
           <NavItem to="/" icon={<Home size={20} />} label={t('nav.notes')} />
-          <NavItem to="/discador" icon={<Phone size={20} />} label={t('nav.dialer')} />
+          {isAdmin && <NavItem to="/discador" icon={<Phone size={20} />} label={t('nav.dialer')} />}
 
           {/* Microfone central: abre TODAS as formas de criar nota (inclusive Gravacao inteligente) */}
           <div className="flex-1 flex justify-center">

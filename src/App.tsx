@@ -27,6 +27,8 @@ import { About } from './pages/About'
 import { EditProfile } from './pages/EditProfile'
 import { ApiMonitor } from './pages/ApiMonitor'
 import { AuditLogPage } from './pages/AuditLog'
+import { AdminTips } from './pages/AdminTips'
+import { ManagerDashboard } from './pages/ManagerDashboard'
 import { InstallApp } from './pages/InstallApp'
 import { isElectron } from './lib/electron'
 import type { ReactNode } from 'react'
@@ -93,7 +95,14 @@ export default function App() {
         <Route path="/nota/:id" element={<NoteDetail />} />
         <Route path="/nota/:id/mapa-mental" element={<MindMapPage />} />
         <Route path="/capturar" element={<Capture />} />
-        <Route path="/discador" element={<Dialer />} />
+        <Route
+          path="/discador"
+          element={
+            <AdminOnly>
+              <Dialer />
+            </AdminOnly>
+          }
+        />
         <Route path="/config" element={<Settings />} />
         <Route path="/lixeira" element={<TrashPage />} />
         <Route path="/ajuda" element={<Help />} />
@@ -128,6 +137,22 @@ export default function App() {
           element={
             <AdminOnly>
               <AuditLogPage />
+            </AdminOnly>
+          }
+        />
+        <Route
+          path="/admin/dicas"
+          element={
+            <AdminOnly>
+              <AdminTips />
+            </AdminOnly>
+          }
+        />
+        <Route
+          path="/gerente"
+          element={
+            <AdminOnly>
+              <ManagerDashboard />
             </AdminOnly>
           }
         />
