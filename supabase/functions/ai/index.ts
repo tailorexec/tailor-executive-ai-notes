@@ -240,9 +240,14 @@ Deno.serve(async (req) => {
         SONNET,
         `Voce e um coach de reunioes executivas. Analise a reuniao e responda APENAS com JSON valido no formato exato:
 {"overallScore":number(0-100),"tone":string,"strengths":string[],"improvements":string[],"questionsAsked":string[],"suggestedQuestions":string[],"pacing":string,"keyPoints":string[],"risks":string[]}
-Foque em: tom, perguntas feitas e sugeridas, ritmo/andamento, pontos fortes, melhorias e dicas praticas.${hint}`,
-        // Folga suficiente para o JSON fechar: cortado no meio, ele nao parseia e a analise falha.
-        3000,
+Foque em: tom, perguntas feitas e sugeridas, ritmo/andamento, pontos fortes, melhorias e dicas praticas.` +
+          ` Cada lista com no maximo 5 itens curtos (uma frase cada) -- reunioes longas tem muito material, mas` +
+          ` a resposta precisa caber inteira no limite de tokens, entao va direto aos pontos mais importantes,` +
+          ` sem se estender.${hint}`,
+        // Reunioes longas (40+ min) geram bastante material pros 9 campos do JSON; 3000 tokens
+        // cortava a resposta no meio ANTES de fechar, e o JSON truncado nao parseava (achado via
+        // /admin/audit em 2026-07-15). Folga maior + prompt mais conciso (max 5 itens por lista).
+        5000,
       )
       out = { analysis: requireJsonObject(text, 'a analise') }
     } else if (task === 'mindmap') {

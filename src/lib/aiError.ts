@@ -27,6 +27,14 @@ const FRIENDLY = [
 const EXPECTED_LIMITS = ['limite diario', 'orcamento mensal', 'Muitas solicitacoes', 'temporariamente desativadas']
 
 /**
+ * Subconjunto de FRIENDLY que a PROPRIA edge function ja loga no catch externo (severity=error,
+ * category=system, source=edge:ai/edge:transcribe) antes de devolver a mensagem pro cliente --
+ * logar de novo aqui so duplica a mesma falha em duas linhas (uma "warning/user", outra
+ * "error/system") no /admin/audit, sem nenhuma informacao nova na segunda.
+ */
+const ALREADY_LOGGED_SERVER = ['nao conseguiu gerar']
+
+/**
  * Funcao usada como `setError(aiError(err, ...))`/`toast(aiError(err, ...), 'error')` em toda
  * tela que chama IA -- por isso PRECISA continuar sincrona (nunca vire async, nunca faça
  * `await logClientError(...)`): se retornasse uma Promise, `setError` receberia um objeto em
@@ -38,7 +46,8 @@ export function aiError(err: unknown, fallback: string): string {
   if (!msg) return fallback
   const matched = FRIENDLY.some((f) => msg.includes(f))
   const isExpectedLimit = EXPECTED_LIMITS.some((f) => msg.includes(f))
-  if (!isExpectedLimit) {
+  const isAlreadyLoggedServer = ALREADY_LOGGED_SERVER.some((f) => msg.includes(f))
+  if (!isExpectedLimit && !isAlreadyLoggedServer) {
     logClientError({
       severity: matched ? 'warning' : 'error',
       category: matched ? 'user' : 'system',
