@@ -4,12 +4,18 @@
 // So o que precisa mesmo de codigo nativo vive aqui: atalho global e captura de audio do
 // sistema sem o dialogo de escolha do SO.
 
-const { app, BrowserWindow, Tray, Menu, globalShortcut, session, desktopCapturer, nativeImage } = require('electron')
+const { app, BrowserWindow, Tray, Menu, globalShortcut, session, desktopCapturer, nativeImage, dialog } = require('electron')
+const { autoUpdater } = require('electron-updater')
 const path = require('node:path')
 
 const APP_URL = 'https://tailor-executive-ai-notes.vercel.app'
 const RECORD_HOTKEY = 'CommandOrControl+Shift+G'
 const ICON_PATH = path.join(__dirname, '..', 'build', 'icon.ico')
+
+// So baixa a atualizacao se o usuario confirmar (dialog abaixo) -- nunca baixa/instala sozinho
+// sem avisar, ja que o instalador nao e assinado e o Windows sempre vai pedir confirmacao.
+autoUpdater.autoDownload = false
+autoUpdater.autoInstallOnAppQuit = false
 
 let mainWindow = null
 let tray = null
@@ -97,6 +103,8 @@ if (!gotSingleInstanceLock) {
         { label: 'Abrir ANA', click: () => (mainWindow ? mainWindow.show() : createWindow()) },
         { label: 'Gravar reunião (Ctrl+Shift+G)', click: triggerRecordHotkey },
         { type: 'separator' },
+        { label: 'Buscar atualizações...', click: () => checkForUpdates(true) },
+        { type: 'separator' },
         {
           label: 'Sair',
           click: () => {
@@ -108,6 +116,84 @@ if (!gotSingleInstanceLock) {
     )
     tray.on('click', () => (mainWindow ? mainWindow.show() : createWindow()))
   }
+
+  /**
+   * Checagem de atualizacao via GitHub Releases (mesmo repositorio, configurado em
+   * package.json's build.publish). `manual` distingue quem clicou em "Buscar atualizacoes"
+   * (sempre mostra um resultado, mesmo "ja esta atualizado") da checagem automatica silenciosa
+   * do startup (so incomoda o usuario quando ha novidade de verdade).
+   */
+  let checkingUpdate = false
+  let lastCheckWasManual = false
+  function checkForUpdates(manual) {
+    if (checkingUpdate) return
+    checkingUpdate = true
+    lastCheckWasManual = manual
+    autoUpdater
+      .checkForUpdates()
+      .catch((err) => {
+        if (manual) {
+          dialog.showMessageBox(mainWindow, {
+            type: 'error',
+            title: 'Buscar atualizações',
+            message: 'Não foi possível verificar atualizações agora.',
+            detail: String(err?.message ?? err),
+          })
+        }
+      })
+      .finally(() => {
+        checkingUpdate = false
+      })
+  }
+
+  autoUpdater.on('update-available', (info) => {
+    dialog
+      .showMessageBox(mainWindow, {
+        type: 'info',
+        title: 'Atualização disponível',
+        message: `Uma nova versão (${info.version}) está disponível. Baixar agora?`,
+        detail: 'O app continua funcionando normalmente enquanto baixa em segundo plano.',
+        buttons: ['Baixar agora', 'Agora não'],
+        defaultId: 0,
+        cancelId: 1,
+      })
+      .then((r) => {
+        if (r.response === 0) autoUpdater.downloadUpdate()
+      })
+  })
+
+  autoUpdater.on('update-not-available', () => {
+    if (lastCheckWasManual) {
+      dialog.showMessageBox(mainWindow, {
+        type: 'info',
+        title: 'Buscar atualizações',
+        message: 'Você já está usando a versão mais recente.',
+      })
+    }
+  })
+
+  autoUpdater.on('download-progress', (p) => {
+    if (mainWindow) mainWindow.setProgressBar(p.percent / 100)
+  })
+
+  autoUpdater.on('update-downloaded', (info) => {
+    if (mainWindow) mainWindow.setProgressBar(-1)
+    dialog
+      .showMessageBox(mainWindow, {
+        type: 'info',
+        title: 'Atualização pronta',
+        message: `A versão ${info.version} foi baixada. Reiniciar agora para instalar?`,
+        buttons: ['Reiniciar agora', 'Depois'],
+        defaultId: 0,
+        cancelId: 1,
+      })
+      .then((r) => {
+        if (r.response === 0) {
+          app.isQuitting = true
+          autoUpdater.quitAndInstall()
+        }
+      })
+  })
 
   app.whenReady().then(() => {
     // Autoriza getDisplayMedia() (usado pelo "Gravar Meet" do site) SEM o dialogo de escolha
@@ -135,6 +221,10 @@ if (!gotSingleInstanceLock) {
       // so fica sem o atalho global (a bandeja/menu ainda funcionam).
       console.warn(`Nao foi possivel registrar o atalho ${RECORD_HOTKEY} (em uso por outro app).`)
     }
+
+    // Checagem automatica e silenciosa ao abrir (so incomoda se houver novidade de verdade;
+    // "ja esta atualizado" nao aparece aqui, so quando o usuario pede pelo menu da bandeja).
+    setTimeout(() => checkForUpdates(false), 5000)
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow()
