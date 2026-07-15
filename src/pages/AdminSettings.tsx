@@ -1,33 +1,14 @@
 import { useEffect, useState } from 'react'
-import { Megaphone, Wrench, Check } from 'lucide-react'
+import { Wrench, Check } from 'lucide-react'
 import { getAppSettings, updateAppSettings } from '../lib/appSettings'
 import { useAppSettings } from '../app/SettingsProvider'
-import type { AnnouncementType, AppSettings } from '../lib/types'
+import type { AppSettings } from '../lib/types'
 import { Spinner } from '../components/ui'
-
-const TYPES: { v: AnnouncementType; label: string }[] = [
-  { v: 'info', label: 'Informacao' },
-  { v: 'warning', label: 'Alerta' },
-  { v: 'maintenance', label: 'Manutencao' },
-  { v: 'promo', label: 'Novidade / Promo' },
-]
-
-function toLocalInput(iso: string | null): string {
-  if (!iso) return ''
-  const d = new Date(iso)
-  const off = d.getTimezoneOffset()
-  return new Date(d.getTime() - off * 60000).toISOString().slice(0, 16)
-}
-function fromLocalInput(v: string): string | null {
-  return v ? new Date(v).toISOString() : null
-}
 
 export function AdminSettings() {
   const { refresh } = useAppSettings()
   const [s, setS] = useState<AppSettings | null>(null)
-  const [savingAnn, setSavingAnn] = useState(false)
   const [savingMaint, setSavingMaint] = useState(false)
-  const [okAnn, setOkAnn] = useState(false)
   const [okMaint, setOkMaint] = useState(false)
 
   useEffect(() => {
@@ -36,27 +17,6 @@ export function AdminSettings() {
 
   if (!s) return null
   const set = (patch: Partial<AppSettings>) => setS({ ...s, ...patch })
-
-  async function saveAnnouncement(enabled: boolean) {
-    if (!s) return
-    setSavingAnn(true)
-    try {
-      const next = await updateAppSettings({
-        announcement_enabled: enabled,
-        announcement_type: s.announcement_type,
-        announcement_message: s.announcement_message,
-        announcement_starts_at: s.announcement_starts_at,
-        announcement_ends_at: s.announcement_ends_at,
-        announcement_version: (s.announcement_version ?? 0) + 1,
-      })
-      setS(next)
-      await refresh()
-      setOkAnn(true)
-      setTimeout(() => setOkAnn(false), 1800)
-    } finally {
-      setSavingAnn(false)
-    }
-  }
 
   async function saveMaintenance(enabled: boolean) {
     if (!s) return
@@ -77,85 +37,9 @@ export function AdminSettings() {
   }
 
   return (
-    <div className="grid lg:grid-cols-2 gap-4 mb-8">
-      {/* Aviso */}
-      <div className="card p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="flex items-center gap-2 font-display font-semibold">
-            <Megaphone size={18} className="text-accent" /> Faixa de avisos
-          </h3>
-          {s.announcement_enabled && (
-            <span className="text-[10px] uppercase tracking-wide bg-green-500/15 text-green-600 dark:text-green-400 px-2 py-0.5 rounded-full">
-              ativo
-            </span>
-          )}
-        </div>
-
-        <label className="label">Tipo</label>
-        <div className="flex flex-wrap gap-2 mb-3">
-          {TYPES.map((t) => (
-            <button
-              key={t.v}
-              onClick={() => set({ announcement_type: t.v })}
-              className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
-                s.announcement_type === t.v
-                  ? 'bg-brand-solid border-brand-solid text-white'
-                  : 'bg-surface-elevated border-surface-border text-content-secondary'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-
-        <label className="label">Mensagem</label>
-        <textarea
-          className="input min-h-[80px] resize-none mb-3"
-          placeholder="Ex: Nova funcionalidade de reunioes disponivel!"
-          value={s.announcement_message}
-          onChange={(e) => set({ announcement_message: e.target.value })}
-        />
-
-        <label className="label">Periodo (opcional)</label>
-        {/* O datetime-local tem largura MINIMA intrinseca (calendario + texto) que o grid nao
-            consegue encolher. Empilhados, os dois campos ficam exatamente da largura do campo
-            de mensagem acima e nada escapa do card. */}
-        <div className="space-y-3 mb-1">
-          <div className="min-w-0">
-            <span className="block text-[11px] text-content-muted mb-1">Inicio</span>
-            <input
-              type="datetime-local"
-              className="input w-full min-w-0 px-2"
-              value={toLocalInput(s.announcement_starts_at)}
-              onChange={(e) => set({ announcement_starts_at: fromLocalInput(e.target.value) })}
-            />
-          </div>
-          <div className="min-w-0">
-            <span className="block text-[11px] text-content-muted mb-1">Fim</span>
-            <input
-              type="datetime-local"
-              className="input w-full min-w-0 px-2"
-              value={toLocalInput(s.announcement_ends_at)}
-              onChange={(e) => set({ announcement_ends_at: fromLocalInput(e.target.value) })}
-            />
-          </div>
-        </div>
-        <p className="text-xs text-content-muted mb-4">Sem datas = fixo ate voce remover.</p>
-
-        {s.announcement_enabled ? (
-          <button className="btn-outline w-full text-accent" onClick={() => saveAnnouncement(false)} disabled={savingAnn}>
-            {savingAnn ? <Spinner /> : null} Remover aviso
-          </button>
-        ) : (
-          <button className="btn-primary w-full" onClick={() => saveAnnouncement(true)} disabled={savingAnn}>
-            {savingAnn ? <Spinner /> : okAnn ? <Check size={18} /> : null}
-            {okAnn ? 'Publicado' : 'Publicar aviso'}
-          </button>
-        )}
-      </div>
-
-      {/* Manutencao */}
-      <div className="card p-5">
+    <div className="mb-8">
+      {/* Manutencao. Faixa de avisos foi pra /admin/dicas, junto com as Dicas. */}
+      <div className="card p-5 max-w-md">
         <div className="flex items-center justify-between mb-4">
           <h3 className="flex items-center gap-2 font-display font-semibold">
             <Wrench size={18} className="text-accent" /> Modo manutencao

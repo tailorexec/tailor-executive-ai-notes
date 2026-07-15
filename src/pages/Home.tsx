@@ -29,6 +29,7 @@ import { useAuth } from '../auth/AuthProvider'
 import { db } from '../lib/api'
 import type { Note, Folder, Tip } from '../lib/types'
 import { tipsEnabled, listActiveTips } from '../lib/tips'
+import { useAppSettings } from '../app/SettingsProvider'
 import { fmtDate, fmtDuration, fmtTime } from '../lib/format'
 import { Avatar, EmptyState, Chip, NoteCardSkeleton, PriorityBadge, ConfirmDialog } from '../components/ui'
 import { ThemeToggle } from '../components/ThemeToggle'
@@ -81,10 +82,14 @@ function readDismissedTips(): string[] {
   }
 }
 
-/** Dicas publicadas pelo admin (/admin/dicas). Mostra uma por vez, na ordem de criacao; ao
- *  dispensar, guarda o id em localStorage e a proxima nao-dispensada aparece na visita seguinte. */
+/** Dicas publicadas pelo admin (/admin/dicas). Duas formas de avancar: normalmente mostra uma
+ *  por vez na ordem de criacao e so troca quando o usuario dispensa; com "rotacao automatica"
+ *  ligada (Admin > Avisos e Dicas), a dica muda sozinha a cada N dias -- a MESMA pra todo mundo
+ *  naquele periodo, calculada pela data (sem precisar de estado no servidor). Dispensar sempre
+ *  guarda o id em localStorage; se a rotacao trouxer essa dica de volta depois, ela e pulada.*/
 function HomeTip() {
   const t = useT()
+  const { settings } = useAppSettings()
   const [tips, setTips] = useState<Tip[] | null>(null)
   const [dismissed, setDismissed] = useState<string[]>(readDismissedTips)
 
@@ -99,9 +104,17 @@ function HomeTip() {
     }
   }, [])
 
-  const next = (tips ?? [])
-    .filter((t) => !t.electron_only || isElectron())
-    .find((t) => !dismissed.includes(t.id))
+  const eligible = (tips ?? []).filter((t) => !t.electron_only || isElectron())
+
+  let next: Tip | undefined
+  if (settings?.tips_rotate_enabled && eligible.length > 0) {
+    const days = Math.max(1, settings.tips_rotate_days || 3)
+    const slot = Math.floor(Date.now() / 86_400_000 / days) % eligible.length
+    const candidate = eligible[slot]
+    next = dismissed.includes(candidate.id) ? undefined : candidate
+  } else {
+    next = eligible.find((t) => !dismissed.includes(t.id))
+  }
 
   if (!next) return null
 

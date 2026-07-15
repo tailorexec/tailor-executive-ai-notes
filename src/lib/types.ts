@@ -250,6 +250,9 @@ export interface AppSettings {
   maintenance_enabled: boolean
   maintenance_message: string
   maintenance_eta: string
+  /** Troca a dica mostrada na Home sozinha a cada N dias (mesma dica pra todo mundo). */
+  tips_rotate_enabled: boolean
+  tips_rotate_days: number
   /** Freios de gasto com IA (Config > Admin). */
   ai_enabled: boolean
   ai_daily_usd_per_user: number

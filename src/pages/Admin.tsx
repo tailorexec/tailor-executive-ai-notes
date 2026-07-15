@@ -356,8 +356,8 @@ export function Admin() {
               <Lightbulb size={18} />
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block font-medium">Dicas</span>
-              <span className="block text-sm text-content-muted">Criar e publicar dicas mostradas na tela inicial</span>
+              <span className="block font-medium">Avisos e Dicas</span>
+              <span className="block text-sm text-content-muted">Faixa de avisos, dicas da tela inicial e rotação automática</span>
             </span>
             <ChevronRight size={18} className="text-content-muted shrink-0" />
           </button>

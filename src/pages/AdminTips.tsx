@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Lightbulb, Monitor, Trash2 } from 'lucide-react'
+import { ArrowLeft, Check, Lightbulb, Megaphone, Monitor, RefreshCw, Trash2 } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
 import { adminListTips, createTip, deleteTip, setTipActive } from '../lib/tips'
-import type { Tip } from '../lib/types'
+import { getAppSettings, updateAppSettings } from '../lib/appSettings'
+import { useAppSettings } from '../app/SettingsProvider'
+import type { AnnouncementType, AppSettings, Tip } from '../lib/types'
 import { Chip, ConfirmDialog, Spinner } from '../components/ui'
 import { useToast } from '../components/Toast'
 import { logSilentError } from '../lib/auditLog'
@@ -20,6 +22,199 @@ const SUGGESTIONS = [
   'No computador, grave o áudio de qualquer chamada (Zoom, Meet, Teams) direto da aba do navegador.',
   'Ative "manter conectado" no login para não precisar digitar sua senha toda vez.',
 ]
+
+const ANNOUNCEMENT_TYPES: { v: AnnouncementType; label: string }[] = [
+  { v: 'info', label: 'Informacao' },
+  { v: 'warning', label: 'Alerta' },
+  { v: 'maintenance', label: 'Manutencao' },
+  { v: 'promo', label: 'Novidade / Promo' },
+]
+
+const ROTATE_DAYS_OPTIONS = [1, 3, 7, 14]
+
+function toLocalInput(iso: string | null): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  const off = d.getTimezoneOffset()
+  return new Date(d.getTime() - off * 60000).toISOString().slice(0, 16)
+}
+function fromLocalInput(v: string): string | null {
+  return v ? new Date(v).toISOString() : null
+}
+
+/** Faixa de avisos (banner no topo do app) -- junto com Dicas por serem os dois jeitos de
+ *  comunicar algo pra todo mundo, publicados no mesmo lugar. */
+function AnnouncementCard() {
+  const { refresh } = useAppSettings()
+  const [s, setS] = useState<AppSettings | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [ok, setOk] = useState(false)
+
+  useEffect(() => {
+    getAppSettings().then(setS)
+  }, [])
+
+  if (!s) return null
+  const set = (patch: Partial<AppSettings>) => setS({ ...s, ...patch })
+
+  async function save(enabled: boolean) {
+    if (!s) return
+    setSaving(true)
+    try {
+      const next = await updateAppSettings({
+        announcement_enabled: enabled,
+        announcement_type: s.announcement_type,
+        announcement_message: s.announcement_message,
+        announcement_starts_at: s.announcement_starts_at,
+        announcement_ends_at: s.announcement_ends_at,
+        announcement_version: (s.announcement_version ?? 0) + 1,
+      })
+      setS(next)
+      await refresh()
+      setOk(true)
+      setTimeout(() => setOk(false), 1800)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="card p-5 mb-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="flex items-center gap-2 font-display font-semibold">
+          <Megaphone size={18} className="text-accent" /> Faixa de avisos
+        </h3>
+        {s.announcement_enabled && (
+          <span className="text-[10px] uppercase tracking-wide bg-green-500/15 text-green-600 dark:text-green-400 px-2 py-0.5 rounded-full">
+            ativo
+          </span>
+        )}
+      </div>
+
+      <label className="label">Tipo</label>
+      <div className="flex flex-wrap gap-2 mb-3">
+        {ANNOUNCEMENT_TYPES.map((t) => (
+          <button
+            key={t.v}
+            onClick={() => set({ announcement_type: t.v })}
+            className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
+              s.announcement_type === t.v
+                ? 'bg-brand-solid border-brand-solid text-white'
+                : 'bg-surface-elevated border-surface-border text-content-secondary'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      <label className="label">Mensagem</label>
+      <textarea
+        className="input min-h-[80px] resize-none mb-3"
+        placeholder="Ex: Nova funcionalidade de reunioes disponivel!"
+        value={s.announcement_message}
+        onChange={(e) => set({ announcement_message: e.target.value })}
+      />
+
+      <label className="label">Periodo (opcional)</label>
+      <div className="space-y-3 mb-1">
+        <div className="min-w-0">
+          <span className="block text-[11px] text-content-muted mb-1">Inicio</span>
+          <input
+            type="datetime-local"
+            className="input w-full min-w-0 px-2"
+            value={toLocalInput(s.announcement_starts_at)}
+            onChange={(e) => set({ announcement_starts_at: fromLocalInput(e.target.value) })}
+          />
+        </div>
+        <div className="min-w-0">
+          <span className="block text-[11px] text-content-muted mb-1">Fim</span>
+          <input
+            type="datetime-local"
+            className="input w-full min-w-0 px-2"
+            value={toLocalInput(s.announcement_ends_at)}
+            onChange={(e) => set({ announcement_ends_at: fromLocalInput(e.target.value) })}
+          />
+        </div>
+      </div>
+      <p className="text-xs text-content-muted mb-4">Sem datas = fixo ate voce remover.</p>
+
+      {s.announcement_enabled ? (
+        <button className="btn-outline w-full text-accent" onClick={() => save(false)} disabled={saving}>
+          {saving ? <Spinner /> : null} Remover aviso
+        </button>
+      ) : (
+        <button className="btn-primary w-full" onClick={() => save(true)} disabled={saving}>
+          {saving ? <Spinner /> : ok ? <Check size={18} /> : null}
+          {ok ? 'Publicado' : 'Publicar aviso'}
+        </button>
+      )}
+    </div>
+  )
+}
+
+/** Liga/desliga a rotacao automatica das dicas (troca sozinha a cada N dias, igual pra todo
+ *  mundo) -- sem isto, a dica so avanca quando cada usuario dispensa a atual. */
+function RotationCard() {
+  const { settings, refresh } = useAppSettings()
+  const [saving, setSaving] = useState(false)
+
+  if (!settings) return null
+
+  async function toggle() {
+    setSaving(true)
+    try {
+      await updateAppSettings({ tips_rotate_enabled: !settings!.tips_rotate_enabled })
+      await refresh()
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function setDays(days: number) {
+    setSaving(true)
+    try {
+      await updateAppSettings({ tips_rotate_days: days })
+      await refresh()
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="card p-5 mb-6">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="flex items-center gap-2 font-display font-semibold">
+          <RefreshCw size={18} className="text-accent" /> Rotação automática
+        </h3>
+        <button
+          onClick={toggle}
+          disabled={saving}
+          className={`h-6 w-11 rounded-full transition-colors relative shrink-0 ${
+            settings.tips_rotate_enabled ? 'bg-brand-solid' : 'bg-surface-border'
+          }`}
+        >
+          <span
+            className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
+              settings.tips_rotate_enabled ? 'translate-x-5' : 'translate-x-0.5'
+            }`}
+          />
+        </button>
+      </div>
+      <p className="text-sm text-content-secondary mb-3">
+        Quando ligado, a dica mostrada na Home troca sozinha a cada N dias — a mesma dica aparece pra todo
+        mundo naquele período, em vez de só avançar quando cada usuário dispensa a atual.
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {ROTATE_DAYS_OPTIONS.map((d) => (
+          <Chip key={d} active={settings.tips_rotate_days === d} onClick={() => setDays(d)}>
+            a cada {d} {d === 1 ? 'dia' : 'dias'}
+          </Chip>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export function AdminTips() {
   const { profile } = useAuth()
@@ -104,9 +299,12 @@ export function AdminTips() {
           <ArrowLeft size={18} />
         </button>
         <h1 className="font-display text-2xl font-bold flex items-center gap-2">
-          <Lightbulb size={20} className="text-accent" /> Dicas
+          <Lightbulb size={20} className="text-accent" /> Avisos e Dicas
         </h1>
       </header>
+
+      <AnnouncementCard />
+      <RotationCard />
 
       <div className="card p-4 mb-6">
         <p className="text-xs uppercase tracking-wide text-content-muted mb-2">Sugestões (clique para usar)</p>
@@ -142,7 +340,7 @@ export function AdminTips() {
           Somente no app Windows
         </label>
 
-        <button onClick={save} disabled={!body.trim() || saving} className="btn-primary" >
+        <button onClick={save} disabled={!body.trim() || saving} className="btn-primary">
           {saving ? <Spinner size={16} /> : <Lightbulb size={16} />}
           Publicar dica
         </button>
