@@ -1,7 +1,7 @@
 {
   "name": "tailor-executive-ai-notes",
   "private": true,
-  "version": "0.17.3",
+  "version": "0.17.4",
   "author": "Tailor Executive",
   "type": "module",
   "description": "Tailor Executive AI Notes - IA de anotacoes e transcricoes de reunioes",
@@ -61,7 +61,8 @@
       "electron/**/*",
       "!electron/build-icon.mjs",
       "node_modules/**/*",
-      "package.json"
+      "package.json",
+      "build/icon.ico"
     ],
     "win": {
       "target": [
