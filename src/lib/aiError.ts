@@ -1,4 +1,5 @@
 import { logClientError } from './auditLog'
+import { describeUnknownError } from './errorMessage'
 
 /**
  * As edge functions devolvem `{ error: "..." }` com mensagem pronta quando barram a chamada
@@ -42,7 +43,7 @@ const ALREADY_LOGGED_SERVER = ['nao conseguiu gerar']
  * sem bloquear o retorno.
  */
 export function aiError(err: unknown, fallback: string): string {
-  const msg = err instanceof Error ? err.message : String(err ?? '')
+  const msg = describeUnknownError(err)
   if (!msg) return fallback
   const matched = FRIENDLY.some((f) => msg.includes(f))
   const isExpectedLimit = EXPECTED_LIMITS.some((f) => msg.includes(f))

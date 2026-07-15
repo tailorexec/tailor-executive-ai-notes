@@ -13,6 +13,7 @@ import { initLang } from './lib/lang'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { logClientError } from './lib/auditLog'
 import { setupInstallPromptCapture } from './lib/pwaInstall'
+import { describeUnknownError } from './lib/errorMessage'
 
 /**
  * Hoje nao existe NENHUM catch-all de erro no cliente: um throw fora de um try/catch, ou uma
@@ -37,7 +38,7 @@ function setupGlobalErrorLogging() {
       severity: 'error',
       category: 'silent',
       source: 'client:window',
-      message: reason instanceof Error ? reason.message : String(reason ?? 'unhandledrejection sem motivo'),
+      message: describeUnknownError(reason) || 'unhandledrejection sem motivo',
       detail: reason instanceof Error ? { stack: reason.stack?.slice(0, 2000) } : undefined,
     })
   })
@@ -59,7 +60,10 @@ function setupServiceWorkerUpdates() {
     immediate: true,
     onRegisteredSW(_url, registration) {
       if (!registration) return
-      setInterval(() => void registration.update(), 60_000)
+      // .catch() de proposito: uma checagem falhando (rede instavel, blip momentaneo do CDN)
+      // nao e acionavel -- a proxima tentativa e so daqui 60s, e sem isto cada falha virava um
+      // "erro" no audit_log sem nenhuma acao possivel do lado do codigo (ja aconteceu 3x).
+      setInterval(() => registration.update().catch(() => {}), 60_000)
     },
   })
 

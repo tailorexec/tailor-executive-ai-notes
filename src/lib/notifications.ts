@@ -1,4 +1,5 @@
 import { logClientError } from './auditLog'
+import { describeUnknownError } from './errorMessage'
 
 export interface NotifPrefs {
   shared: boolean // nova transcricao compartilhada comigo
@@ -43,7 +44,7 @@ export function notify(title: string, body: string): void {
         severity: 'warning',
         category: 'silent',
         source: 'client:notifications',
-        message: err instanceof Error ? err.message : String(err),
+        message: describeUnknownError(err),
       })
     }
   }

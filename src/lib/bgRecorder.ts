@@ -1,5 +1,6 @@
 import { Capacitor, registerPlugin } from '@capacitor/core'
 import { logClientError } from './auditLog'
+import { describeUnknownError } from './errorMessage'
 
 interface StopResult {
   path: string
@@ -63,7 +64,7 @@ export const bgRecorder = {
         severity: 'warning',
         category: 'silent',
         source: 'client:bgRecorder',
-        message: err instanceof Error ? err.message : String(err),
+        message: describeUnknownError(err),
       }),
     )
     return {

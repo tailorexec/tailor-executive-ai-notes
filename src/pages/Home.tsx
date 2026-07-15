@@ -143,7 +143,12 @@ export function Home() {
   const [updatePercent, setUpdatePercent] = useState<number | null>(null)
   // So os instaladores novos (a partir desta versao) tem essa API no preload -- quem ainda esta
   // num instalador antigo (site atualiza sozinho, o wrapper nativo nao) cai no fallback de antes.
-  const supportsUpdateStatus = isElectron() && typeof window.anaElectron!.onUpdateStatus === 'function'
+  // `checkForUpdates` em si so existe a partir de um instalador mais velho ainda que introduziu o
+  // recurso de auto-update -- quem tem um instalador anterior a ISSO (bem mais raro, mas
+  // aconteceu: gerou 40 erros "checkForUpdates is not a function" no audit_log de um usuario)
+  // nem esse metodo tem, entao o botao de atualizar so aparece se o preload realmente o suporta.
+  const supportsCheckForUpdates = isElectron() && typeof window.anaElectron!.checkForUpdates === 'function'
+  const supportsUpdateStatus = supportsCheckForUpdates && typeof window.anaElectron!.onUpdateStatus === 'function'
 
   const retention = retentionOf(profile)
 
@@ -320,7 +325,7 @@ export function Home() {
             >
               <FolderIcon size={18} />
             </button>
-            {isElectron() && (
+            {supportsCheckForUpdates && (
               <button
                 onClick={() => {
                   if (supportsUpdateStatus) {

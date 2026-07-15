@@ -4,6 +4,7 @@
 
 import { supabase } from './supabase'
 import { config } from './config'
+import { describeUnknownError } from './errorMessage'
 
 export type AuditSeverity = 'info' | 'warning' | 'error' | 'critical'
 export type AuditCategory = 'system' | 'user' | 'silent' | 'security'
@@ -73,7 +74,7 @@ export function logSilentError(source: string, err: unknown): void {
     severity: 'error',
     category: 'system',
     source,
-    message: err instanceof Error ? err.message : String(err),
+    message: describeUnknownError(err),
     detail: err instanceof Error ? { stack: err.stack?.slice(0, 1000) } : undefined,
   })
 }

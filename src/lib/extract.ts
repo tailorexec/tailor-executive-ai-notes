@@ -4,6 +4,7 @@
 
 import { config } from './config'
 import { supabase } from './supabase'
+import { describeUnknownError } from './errorMessage'
 
 export const TEXT_FILE_ACCEPT = '.pdf,.txt,.md,.csv,.docx'
 const TEXT_EXTS = ['pdf', 'docx', 'txt', 'md', 'csv']
@@ -30,7 +31,7 @@ export async function extractPdf(file: File): Promise<string> {
     }
   } catch (err) {
     // A mensagem crua do pdfjs ("undefined is not a function...") nao ajuda ninguem.
-    const msg = err instanceof Error ? err.message : String(err)
+    const msg = describeUnknownError(err)
     if (/password/i.test(msg)) throw new FileError('Este PDF esta protegido por senha.')
     if (/invalid|corrupt|structure/i.test(msg)) throw new FileError('Este PDF parece estar corrompido.')
     throw new FileError('Nao consegui ler este PDF. Se ele for digitalizado, use "Resumir imagem".')

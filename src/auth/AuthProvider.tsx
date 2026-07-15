@@ -4,6 +4,7 @@ import type { SignUpInput } from '../lib/db'
 import type { Profile, ProfilePatch } from '../lib/types'
 import { isAdminEmail } from '../lib/config'
 import { logClientError } from '../lib/auditLog'
+import { describeUnknownError } from '../lib/errorMessage'
 
 interface AuthCtx {
   profile: Profile | null
@@ -31,7 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           severity: 'error',
           category: 'silent',
           source: 'client:auth',
-          message: err instanceof Error ? err.message : String(err),
+          message: describeUnknownError(err),
         })
       })
       .finally(() => setLoading(false))

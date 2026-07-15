@@ -5,6 +5,7 @@ import { getNotifPrefs, notify } from './notifications'
 import { listUpcomingEvents } from './googleCalendar'
 import { getLang } from './lang'
 import { logClientError } from './auditLog'
+import { describeUnknownError } from './errorMessage'
 
 const REMIND_WINDOW_MIN = 15 // avisa quando faltar entre 0 e 15 min para o evento
 const POLL_MS = 3 * 60 * 1000 // reconsulta a cada 3 min
@@ -72,7 +73,7 @@ export function startCalendarReminders(): () => void {
           severity: 'warning',
           category: 'silent',
           source: 'client:calendarReminders',
-          message: err instanceof Error ? err.message : String(err),
+          message: describeUnknownError(err),
         })
       }
     }
