@@ -12,8 +12,11 @@ npm install
 npm run dist:win
 ```
 
-O instalador sai em `release/ANA by Tailor Setup <versao>.exe` (a versao vem do campo `version`
-do `package.json` -- mantenha igual a `src/lib/version.ts`).
+O instalador sai em `release/ANA-by-Tailor-Setup-<versao>.exe` (a versao vem do campo `version`
+do `package.json` -- mantenha igual a `src/lib/version.ts`). Sem espaco no nome de proposito
+(`nsis.artifactName` em package.json) -- com espaco, o GitHub troca por ponto ao subir o asset,
+e isso NAO bate com o nome que `latest.yml` espera (gerado sem espaco), quebrando o auto-update
+em silencio (aconteceu uma vez, ver historico do commit `feat(windows): busca e instala...`).
 
 ## 2. Testar sem empacotar (mais rapido, ao editar `electron/`)
 
@@ -41,6 +44,26 @@ artefato do workflow (`ana-windows-setup`).
 - **Bandeja do sistema**: fechar a janela minimiza para a bandeja em vez de encerrar o app (o
   atalho global continua funcionando com a janela "fechada"). "Sair" no menu da bandeja encerra
   de verdade.
+- **Busca atualizacoes sozinho** (`electron-updater`): checa 5s apos abrir (silencioso, so avisa
+  se houver novidade) e pelo item "Buscar atualizacoes..." no menu da bandeja (sempre mostra um
+  resultado). So baixa/instala com confirmacao do usuario (`autoDownload = false`). Le a config
+  de `package.json`'s `build.publish` (provider github, mesmo repositorio das releases).
+
+## Publicar uma release (checklist -- os 3 primeiros SAO OBRIGATORIOS pro auto-update funcionar)
+
+Depois de `npm run dist:win`, a pasta `release/` tem os arquivos que precisam ir TODOS pra
+mesma release do GitHub:
+
+1. `ANA-by-Tailor-Setup-<versao>.exe` (o instalador em si, nome com versao)
+2. `ANA-by-Tailor-Setup-<versao>.exe.blockmap` (permite update diferencial, so baixa o que mudou)
+3. `latest.yml` (o que `electron-updater` le pra saber que ha versao nova e onde baixar)
+4. Uma copia do `.exe` renomeada pra `ANA-Tailor-Setup-Windows.exe` (nome FIXO, sem versao --
+   e o link usado no site/app, `src/lib/windowsApp.ts`, via `releases/latest/download/...`)
+5. O `.apk` do Android (se tambem foi gerado nesta rodada), renomeado pra `ANA-Tailor-Android.apk`
+
+Faltar os itens 1-3 nao quebra o download manual (item 4 continua funcionando), mas quebra o
+auto-update em silencio: o app vai detectar que ha uma versao nova, tentar baixar, e falhar
+(404) sem avisar nada de util no dialogo de erro alem de "nao foi possivel verificar".
 
 ## Assinatura de codigo (NAO configurada)
 
