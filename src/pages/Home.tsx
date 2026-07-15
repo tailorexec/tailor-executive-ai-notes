@@ -19,6 +19,8 @@ import {
   Clock,
   Image as ImageIcon,
   RefreshCw,
+  Lightbulb,
+  X,
 } from 'lucide-react'
 import { AnaIcon } from '../components/AnaIcon'
 import { logSilentError } from '../lib/auditLog'
@@ -66,6 +68,58 @@ const SORT_OPTIONS: { key: SortKey; labelKey: string }[] = [
 /** alta > media > baixa. Notas SEM prioridade ficam sempre por ultimo. */
 const PRIO_RANK: Record<string, number> = { alta: 3, media: 2, baixa: 1 }
 const prioOf = (n: Note) => (n.priority ? PRIO_RANK[n.priority] ?? 0 : 0)
+
+const SHORTCUT_TIP_KEY = 'tailor.tip.shortcutDismissed'
+
+/** Tecla estilo "key cap" pra ficar bonito escrever o atalho, sem depender so de texto. */
+function KeyCap({ children }: { children: React.ReactNode }) {
+  return (
+    <kbd className="inline-block px-1.5 py-0.5 rounded-md bg-surface-card border border-surface-border text-[11px] font-semibold shadow-sm">
+      {children}
+    </kbd>
+  )
+}
+
+/** So existe no app Windows (o atalho global e nativo, Ctrl+Shift+G nao faz nada no navegador
+ *  comum) -- some pra sempre assim que o usuario fechar, sem voltar a incomodar. */
+function ShortcutTip() {
+  const [dismissed, setDismissed] = useState(() => {
+    try {
+      return localStorage.getItem(SHORTCUT_TIP_KEY) === '1'
+    } catch {
+      return false
+    }
+  })
+
+  if (!isElectron() || dismissed) return null
+
+  function dismiss() {
+    try {
+      localStorage.setItem(SHORTCUT_TIP_KEY, '1')
+    } catch {
+      /* ignore */
+    }
+    setDismissed(true)
+  }
+
+  return (
+    <div className="flex items-center gap-2.5 rounded-2xl border border-accent/20 bg-accent/5 px-4 py-2.5 mb-3">
+      <Lightbulb size={16} className="text-accent shrink-0" />
+      <p className="flex-1 min-w-0 text-sm text-content-secondary">
+        <span className="font-medium text-content-primary">Dica:</span> utilize o comando{' '}
+        <KeyCap>Ctrl</KeyCap> + <KeyCap>Shift</KeyCap> + <KeyCap>G</KeyCap> para iniciar uma
+        gravação rápida de reunião.
+      </p>
+      <button
+        onClick={dismiss}
+        aria-label="Fechar dica"
+        className="shrink-0 text-content-muted hover:text-content-primary"
+      >
+        <X size={16} />
+      </button>
+    </div>
+  )
+}
 
 export function Home() {
   const { profile } = useAuth()
@@ -235,6 +289,8 @@ export function Home() {
           </div>
         </div>
       </header>
+
+      <ShortcutTip />
 
       <button
         onClick={() => setAskOpen(true)}
