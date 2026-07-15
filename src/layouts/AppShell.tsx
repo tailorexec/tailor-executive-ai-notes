@@ -11,6 +11,7 @@ import { NavTag } from '../components/NavTag'
 import { startCalendarReminders } from '../lib/calendarReminders'
 import { canReceiveSharedFiles, consumeSharedFile, onSharedFile, setPendingUpload } from '../lib/sharedFile'
 import { useAppSettings } from '../app/SettingsProvider'
+import { announcementActive } from '../lib/appSettings'
 import { Maintenance } from '../pages/Maintenance'
 import { HelpAssistant } from '../pages/HelpAssistant'
 import { useT } from '../lib/i18n'
@@ -244,6 +245,7 @@ export function AppShell() {
   const { isAdmin } = useAuth()
   const { settings } = useAppSettings()
   const hideMobileNav = HIDE_MOBILE_NAV_ON.some((p) => location.pathname.startsWith(p))
+  const showBanner = announcementActive(settings)
 
   const [helpOpen, setHelpOpen] = useState(false)
 
@@ -320,9 +322,18 @@ export function AppShell() {
 
       {/* Recolhida: o conteudo ocupa a pagina toda (so o respiro do botao de reabrir). */}
       <div className={collapsed ? 'md:pl-14' : 'md:pl-64'}>
-        <main className={`mx-auto w-full max-w-6xl overflow-x-hidden ${hideMobileNav ? '' : 'pb-nav'}`}>
+        <main
+          className={`mx-auto w-full max-w-6xl overflow-x-hidden ${hideMobileNav ? '' : 'pb-nav'} ${
+            showBanner ? 'has-announcement' : ''
+          }`}
+        >
+          {/* Quando ha aviso, e ELE quem precisa vencer o notch/status bar (fica visualmente no
+              topo) -- por isso usa safe-top aqui. A pagina logo abaixo (Outlet) tambem tem
+              safe-top no proprio container (convencao usada em quase toda pagina do app), o que
+              dobraria o respiro do notch; a classe "has-announcement" (index.css) neutraliza
+              esse segundo respiro so quando o aviso esta mesmo visivel. */}
           {!hideMobileNav && (
-            <div className="px-5 pt-4">
+            <div className={showBanner ? 'px-5 safe-top' : 'px-5 pt-4'}>
               <AnnouncementBanner />
             </div>
           )}

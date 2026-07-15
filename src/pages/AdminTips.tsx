@@ -30,7 +30,18 @@ const ANNOUNCEMENT_TYPES: { v: AnnouncementType; label: string }[] = [
   { v: 'promo', label: 'Novidade / Promo' },
 ]
 
-const ROTATE_DAYS_OPTIONS = [1, 3, 7, 14]
+const ROTATE_PRESETS: { hours: number; label: string }[] = [
+  { hours: 1, label: '1 hora' },
+  { hours: 2, label: '2 horas' },
+  { hours: 3, label: '3 horas' },
+  { hours: 4, label: '4 horas' },
+  { hours: 6, label: '6 horas' },
+  { hours: 12, label: '12 horas' },
+  { hours: 24, label: '1 dia' },
+  { hours: 72, label: '3 dias' },
+  { hours: 168, label: '7 dias' },
+  { hours: 336, label: '14 dias' },
+]
 
 function toLocalInput(iso: string | null): string {
   if (!iso) return ''
@@ -153,7 +164,7 @@ function AnnouncementCard() {
   )
 }
 
-/** Liga/desliga a rotacao automatica das dicas (troca sozinha a cada N dias, igual pra todo
+/** Liga/desliga a rotacao automatica das dicas (troca sozinha a cada N horas, igual pra todo
  *  mundo) -- sem isto, a dica so avanca quando cada usuario dispensa a atual. */
 function RotationCard() {
   const { settings, refresh } = useAppSettings()
@@ -171,10 +182,10 @@ function RotationCard() {
     }
   }
 
-  async function setDays(days: number) {
+  async function setHours(hours: number) {
     setSaving(true)
     try {
-      await updateAppSettings({ tips_rotate_days: days })
+      await updateAppSettings({ tips_rotate_hours: hours })
       await refresh()
     } finally {
       setSaving(false)
@@ -183,13 +194,17 @@ function RotationCard() {
 
   return (
     <div className="card p-5 mb-6">
-      <div className="flex items-center justify-between mb-3">
+      {/* A LINHA INTEIRA e clicavel (nao so a bolinha) -- um alvo de toque pequeno demais e a
+          causa mais provavel de "o toggle nao funciona" no celular/PWA. */}
+      <button
+        onClick={toggle}
+        disabled={saving}
+        className="w-full flex items-center justify-between gap-3 mb-3 disabled:opacity-60"
+      >
         <h3 className="flex items-center gap-2 font-display font-semibold">
           <RefreshCw size={18} className="text-accent" /> Rotação automática
         </h3>
-        <button
-          onClick={toggle}
-          disabled={saving}
+        <span
           className={`h-6 w-11 rounded-full transition-colors relative shrink-0 ${
             settings.tips_rotate_enabled ? 'bg-brand-solid' : 'bg-surface-border'
           }`}
@@ -199,16 +214,16 @@ function RotationCard() {
               settings.tips_rotate_enabled ? 'translate-x-5' : 'translate-x-0.5'
             }`}
           />
-        </button>
-      </div>
+        </span>
+      </button>
       <p className="text-sm text-content-secondary mb-3">
-        Quando ligado, a dica mostrada na Home troca sozinha a cada N dias — a mesma dica aparece pra todo
-        mundo naquele período, em vez de só avançar quando cada usuário dispensa a atual.
+        Quando ligado, a dica mostrada na Home troca sozinha a cada X horas/dias — a mesma dica aparece pra
+        todo mundo naquele período, em vez de só avançar quando cada usuário dispensa a atual.
       </p>
       <div className="flex flex-wrap gap-2">
-        {ROTATE_DAYS_OPTIONS.map((d) => (
-          <Chip key={d} active={settings.tips_rotate_days === d} onClick={() => setDays(d)}>
-            a cada {d} {d === 1 ? 'dia' : 'dias'}
+        {ROTATE_PRESETS.map((p) => (
+          <Chip key={p.hours} active={settings.tips_rotate_hours === p.hours} onClick={() => setHours(p.hours)}>
+            a cada {p.label}
           </Chip>
         ))}
       </div>

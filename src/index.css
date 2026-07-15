@@ -126,6 +126,22 @@
   html.ios-standalone .safe-top {
     padding-top: calc(env(safe-area-inset-top, 0px) + 0.5rem);
   }
+  /* Quando a faixa de aviso esta visivel, ELA e quem fica logo abaixo do notch/status bar
+     (ganha safe-top no proprio wrapper, ver AppShell.tsx) -- a pagina logo abaixo (Outlet)
+     tambem tem .safe-top por convencao propria, o que somaria o respiro do notch DUAS vezes
+     e deixava um vao grande e sem sentido entre o aviso e o conteudo (relatado no PWA do iOS).
+     So o respiro base continua; o inset do notch ja foi consumido pelo aviso acima. */
+  .has-announcement .safe-top {
+    padding-top: 1.5rem;
+  }
+  @media (display-mode: standalone) {
+    .has-announcement .safe-top {
+      padding-top: 0.5rem;
+    }
+  }
+  html.ios-standalone .has-announcement .safe-top {
+    padding-top: 0.5rem;
+  }
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }

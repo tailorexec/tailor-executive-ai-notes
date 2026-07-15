@@ -16,7 +16,7 @@ const DEFAULTS: AppSettings = {
   maintenance_message: 'Estamos em manutencao. Voltamos em breve.',
   maintenance_eta: '',
   tips_rotate_enabled: false,
-  tips_rotate_days: 3,
+  tips_rotate_hours: 72,
   // Devem espelhar os defaults da migration 0019.
   ai_enabled: true,
   ai_daily_usd_per_user: 2,

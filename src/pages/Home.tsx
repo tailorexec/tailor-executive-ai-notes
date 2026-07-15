@@ -108,8 +108,8 @@ function HomeTip() {
 
   let next: Tip | undefined
   if (settings?.tips_rotate_enabled && eligible.length > 0) {
-    const days = Math.max(1, settings.tips_rotate_days || 3)
-    const slot = Math.floor(Date.now() / 86_400_000 / days) % eligible.length
+    const hours = Math.max(1, settings.tips_rotate_hours || 72)
+    const slot = Math.floor(Date.now() / 3_600_000 / hours) % eligible.length
     const candidate = eligible[slot]
     next = dismissed.includes(candidate.id) ? undefined : candidate
   } else {
