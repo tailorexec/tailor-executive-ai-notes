@@ -25,6 +25,7 @@ import {
   Info,
   Monitor,
   Smartphone,
+  SquarePlus,
 } from 'lucide-react'
 import { deleteMyAccount } from '../lib/account'
 import { useAuth } from '../auth/AuthProvider'
@@ -417,6 +418,11 @@ export function Settings() {
           icon={<Smartphone size={20} />}
           label={t('settings.downloadAndroid')}
           onClick={() => window.open(ANDROID_APK_DOWNLOAD_URL, '_blank')}
+        />
+        <Row
+          icon={<SquarePlus size={20} />}
+          label="Instalar app no celular (PWA)"
+          onClick={() => navigate('/instalar')}
         />
       </div>
 

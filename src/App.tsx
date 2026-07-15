@@ -27,6 +27,7 @@ import { About } from './pages/About'
 import { EditProfile } from './pages/EditProfile'
 import { ApiMonitor } from './pages/ApiMonitor'
 import { AuditLogPage } from './pages/AuditLog'
+import { InstallApp } from './pages/InstallApp'
 import { isElectron } from './lib/electron'
 import type { ReactNode } from 'react'
 
@@ -75,6 +76,9 @@ export default function App() {
         path="/cadastro"
         element={loading ? <FullscreenLoader /> : profile ? <Navigate to="/" replace /> : <Register />}
       />
+      {/* Publica de proposito (sem Protected): e o link que a gente compartilha pra alguem
+          instalar o app antes mesmo de ter conta/logar. */}
+      <Route path="/instalar" element={<InstallApp />} />
 
       <Route
         element={

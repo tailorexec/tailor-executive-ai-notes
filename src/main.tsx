@@ -12,6 +12,7 @@ import { I18nProvider } from './lib/i18n'
 import { initLang } from './lib/lang'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { logClientError } from './lib/auditLog'
+import { setupInstallPromptCapture } from './lib/pwaInstall'
 
 /**
  * Hoje nao existe NENHUM catch-all de erro no cliente: um throw fora de um try/catch, ou uma
@@ -113,6 +114,7 @@ function sanitizeAuthStorage() {
 
 sanitizeAuthStorage()
 setupGlobalErrorLogging()
+setupInstallPromptCapture()
 initLang()
 
 createRoot(document.getElementById('root')!).render(
