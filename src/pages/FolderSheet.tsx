@@ -167,7 +167,7 @@ export function FolderSheet({
                   className="flex items-center gap-3 flex-1 min-w-0 text-left"
                 >
                   <span className="h-4 w-4 rounded-full shrink-0" style={{ background: f.color }} />
-                  <span className="font-medium truncate">{f.name}</span>
+                  <span className="font-medium truncate min-w-0 flex-1">{f.name}</span>
                   {mode === 'assign' && selectedId === f.id && <Check size={16} className="text-accent ml-auto" />}
                 </button>
                 {mode === 'manage' && (

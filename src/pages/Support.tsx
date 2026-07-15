@@ -107,9 +107,9 @@ export function Support() {
           {tickets.map((tk) => (
             <li key={tk.id} className="card p-4">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-[10px] uppercase tracking-wide bg-brand-solid text-white px-2 py-0.5 rounded-full">{tk.topic}</span>
-                {tk.subject && <span className="font-medium text-sm truncate">{tk.subject}</span>}
-                <span className="text-xs text-content-muted ml-auto">{fmtDateTime(tk.created_at)}</span>
+                <span className="text-[10px] uppercase tracking-wide bg-brand-solid text-white px-2 py-0.5 rounded-full shrink-0">{tk.topic}</span>
+                {tk.subject && <span className="font-medium text-sm truncate min-w-0 flex-1">{tk.subject}</span>}
+                <span className="text-xs text-content-muted ml-auto shrink-0">{fmtDateTime(tk.created_at)}</span>
               </div>
               <p className="text-sm text-content-secondary whitespace-pre-line">{tk.message}</p>
             </li>

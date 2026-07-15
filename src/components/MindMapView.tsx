@@ -431,9 +431,9 @@ ${branches}
 
       {fs && (
         <div className="fixed inset-0 z-[80] flex flex-col" style={{ background: BG }}>
-          <div className="flex items-center justify-between px-3 py-2 shrink-0 border-b border-black/10">
-            <span className="text-sm font-medium text-slate-700 truncate">{title || 'Mapa mental'}</span>
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between gap-2 px-3 py-2 shrink-0 border-b border-black/10">
+            <span className="text-sm font-medium text-slate-700 truncate min-w-0 flex-1">{title || 'Mapa mental'}</span>
+            <div className="flex items-center gap-2 shrink-0">
               <button onClick={downloadPng} className="grid place-items-center h-9 w-9 rounded-lg bg-white border border-black/10 text-slate-700" aria-label="Baixar imagem">
                 <Download size={17} />
               </button>

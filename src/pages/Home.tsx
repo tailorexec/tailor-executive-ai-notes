@@ -450,8 +450,8 @@ export function Home() {
                     {sourceIcon(n)}
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <h3 className="font-semibold truncate">{n.title}</h3>
+                <div className="flex items-center gap-2 min-w-0">
+                  <h3 className="flex-1 min-w-0 font-semibold truncate">{n.title}</h3>
                   {n.status === 'processing' && (
                     <span className="text-[10px] uppercase tracking-wide bg-brand-solid text-white px-1.5 py-0.5 rounded shrink-0">
                       {t('home.processing')}

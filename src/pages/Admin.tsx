@@ -187,10 +187,12 @@ export function Admin() {
                       <div className="flex items-center gap-3">
                         <Avatar first={r.profile.first_name} last={r.profile.last_name} size={34} />
                         <div className="min-w-0">
-                          <p className="font-medium truncate flex items-center gap-2">
-                            {r.profile.first_name} {r.profile.last_name}
+                          <p className="font-medium flex items-center gap-2 min-w-0">
+                            <span className="truncate min-w-0 flex-1">
+                              {r.profile.first_name} {r.profile.last_name}
+                            </span>
                             {r.profile.role === 'admin' && (
-                              <span className="text-[10px] uppercase bg-brand-solid text-white px-1.5 py-0.5 rounded">
+                              <span className="text-[10px] uppercase bg-brand-solid text-white px-1.5 py-0.5 rounded shrink-0">
                                 admin
                               </span>
                             )}
@@ -237,10 +239,12 @@ export function Admin() {
                 <div className="flex items-center gap-3 mb-3">
                   <Avatar first={r.profile.first_name} last={r.profile.last_name} size={40} />
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium truncate flex items-center gap-2">
-                      {r.profile.first_name} {r.profile.last_name}
+                    <p className="font-medium flex items-center gap-2 min-w-0">
+                      <span className="truncate min-w-0 flex-1">
+                        {r.profile.first_name} {r.profile.last_name}
+                      </span>
                       {r.profile.role === 'admin' && (
-                        <span className="text-[10px] uppercase bg-brand-solid text-white px-1.5 py-0.5 rounded">
+                        <span className="text-[10px] uppercase bg-brand-solid text-white px-1.5 py-0.5 rounded shrink-0">
                           admin
                         </span>
                       )}
@@ -359,9 +363,9 @@ export function Admin() {
                 {tickets.map((tk) => (
                   <li key={tk.id} className="card p-4">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className="text-[10px] uppercase tracking-wide bg-brand-solid text-white px-2 py-0.5 rounded-full">{tk.topic}</span>
-                      {tk.subject && <span className="font-medium text-sm truncate">{tk.subject}</span>}
-                      <span className="text-xs text-content-muted ml-auto">{fmtDateTime(tk.created_at)}</span>
+                      <span className="text-[10px] uppercase tracking-wide bg-brand-solid text-white px-2 py-0.5 rounded-full shrink-0">{tk.topic}</span>
+                      {tk.subject && <span className="font-medium text-sm truncate min-w-0 flex-1">{tk.subject}</span>}
+                      <span className="text-xs text-content-muted ml-auto shrink-0">{fmtDateTime(tk.created_at)}</span>
                     </div>
                     <p className="text-sm text-content-secondary whitespace-pre-line">{tk.message}</p>
                     {tk.profile && (
