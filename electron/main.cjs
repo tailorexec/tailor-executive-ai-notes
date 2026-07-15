@@ -4,7 +4,7 @@
 // So o que precisa mesmo de codigo nativo vive aqui: atalho global e captura de audio do
 // sistema sem o dialogo de escolha do SO.
 
-const { app, BrowserWindow, Tray, Menu, globalShortcut, session, desktopCapturer, nativeImage, dialog } = require('electron')
+const { app, BrowserWindow, Tray, Menu, globalShortcut, session, desktopCapturer, nativeImage, dialog, ipcMain } = require('electron')
 const { autoUpdater } = require('electron-updater')
 const path = require('node:path')
 
@@ -145,6 +145,10 @@ if (!gotSingleInstanceLock) {
         checkingUpdate = false
       })
   }
+
+  // Pedido vindo do site (icone no topo, ao lado de pasta/tema -- ver src/lib/electron.ts +
+  // preload.cjs): mesmo comportamento do item de menu da bandeja.
+  ipcMain.on('ana:check-for-updates', () => checkForUpdates(true))
 
   autoUpdater.on('update-available', (info) => {
     dialog

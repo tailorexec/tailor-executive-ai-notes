@@ -13,4 +13,9 @@ contextBridge.exposeInMainWorld('anaElectron', {
     ipcRenderer.on('ana:hotkey-record', listener)
     return () => ipcRenderer.removeListener('ana:hotkey-record', listener)
   },
+  /** Pede pro processo principal checar atualizacoes agora (sempre mostra um resultado,
+   *  mesmo "ja esta atualizado" -- o dialogo nativo aparece do lado do main.cjs). */
+  checkForUpdates() {
+    ipcRenderer.send('ana:check-for-updates')
+  },
 })

@@ -18,9 +18,11 @@ import {
   Folder as FolderIcon,
   Clock,
   Image as ImageIcon,
+  RefreshCw,
 } from 'lucide-react'
 import { AnaIcon } from '../components/AnaIcon'
 import { logSilentError } from '../lib/auditLog'
+import { isElectron } from '../lib/electron'
 import { useAuth } from '../auth/AuthProvider'
 import { db } from '../lib/api'
 import type { Note, Folder } from '../lib/types'
@@ -212,6 +214,19 @@ export function Home() {
             >
               <FolderIcon size={18} />
             </button>
+            {isElectron() && (
+              <button
+                onClick={() => {
+                  window.anaElectron!.checkForUpdates()
+                  toast('Verificando atualizações...')
+                }}
+                aria-label="Buscar atualizações"
+                title="Buscar atualizações"
+                className="grid place-items-center h-10 w-10 rounded-full bg-surface-elevated border border-surface-border text-content-secondary hover:text-content-primary"
+              >
+                <RefreshCw size={18} />
+              </button>
+            )}
             <ThemeToggle />
             {/* No desktop o perfil ja esta na sidebar (foto do usuario). Aqui e so mobile. */}
             <button onClick={() => navigate('/config')} aria-label="Perfil" className="md:hidden">

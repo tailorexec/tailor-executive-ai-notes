@@ -5,6 +5,7 @@
 export interface AnaElectronBridge {
   platform: 'win32'
   onRecordHotkey: (cb: () => void) => () => void
+  checkForUpdates: () => void
 }
 
 declare global {
