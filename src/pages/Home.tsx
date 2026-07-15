@@ -138,6 +138,7 @@ export function Home() {
   const [askOpen, setAskOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<Note | null>(null)
+  const [pendingLeave, setPendingLeave] = useState<Note | null>(null)
 
   const retention = retentionOf(profile)
 
@@ -151,6 +152,20 @@ export function Home() {
       toast(t('home.deleted'))
     } catch (err) {
       logSilentError('client:Home.confirmDelete', err)
+      toast(t('common.error'), 'error')
+    }
+  }
+
+  /** So pra nota compartilhada comigo: sai da lista de quem ve, sem tocar na nota do dono. */
+  async function confirmLeave() {
+    const target = pendingLeave
+    if (!target) return
+    try {
+      await db.leaveSharedNote(target.id)
+      setNotes((prev) => (prev ? prev.filter((x) => x.id !== target.id) : prev))
+      toast(t('home.left'))
+    } catch (err) {
+      logSilentError('client:Home.confirmLeave', err)
       toast(t('common.error'), 'error')
     }
   }
@@ -486,7 +501,9 @@ export function Home() {
                     {card}
                   </SwipeRow>
                 ) : (
-                  card
+                  <SwipeRow label={t('home.leave')} onDelete={() => setPendingLeave(n)}>
+                    {card}
+                  </SwipeRow>
                 )}
               </li>
             )
@@ -518,6 +535,17 @@ export function Home() {
         danger
         onConfirm={confirmDelete}
         onClose={() => setPendingDelete(null)}
+      />
+
+      <ConfirmDialog
+        open={!!pendingLeave}
+        title={t('home.leaveTitle')}
+        message={t('home.leaveConfirm').replace('{title}', pendingLeave?.title ?? '')}
+        confirmLabel={t('home.leave')}
+        cancelLabel={t('common.cancel')}
+        danger
+        onConfirm={confirmLeave}
+        onClose={() => setPendingLeave(null)}
       />
 
       {folderOpen && profile && (

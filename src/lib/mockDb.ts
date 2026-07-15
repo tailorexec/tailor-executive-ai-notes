@@ -289,6 +289,17 @@ export const mockDb: Db = {
     write(K.notes, notes.filter((n) => n.id !== id))
   },
 
+  async leaveSharedNote(id) {
+    const myId = localStorage.getItem(K.session)
+    if (!myId) return
+    const notes = read<Note[]>(K.notes, [])
+    const idx = notes.findIndex((n) => n.id === id)
+    if (idx !== -1) {
+      notes[idx].shared_with = notes[idx].shared_with.filter((u) => u !== myId)
+      write(K.notes, notes)
+    }
+  },
+
   async getNote(id) {
     cleanupExpiredAudio()
     const notes = read<Note[]>(K.notes, [])

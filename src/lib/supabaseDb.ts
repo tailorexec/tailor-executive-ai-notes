@@ -325,6 +325,11 @@ export const supabaseDb: Db = {
     if (error) throw error
   },
 
+  async leaveSharedNote(id) {
+    const { error } = await client().rpc('leave_shared_note', { p_note_id: id })
+    if (error) throw error
+  },
+
   async getNote(id) {
     const { data, error } = await client().from('notes').select('*').eq('id', id).single()
     if (error) return null

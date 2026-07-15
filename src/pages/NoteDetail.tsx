@@ -67,6 +67,7 @@ export function NoteDetail() {
   const [folders, setFolders] = useState<Folder[]>([])
   const [menuOpen, setMenuOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [confirmLeave, setConfirmLeave] = useState(false)
   const [editField, setEditField] = useState<null | 'title' | 'summary'>(null)
   const [editValue, setEditValue] = useState('')
   const [chatInput, setChatInput] = useState('')
@@ -271,6 +272,13 @@ export function NoteDetail() {
     navigate('/', { replace: true })
   }
 
+  /** So pra quem RECEBEU a nota: sai da lista de quem ve, sem tocar na nota do dono. */
+  async function doLeave() {
+    if (!note) return
+    await db.leaveSharedNote(note.id)
+    navigate('/', { replace: true })
+  }
+
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
     { key: 'summary', label: t('note.tabSummary'), icon: <FileText size={16} /> },
     { key: 'detailed', label: t('note.tabDetailed'), icon: <Sparkles size={16} /> },
@@ -360,6 +368,17 @@ export function NoteDetail() {
                         className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left text-accent hover:bg-surface-elevated border-t border-surface-border"
                       >
                         <Trash2 size={16} /> {t('note.deleteNote')}
+                      </button>
+                    )}
+                    {!canEdit && (
+                      <button
+                        onClick={() => {
+                          setMenuOpen(false)
+                          setConfirmLeave(true)
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left text-accent hover:bg-surface-elevated border-t border-surface-border"
+                      >
+                        <Trash2 size={16} /> {t('note.leaveNote')}
                       </button>
                     )}
                   </div>
@@ -653,6 +672,17 @@ export function NoteDetail() {
         danger
         onConfirm={doDelete}
         onClose={() => setConfirmDelete(false)}
+      />
+
+      <ConfirmDialog
+        open={confirmLeave}
+        title={t('note.leaveTitle')}
+        message={t('note.leaveMsg')}
+        confirmLabel={t('note.leaveConfirm')}
+        cancelLabel={t('common.cancel')}
+        danger
+        onConfirm={doLeave}
+        onClose={() => setConfirmLeave(false)}
       />
 
       {shareOpen && (

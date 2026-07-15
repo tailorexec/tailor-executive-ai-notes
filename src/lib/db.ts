@@ -60,6 +60,9 @@ export interface Db {
   restoreNote(id: string): Promise<void>
   /** Remove definitivamente (o audio deve ser apagado pelo chamador). */
   deleteNotePermanent(id: string): Promise<void>
+  /** So pra quem RECEBEU a nota (nao e dono): tira o proprio usuario de shared_with -- a
+   *  nota do dono e o resto de shared_with continuam intactos, so some da MINHA lista. */
+  leaveSharedNote(id: string): Promise<void>
 
   // --- usage / admin ---
   logUsage(userId: string, type: UsageEventType, noteId?: string | null): Promise<void>
