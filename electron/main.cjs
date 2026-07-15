@@ -94,6 +94,12 @@ if (!gotSingleInstanceLock) {
   }
 
   function createTray() {
+    // Defensivo: se por algum motivo isto rodar de novo com uma tray ja existente, destroi a
+    // antiga antes -- nunca deixa duas ativas ao mesmo tempo no mesmo processo.
+    if (tray) {
+      tray.destroy()
+      tray = null
+    }
     let icon = nativeImage.createFromPath(ICON_PATH)
     if (!icon.isEmpty()) icon = icon.resize({ width: 16, height: 16 })
     tray = new Tray(icon)
@@ -241,6 +247,12 @@ if (!gotSingleInstanceLock) {
 
   app.on('will-quit', () => {
     globalShortcut.unregisterAll()
+    // Sem isto, o Windows deixava o icone "fantasma" na bandeja depois de fechar (o Electron
+    // nao remove sozinho) -- so sumia de vez ao passar o mouse em cima ou reiniciar o Explorer.
+    if (tray) {
+      tray.destroy()
+      tray = null
+    }
   })
 
   // Continua rodando na bandeja no Windows mesmo com todas as janelas fechadas -- so encerra
