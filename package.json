@@ -1,7 +1,7 @@
 {
   "name": "tailor-executive-ai-notes",
   "private": true,
-  "version": "0.17.4",
+  "version": "0.17.5",
   "author": "Tailor Executive",
   "type": "module",
   "description": "Tailor Executive AI Notes - IA de anotacoes e transcricoes de reunioes",
@@ -24,6 +24,7 @@
     "@capacitor/ios": "^8.4.1",
     "@supabase/supabase-js": "^2.45.4",
     "date-fns": "^3.6.0",
+    "electron-log": "^5.4.4",
     "electron-updater": "^6.8.9",
     "jspdf": "^2.5.2",
     "lucide-react": "^0.454.0",

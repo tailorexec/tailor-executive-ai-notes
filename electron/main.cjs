@@ -4,18 +4,29 @@
 // So o que precisa mesmo de codigo nativo vive aqui: atalho global e captura de audio do
 // sistema sem o dialogo de escolha do SO.
 
-const { app, BrowserWindow, Tray, Menu, globalShortcut, session, desktopCapturer, nativeImage, dialog, ipcMain } = require('electron')
+const { app, BrowserWindow, Tray, Menu, globalShortcut, session, desktopCapturer, nativeImage, dialog, ipcMain, shell } = require('electron')
 const { autoUpdater } = require('electron-updater')
+const log = require('electron-log/main')
 const path = require('node:path')
 
 const APP_URL = 'https://tailor-executive-ai-notes.vercel.app'
 const RECORD_HOTKEY = 'CommandOrControl+Shift+G'
 const ICON_PATH = path.join(__dirname, '..', 'build', 'icon.ico')
 
+// Grava em arquivo (userData/logs/main.log) -- sem isto, um "buscar atualizacoes" que nao
+// mostra nada nunca deixa rastro nenhum pra investigar. Se acontecer de novo, pedir esse
+// arquivo pro usuario mostra exatamente onde a checagem parou (rede, GitHub, parse do
+// latest.yml, etc.) em vez de adivinhar as cegas.
+log.initialize()
+log.transports.file.level = 'info'
+autoUpdater.logger = log
+
 // So baixa a atualizacao se o usuario confirmar (dialog abaixo) -- nunca baixa/instala sozinho
 // sem avisar, ja que o instalador nao e assinado e o Windows sempre vai pedir confirmacao.
 autoUpdater.autoDownload = false
 autoUpdater.autoInstallOnAppQuit = false
+
+log.info(`ANA iniciando -- versao ${app.getVersion()}, plataforma ${process.platform}`)
 
 let mainWindow = null
 let tray = null
@@ -110,6 +121,7 @@ if (!gotSingleInstanceLock) {
         { label: 'Gravar reunião (Ctrl+Shift+G)', click: triggerRecordHotkey },
         { type: 'separator' },
         { label: 'Buscar atualizações...', click: () => checkForUpdates(true) },
+        { label: 'Abrir pasta de logs...', click: () => shell.showItemInFolder(log.transports.file.getFile().path) },
         { type: 'separator' },
         {
           label: 'Sair',
@@ -132,12 +144,14 @@ if (!gotSingleInstanceLock) {
   let checkingUpdate = false
   let lastCheckWasManual = false
   function checkForUpdates(manual) {
+    log.info(`checkForUpdates chamado (manual=${manual}, ja em andamento=${checkingUpdate})`)
     if (checkingUpdate) return
     checkingUpdate = true
     lastCheckWasManual = manual
     autoUpdater
       .checkForUpdates()
       .catch((err) => {
+        log.error('checkForUpdates falhou:', err)
         if (manual) {
           dialog.showMessageBox(mainWindow, {
             type: 'error',
@@ -154,9 +168,13 @@ if (!gotSingleInstanceLock) {
 
   // Pedido vindo do site (icone no topo, ao lado de pasta/tema -- ver src/lib/electron.ts +
   // preload.cjs): mesmo comportamento do item de menu da bandeja.
-  ipcMain.on('ana:check-for-updates', () => checkForUpdates(true))
+  ipcMain.on('ana:check-for-updates', () => {
+    log.info('IPC ana:check-for-updates recebido do site')
+    checkForUpdates(true)
+  })
 
   autoUpdater.on('update-available', (info) => {
+    log.info('update-available:', info.version)
     dialog
       .showMessageBox(mainWindow, {
         type: 'info',
@@ -172,7 +190,8 @@ if (!gotSingleInstanceLock) {
       })
   })
 
-  autoUpdater.on('update-not-available', () => {
+  autoUpdater.on('update-not-available', (info) => {
+    log.info('update-not-available (versao atual ja e a mais nova):', info?.version)
     if (lastCheckWasManual) {
       dialog.showMessageBox(mainWindow, {
         type: 'info',
