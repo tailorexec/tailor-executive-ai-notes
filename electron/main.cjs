@@ -136,10 +136,22 @@ if (!gotSingleInstanceLock) {
   }
 
   /**
+   * Manda o status pro site (icone de atualizar em Home.tsx) alem dos dialogos nativos --
+   * sem isto, clicar em "buscar atualizacoes" nao dava NENHUM feedback visivel ate um dialogo
+   * eventualmente aparecer (ou nunca aparecer, se ja estivesse atualizado), parecendo que o
+   * botao nao fez nada.
+   */
+  function sendUpdateStatus(payload) {
+    if (mainWindow) mainWindow.webContents.send('ana:update-status', payload)
+  }
+
+  /**
    * Checagem de atualizacao via GitHub Releases (mesmo repositorio, configurado em
    * package.json's build.publish). `manual` distingue quem clicou em "Buscar atualizacoes"
    * (sempre mostra um resultado, mesmo "ja esta atualizado") da checagem automatica silenciosa
-   * do startup (so incomoda o usuario quando ha novidade de verdade).
+   * do startup (so incomoda o usuario quando ha novidade de verdade) -- por isso so os eventos
+   * de "checando"/"sem novidade" respeitam esse filtro; "achou"/"baixando"/"pronto" o site sempre
+   * mostra, ja que nesse ponto ha algo real acontecendo (e o dialogo nativo tambem aparece nos 2 casos).
    */
   let checkingUpdate = false
   let lastCheckWasManual = false
@@ -148,11 +160,13 @@ if (!gotSingleInstanceLock) {
     if (checkingUpdate) return
     checkingUpdate = true
     lastCheckWasManual = manual
+    if (manual) sendUpdateStatus({ status: 'checking' })
     autoUpdater
       .checkForUpdates()
       .catch((err) => {
         log.error('checkForUpdates falhou:', err)
         if (manual) {
+          sendUpdateStatus({ status: 'error', message: String(err?.message ?? err) })
           dialog.showMessageBox(mainWindow, {
             type: 'error',
             title: 'Buscar atualizações',
@@ -175,6 +189,7 @@ if (!gotSingleInstanceLock) {
 
   autoUpdater.on('update-available', (info) => {
     log.info('update-available:', info.version)
+    sendUpdateStatus({ status: 'available', version: info.version })
     dialog
       .showMessageBox(mainWindow, {
         type: 'info',
@@ -186,13 +201,20 @@ if (!gotSingleInstanceLock) {
         cancelId: 1,
       })
       .then((r) => {
-        if (r.response === 0) autoUpdater.downloadUpdate()
+        if (r.response === 0) {
+          autoUpdater.downloadUpdate()
+        } else {
+          // Usuario recusou baixar agora -- sem isto, o icone de "buscando atualizacao" do site
+          // ficava girando pra sempre, ja que nenhum evento de download nunca chegaria.
+          sendUpdateStatus({ status: 'cancelled' })
+        }
       })
   })
 
   autoUpdater.on('update-not-available', (info) => {
     log.info('update-not-available (versao atual ja e a mais nova):', info?.version)
     if (lastCheckWasManual) {
+      sendUpdateStatus({ status: 'not-available' })
       dialog.showMessageBox(mainWindow, {
         type: 'info',
         title: 'Buscar atualizações',
@@ -203,10 +225,12 @@ if (!gotSingleInstanceLock) {
 
   autoUpdater.on('download-progress', (p) => {
     if (mainWindow) mainWindow.setProgressBar(p.percent / 100)
+    sendUpdateStatus({ status: 'downloading', percent: p.percent })
   })
 
   autoUpdater.on('update-downloaded', (info) => {
     if (mainWindow) mainWindow.setProgressBar(-1)
+    sendUpdateStatus({ status: 'downloaded', version: info.version })
     dialog
       .showMessageBox(mainWindow, {
         type: 'info',

@@ -139,6 +139,11 @@ export function Home() {
   const [helpOpen, setHelpOpen] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<Note | null>(null)
   const [pendingLeave, setPendingLeave] = useState<Note | null>(null)
+  const [updateBusy, setUpdateBusy] = useState(false)
+  const [updatePercent, setUpdatePercent] = useState<number | null>(null)
+  // So os instaladores novos (a partir desta versao) tem essa API no preload -- quem ainda esta
+  // num instalador antigo (site atualiza sozinho, o wrapper nativo nao) cai no fallback de antes.
+  const supportsUpdateStatus = isElectron() && typeof window.anaElectron!.onUpdateStatus === 'function'
 
   const retention = retentionOf(profile)
 
@@ -214,6 +219,38 @@ export function Home() {
     }
   }, [sortOpen])
 
+  // App Windows (Electron): reage ao status real da checagem/download de atualizacao em vez
+  // de so mostrar um toast fixo "verificando..." que nunca sabia se de fato terminou.
+  useEffect(() => {
+    if (!supportsUpdateStatus) return
+    return window.anaElectron!.onUpdateStatus((payload) => {
+      if (payload.status === 'checking') {
+        setUpdateBusy(true)
+        setUpdatePercent(null)
+      } else if (payload.status === 'available') {
+        toast(`Nova versão ${payload.version} encontrada, baixando...`)
+      } else if (payload.status === 'not-available') {
+        setUpdateBusy(false)
+        toast('Você já está com a versão mais recente.')
+      } else if (payload.status === 'downloading') {
+        setUpdateBusy(true)
+        setUpdatePercent(Math.round(payload.percent))
+      } else if (payload.status === 'downloaded') {
+        setUpdateBusy(false)
+        setUpdatePercent(null)
+        toast(`Atualização ${payload.version} baixada. Reinicie para instalar.`)
+      } else if (payload.status === 'error') {
+        setUpdateBusy(false)
+        setUpdatePercent(null)
+        toast('Não foi possível verificar atualizações agora.', 'error')
+      } else if (payload.status === 'cancelled') {
+        setUpdateBusy(false)
+        setUpdatePercent(null)
+      }
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const folderName = (id: string | null) => folderList.find((f) => f.id === id)?.name
   const folderColor = (id: string | null) => folderList.find((f) => f.id === id)?.color ?? null
 
@@ -286,14 +323,25 @@ export function Home() {
             {isElectron() && (
               <button
                 onClick={() => {
+                  if (supportsUpdateStatus) {
+                    if (updateBusy) return
+                    setUpdateBusy(true)
+                  } else {
+                    toast('Verificando atualizações...')
+                  }
                   window.anaElectron!.checkForUpdates()
-                  toast('Verificando atualizações...')
                 }}
+                disabled={supportsUpdateStatus && updateBusy}
                 aria-label="Buscar atualizações"
-                title="Buscar atualizações"
-                className="grid place-items-center h-10 w-10 rounded-full bg-surface-elevated border border-surface-border text-content-secondary hover:text-content-primary"
+                title={updatePercent !== null ? `Baixando atualização... ${updatePercent}%` : 'Buscar atualizações'}
+                className="relative grid place-items-center h-10 w-10 rounded-full bg-surface-elevated border border-surface-border text-content-secondary hover:text-content-primary disabled:opacity-70"
               >
-                <RefreshCw size={18} />
+                <RefreshCw size={18} className={supportsUpdateStatus && updateBusy ? 'animate-spin' : undefined} />
+                {updatePercent !== null && (
+                  <span className="absolute -bottom-1 -right-1 text-[9px] font-semibold bg-brand-solid text-white rounded-full min-w-[18px] h-[18px] grid place-items-center px-0.5">
+                    {updatePercent}
+                  </span>
+                )}
               </button>
             )}
             <ThemeToggle />

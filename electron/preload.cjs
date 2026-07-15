@@ -18,4 +18,12 @@ contextBridge.exposeInMainWorld('anaElectron', {
   checkForUpdates() {
     ipcRenderer.send('ana:check-for-updates')
   },
+  /** Chama `cb` a cada mudanca de status da checagem/download de atualizacao (checando,
+   *  achou, sem novidade, baixando com %, pronto, erro) -- da o feedback visivel que o
+   *  dialogo nativo sozinho nao cobre (ex.: nada aparece enquanto so esta checando). */
+  onUpdateStatus(cb) {
+    const listener = (_event, payload) => cb(payload)
+    ipcRenderer.on('ana:update-status', listener)
+    return () => ipcRenderer.removeListener('ana:update-status', listener)
+  },
 })
