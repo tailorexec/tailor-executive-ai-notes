@@ -78,6 +78,23 @@ const authStorage = {
   },
 }
 
+/**
+ * Existe uma sessao gravada (localStorage OU sessionStorage) agora? Usado so pra diagnostico:
+ * distingue "nunca fez login neste navegador/perfil" (normal, nada a investigar) de "havia um
+ * token gravado e mesmo assim o servidor nao reconheceu o usuario" (sinal real de sessao
+ * expirada/corrompida/perdida -- o caso que motivou o log em getCurrentProfile()).
+ */
+export function hasStoredSession(): boolean {
+  try {
+    return (
+      Object.keys(localStorage).some((k) => k.startsWith('sb-')) ||
+      Object.keys(sessionStorage).some((k) => k.startsWith('sb-'))
+    )
+  } catch {
+    return false
+  }
+}
+
 // Only instantiate a real client when configured. In mock mode this stays null
 // and the data layer uses the localStorage-backed implementation instead.
 export const supabase: SupabaseClient | null = config.mockMode

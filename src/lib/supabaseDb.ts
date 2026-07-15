@@ -1,8 +1,9 @@
 // Supabase-backed implementation of Db (production path).
 // Requires the schema in supabase/migrations and the edge functions.
 
-import { supabase } from './supabase'
+import { supabase, hasStoredSession } from './supabase'
 import { config, isAdminEmail, isAllowedDomain } from './config'
+import { logClientError } from './auditLog'
 import type { Db, SignUpInput } from './db'
 import type {
   AdminUserRow,
@@ -68,8 +69,21 @@ export const supabaseDb: Db = {
     const sb = client()
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        const { data: auth } = await sb.auth.getUser()
-        if (!auth.user) return null
+        const { data: auth, error: authError } = await sb.auth.getUser()
+        if (!auth.user) {
+          // Diferente de "nunca fez login" (normal): havia um token gravado e o servidor
+          // mesmo assim nao reconheceu -- e o sinal real do bug "fechar o app desconecta a
+          // conta". So aqui da pra distinguir os dois casos; sem isto, os dois pareciam iguais.
+          if (hasStoredSession()) {
+            logClientError({
+              severity: 'warning',
+              category: 'silent',
+              source: 'client:auth.sessionRejected',
+              message: authError?.message || 'Sessao gravada existia mas auth.getUser() nao devolveu usuario',
+            })
+          }
+          return null
+        }
         const { data, error } = await sb.from('profiles').select('*').eq('id', auth.user.id).single()
         if (error || !data) return null
         return rowToProfile(data)

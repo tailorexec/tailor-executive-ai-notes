@@ -20,6 +20,8 @@ export interface AuditLogRow {
   note_id: string | null
   route: string | null
   user_agent: string | null
+  resolved_at: string | null
+  resolved_by: string | null
 }
 
 /* ---------------------------------------------------------------------------
@@ -86,6 +88,9 @@ export interface AuditLogFilters {
   severities?: AuditSeverity[]
   categories?: AuditCategory[]
   search?: string
+  /** Default false: um evento marcado como resolvido some da lista (senao a tela so acumula
+   *  pra sempre, mesmo depois do bug corrigido). Ligar pra ver o historico completo. */
+  includeResolved?: boolean
 }
 
 export interface AuditLogCursor {
@@ -117,6 +122,7 @@ export async function listAuditLog(
   if (filters.severities?.length) q = q.in('severity', filters.severities)
   if (filters.categories?.length) q = q.in('category', filters.categories)
   if (filters.search?.trim()) q = q.ilike('message', `%${filters.search.trim()}%`)
+  if (!filters.includeResolved) q = q.is('resolved_at', null)
   if (cursor) {
     q = q.or(`created_at.lt.${cursor.created_at},and(created_at.eq.${cursor.created_at},id.lt.${cursor.id})`)
   }
@@ -124,6 +130,26 @@ export async function listAuditLog(
   const { data, error } = await q
   if (error) throw error
   return (data ?? []) as AuditLogRow[]
+}
+
+/** Marca uma ou mais linhas como resolvidas -- somem da lista padrao (includeResolved=false). */
+export async function resolveAuditLog(ids: string[], resolvedBy: string): Promise<void> {
+  if (!supabase || !ids.length) return
+  const { error } = await supabase
+    .from('audit_log')
+    .update({ resolved_at: new Date().toISOString(), resolved_by: resolvedBy })
+    .in('id', ids)
+  if (error) throw error
+}
+
+/** Desfaz a resolucao (caso tenha marcado sem querer). */
+export async function unresolveAuditLog(ids: string[]): Promise<void> {
+  if (!supabase || !ids.length) return
+  const { error } = await supabase
+    .from('audit_log')
+    .update({ resolved_at: null, resolved_by: null })
+    .in('id', ids)
+  if (error) throw error
 }
 
 export interface AuditLogSummary {

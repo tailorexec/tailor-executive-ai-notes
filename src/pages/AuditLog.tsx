@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, ScrollText, AlertTriangle, Users, ListTree, ChevronDown, ChevronUp } from 'lucide-react'
+import { ArrowLeft, ScrollText, AlertTriangle, Users, ListTree, ChevronDown, ChevronUp, Check, RotateCcw } from 'lucide-react'
 import { db } from '../lib/api'
+import { useAuth } from '../auth/AuthProvider'
 import { Avatar, Chip, Spinner } from '../components/ui'
 import { useToast } from '../components/Toast'
 import { fmtDate } from '../lib/format'
 import { periodDays, periodRange, type PeriodKey } from '../lib/apiUsage'
 import {
   listAuditLog,
+  resolveAuditLog,
   summarizeAuditLog,
+  unresolveAuditLog,
   type AuditCategory,
   type AuditLogRow,
   type AuditSeverity,
@@ -68,42 +71,71 @@ function SeverityBadge({ severity }: { severity: AuditSeverity }) {
   )
 }
 
-function LogRow({ row, person }: { row: AuditLogRow; person?: Profile }) {
+function LogRow({
+  row,
+  person,
+  busy,
+  onResolve,
+  onUnresolve,
+}: {
+  row: AuditLogRow
+  person?: Profile
+  busy: boolean
+  onResolve: (id: string) => void
+  onUnresolve: (id: string) => void
+}) {
   const [open, setOpen] = useState(false)
   const hasDetail = row.detail && Object.keys(row.detail).length > 0
+  const resolved = !!row.resolved_at
 
   return (
-    <li className="card p-3">
-      <button
-        onClick={() => hasDetail && setOpen((o) => !o)}
-        className="w-full text-left flex items-start gap-2"
-      >
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center flex-wrap gap-1.5 mb-1">
-            <SeverityBadge severity={row.severity} />
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-content-muted">
-              {CATEGORY_LABEL[row.category]}
-            </span>
-            <span className="text-[11px] text-content-muted">{row.source}</span>
-          </div>
-          <p className="text-sm break-words">{row.message}</p>
-          <div className="flex items-center flex-wrap gap-2 mt-1.5 text-[11px] text-content-muted">
-            <span>{fmtDate(row.created_at)}</span>
-            {row.route && <span>• {row.route}</span>}
-            {person && (
-              <span className="flex items-center gap-1">
-                • <Avatar first={person.first_name} last={person.last_name} size={16} url={person.avatar_url} />
-                {person.first_name} {person.last_name}
+    <li className={`card p-3 ${resolved ? 'opacity-60' : ''}`}>
+      <div className="flex items-start gap-2">
+        <button
+          onClick={() => hasDetail && setOpen((o) => !o)}
+          className="min-w-0 flex-1 text-left flex items-start gap-2"
+        >
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center flex-wrap gap-1.5 mb-1">
+              <SeverityBadge severity={row.severity} />
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-content-muted">
+                {CATEGORY_LABEL[row.category]}
               </span>
-            )}
+              <span className="text-[11px] text-content-muted">{row.source}</span>
+            </div>
+            <p className={`text-sm break-words ${resolved ? 'line-through' : ''}`}>{row.message}</p>
+            <div className="flex items-center flex-wrap gap-2 mt-1.5 text-[11px] text-content-muted">
+              <span>{fmtDate(row.created_at)}</span>
+              {row.route && <span>• {row.route}</span>}
+              {person && (
+                <span className="flex items-center gap-1">
+                  • <Avatar first={person.first_name} last={person.last_name} size={16} url={person.avatar_url} />
+                  {person.first_name} {person.last_name}
+                </span>
+              )}
+              {resolved && <span>• resolvido em {fmtDate(row.resolved_at!)}</span>}
+            </div>
           </div>
-        </div>
-        {hasDetail && (
-          <span className="text-content-muted shrink-0 mt-0.5">
-            {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          </span>
-        )}
-      </button>
+          {hasDetail && (
+            <span className="text-content-muted shrink-0 mt-0.5">
+              {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => (resolved ? onUnresolve(row.id) : onResolve(row.id))}
+          disabled={busy}
+          className={`shrink-0 grid place-items-center h-8 w-8 rounded-lg border transition-colors ${
+            resolved
+              ? 'bg-surface-elevated border-surface-border text-content-muted hover:text-content-primary'
+              : 'bg-surface-elevated border-surface-border text-accent hover:bg-brand-solid hover:text-white hover:border-brand-solid'
+          }`}
+          aria-label={resolved ? 'Reabrir' : 'Marcar como resolvido'}
+          title={resolved ? 'Reabrir' : 'Marcar como resolvido'}
+        >
+          {busy ? <Spinner size={14} /> : resolved ? <RotateCcw size={14} /> : <Check size={14} />}
+        </button>
+      </div>
       {open && hasDetail && (
         <pre className="mt-3 p-2.5 rounded-lg bg-surface-elevated text-[11px] overflow-x-auto whitespace-pre-wrap break-words">
           {JSON.stringify(row.detail, null, 2)}
@@ -116,16 +148,19 @@ function LogRow({ row, person }: { row: AuditLogRow; person?: Profile }) {
 export function AuditLogPage() {
   const navigate = useNavigate()
   const toast = useToast()
+  const { profile } = useAuth()
   const [period, setPeriod] = useState<PeriodKey>('day')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [severities, setSeverities] = useState<Set<AuditSeverity>>(new Set())
   const [categories, setCategories] = useState<Set<AuditCategory>>(new Set())
   const [search, setSearch] = useState('')
+  const [includeResolved, setIncludeResolved] = useState(false)
   const [rows, setRows] = useState<AuditLogRow[] | null>(null)
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(true)
   const [people, setPeople] = useState<Map<string, Profile>>(new Map())
+  const [busyId, setBusyId] = useState<string | null>(null)
 
   const range = useMemo(() => periodRange(period, { from, to }), [period, from, to])
   const filters = useMemo(
@@ -135,8 +170,9 @@ export function AuditLogPage() {
       severities: severities.size ? [...severities] : undefined,
       categories: categories.size ? [...categories] : undefined,
       search: search.trim() || undefined,
+      includeResolved,
     }),
-    [range, severities, categories, search],
+    [range, severities, categories, search, includeResolved],
   )
 
   useEffect(() => {
@@ -182,6 +218,38 @@ export function AuditLogPage() {
     if (next.has(value)) next.delete(value)
     else next.add(value)
     setter(next)
+  }
+
+  async function handleResolve(id: string) {
+    if (!profile || !rows) return
+    setBusyId(id)
+    try {
+      await resolveAuditLog([id], profile.id)
+      // Sem includeResolved, o item resolvido some da lista (e o objetivo); com includeResolved
+      // ligado, so atualiza o estado local pra mostrar o risco e o botao de reabrir.
+      setRows(
+        includeResolved
+          ? rows.map((r) => (r.id === id ? { ...r, resolved_at: new Date().toISOString(), resolved_by: profile.id } : r))
+          : rows.filter((r) => r.id !== id),
+      )
+    } catch {
+      toast('Nao consegui marcar como resolvido', 'error')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  async function handleUnresolve(id: string) {
+    if (!rows) return
+    setBusyId(id)
+    try {
+      await unresolveAuditLog([id])
+      setRows(rows.map((r) => (r.id === id ? { ...r, resolved_at: null, resolved_by: null } : r)))
+    } catch {
+      toast('Nao consegui reabrir', 'error')
+    } finally {
+      setBusyId(null)
+    }
   }
 
   const summary = useMemo(() => (rows ? summarizeAuditLog(rows) : null), [rows])
@@ -237,6 +305,9 @@ export function AuditLogPage() {
             {CATEGORY_LABEL[c]}
           </Chip>
         ))}
+        <Chip active={includeResolved} onClick={() => setIncludeResolved((v) => !v)}>
+          Mostrar resolvidos
+        </Chip>
       </div>
 
       <input
@@ -277,7 +348,14 @@ export function AuditLogPage() {
           ) : (
             <ul className="space-y-2">
               {rows.map((r) => (
-                <LogRow key={r.id} row={r} person={r.user_id ? people.get(r.user_id) : undefined} />
+                <LogRow
+                  key={r.id}
+                  row={r}
+                  person={r.user_id ? people.get(r.user_id) : undefined}
+                  busy={busyId === r.id}
+                  onResolve={handleResolve}
+                  onUnresolve={handleUnresolve}
+                />
               ))}
             </ul>
           )}

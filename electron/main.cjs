@@ -52,6 +52,10 @@ if (!gotSingleInstanceLock) {
         preload: path.join(__dirname, 'preload.cjs'),
         contextIsolation: true,
         nodeIntegration: false,
+        // Particao NOMEADA e persistente (gravada em disco no userData) em vez de depender do
+        // "default session" implicito -- deixa explicito que login/localStorage devem sobreviver
+        // a fechar e reabrir o app, em vez de confiar no comportamento padrao do Electron.
+        partition: 'persist:ana',
       },
     })
 
@@ -110,8 +114,9 @@ if (!gotSingleInstanceLock) {
     // do sistema operacional: grava a tela toda + audio do sistema (loopback) direto. Resolve o
     // maior ponto de atrito da gravacao de reuniao (escolher a aba certa, lembrar de marcar
     // "compartilhar audio") -- so acontece aqui dentro do app nativo, um navegador comum sempre
-    // exige esse dialogo por seguranca.
-    session.defaultSession.setDisplayMediaRequestHandler(
+    // exige esse dialogo por seguranca. Tem que ser na MESMA particao da janela (persist:ana),
+    // senao o handler fica registrado numa sessao que a janela nem usa.
+    session.fromPartition('persist:ana').setDisplayMediaRequestHandler(
       (_request, callback) => {
         desktopCapturer
           .getSources({ types: ['screen'] })

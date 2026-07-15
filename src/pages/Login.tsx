@@ -57,16 +57,26 @@ function Backdrop() {
   )
 }
 
+const LAST_EMAIL_KEY = 'tailor.lastEmail'
+
 export function Login() {
   const { signIn } = useAuth()
   const navigate = useNavigate()
   const t = useT()
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(() => {
+    try {
+      return localStorage.getItem(LAST_EMAIL_KEY) ?? ''
+    } catch {
+      return ''
+    }
+  })
   const [password, setPassword] = useState('')
   const [show, setShow] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [downloadOpen, setDownloadOpen] = useState(false)
+  // Ligado por padrao: se ja tinha um e-mail salvo, e porque o usuario ja escolheu "manter
+  // conectado" antes -- comecar desmarcado apagaria essa preferencia sem ele pedir.
   const [keepSignedIn, setKeepSignedIn] = useState(true)
 
   // A tela de login tem MODO UNICO (escuro). Forca o tema enquanto ela existe e
@@ -86,6 +96,12 @@ export function Login() {
     setLoading(true)
     try {
       setRememberMe(keepSignedIn)
+      try {
+        if (keepSignedIn) localStorage.setItem(LAST_EMAIL_KEY, email.trim())
+        else localStorage.removeItem(LAST_EMAIL_KEY)
+      } catch {
+        /* nao bloqueia o login por isso */
+      }
       await signIn(email, password)
       navigate('/', { replace: true })
     } catch (err) {
