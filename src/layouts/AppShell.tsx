@@ -327,13 +327,16 @@ export function AppShell() {
             showBanner ? 'has-announcement' : ''
           }`}
         >
-          {/* Quando ha aviso, e ELE quem precisa vencer o notch/status bar (fica visualmente no
-              topo) -- por isso usa safe-top aqui. A pagina logo abaixo (Outlet) tambem tem
-              safe-top no proprio container (convencao usada em quase toda pagina do app), o que
-              dobraria o respiro do notch; a classe "has-announcement" (index.css) neutraliza
-              esse segundo respiro so quando o aviso esta mesmo visivel. */}
+          {/* So no DESKTOP: no mobile (PWA/APK inclusive), aviso e dica atrapalhavam o topo da
+              Home (empurravam "conversar com todas as reunioes" pra baixo) -- Home.tsx cuida da
+              versao mobile, reposicionada depois daquele botao. Quando ha aviso, e ELE quem
+              precisa vencer o notch/status bar (fica visualmente no topo) -- por isso usa
+              safe-top aqui. A pagina logo abaixo (Outlet) tambem tem safe-top no proprio
+              container (convencao usada em quase toda pagina do app), o que dobraria o respiro
+              do notch; a classe "has-announcement" (index.css, so em telas md+) neutraliza esse
+              segundo respiro so quando o aviso esta mesmo visivel NESSA posicao. */}
           {!hideMobileNav && (
-            <div className={showBanner ? 'px-5 safe-top' : 'px-5 pt-4'}>
+            <div className={`hidden md:block ${showBanner ? 'px-5 safe-top' : 'px-5 pt-4'}`}>
               <AnnouncementBanner />
             </div>
           )}

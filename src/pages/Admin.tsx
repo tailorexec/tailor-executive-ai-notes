@@ -151,7 +151,7 @@ export function Admin() {
             <div className="lg:w-72 lg:shrink-0">
               <AdminSettings />
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 flex-1 content-start">
+            <div className="grid grid-cols-2 gap-3 flex-1 content-start max-w-md">
               <StatCard icon={<Users size={16} />} label="Usuarios" value={totals.users} />
               <StatCard icon={<NotebookPen size={16} />} label="Notas" value={totals.notes} />
               <StatCard icon={<Mic size={16} />} label="Gravacoes" value={totals.recordings} />

@@ -35,6 +35,7 @@ import { Avatar, EmptyState, Chip, NoteCardSkeleton, PriorityBadge, ConfirmDialo
 import { ThemeToggle } from '../components/ThemeToggle'
 import { Logo } from '../components/Logo'
 import { NewNoteSheet } from '../components/NewNoteSheet'
+import { AnnouncementBanner } from '../components/AnnouncementBanner'
 import { AskNotesSheet } from './AskNotesSheet'
 import { FolderSheet } from './FolderSheet'
 import { getNotifPrefs, notify } from '../lib/notifications'
@@ -384,7 +385,12 @@ export function Home() {
         </div>
       </header>
 
-      <HomeTip />
+      {/* So no desktop: no mobile (PWA/APK inclusive), aviso+dica aqui em cima empurravam
+          "conversar com todas as reunioes" pra baixo e atrapalhavam o layout -- versao mobile
+          fica reposicionada depois daquele botao (abaixo). */}
+      <div className="hidden md:block">
+        <HomeTip />
+      </div>
 
       <button
         onClick={() => setAskOpen(true)}
@@ -399,6 +405,12 @@ export function Home() {
         </span>
         <ChevronRight size={18} className="text-content-muted shrink-0" />
       </button>
+
+      {/* Versao mobile do aviso+dica (ver comentario acima). */}
+      <div className="md:hidden">
+        <AnnouncementBanner />
+        <HomeTip />
+      </div>
 
       <UpcomingEvents />
 
