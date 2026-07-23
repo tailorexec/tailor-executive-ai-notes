@@ -69,6 +69,9 @@ export function Capture() {
   const [submitting, setSubmitting] = useState(false)
   const [imageWords, setImageWords] = useState(150)
   const [processing, setProcessing] = useState(false)
+  // Revela o botao "Cancelar" no spinner so depois de alguns segundos: um processamento rapido
+  // (imagem/texto) nem chega a mostra-lo; um que travou da a saida pro usuario.
+  const [showCancel, setShowCancel] = useState(false)
   const [step, setStep] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement | null>(null)
@@ -81,6 +84,12 @@ export function Capture() {
   const pendingKeyRef = useRef<string | null>(null)
   const createdNoteRef = useRef<Note | null>(null)
   const lastFinalizeOptsRef = useRef<Parameters<typeof finalize>[0] | null>(null)
+  // Identifica a tentativa de finalize em andamento. Se o usuario CANCELAR (ou disparar um
+  // retry) enquanto uma chamada de rede esta pendurada, incrementamos isto -- a tentativa
+  // antiga, ao terminar tarde, ve que nao e mais a atual e NAO sequestra a tela (nem navega,
+  // nem apaga a gravacao pendente). Sem isto, um upload/transcricao que trava numa rede movel
+  // instavel deixava o usuario preso pra sempre no spinner de "processando".
+  const finalizeAttemptRef = useRef(0)
   // Gravacoes de tentativas ANTERIORES (sessao/aba diferente) que ficaram sem processar.
   const [pendingRecordings, setPendingRecordings] = useState(() => listPendingRecordings())
   const [resumingKey, setResumingKey] = useState<string | null>(null)
@@ -90,6 +99,17 @@ export function Capture() {
   useEffect(() => {
     prunePendingRecordings().then(() => setPendingRecordings(listPendingRecordings()))
   }, [])
+
+  // "Cancelar" surge 12s apos comecar a processar (e some assim que o processamento termina).
+  // Tempo suficiente pra um processamento normal terminar sozinho; se travou de vez, da a saida.
+  useEffect(() => {
+    if (!processing) {
+      setShowCancel(false)
+      return
+    }
+    const id = setTimeout(() => setShowCancel(true), 12000)
+    return () => clearTimeout(id)
+  }, [processing])
 
   const autoStoppedRef = useRef(false)
   const isAudioMode = mode === 'record' || mode === 'meeting'
@@ -281,6 +301,9 @@ export function Capture() {
     setProcessing(true)
     setError(null)
     lastFinalizeOptsRef.current = opts
+    // Esta tentativa deixa de valer se o usuario cancelar (ou reiniciar) enquanto ela roda.
+    const attempt = ++finalizeAttemptRef.current
+    const superseded = () => finalizeAttemptRef.current !== attempt
 
     // Mesma chave durante toda a vida desta tentativa (inclusive em retries): nao persiste
     // blobs duplicados nem confunde qual gravacao pendente pertence a qual tentativa.
@@ -319,6 +342,7 @@ export function Capture() {
           setStep(0)
           // Evita transcricao "alucinada" quando a gravacao ficou muda.
           if (mode !== 'video' && (await isSilentAudio(opts.audioBlob))) {
+            if (superseded()) return
             setError(
               'Nao captamos audio suficiente (gravacao silenciosa). Verifique o microfone e o viva-voz, e tente novamente.',
             )
@@ -373,6 +397,10 @@ export function Capture() {
         if (ref) note = await db.updateNote(note.id, { audio_url: ref })
       }
 
+      // Cancelado no meio do caminho: a nota ja foi criada (fica salva, sem perda), mas nao
+      // navegamos nem apagamos a pendencia -- deixa o usuario no controle da tela.
+      if (superseded()) return
+
       // Sucesso completo: a rede de seguranca nao e mais necessaria para esta gravacao.
       await deletePendingRecording(pendingKey)
       pendingKeyRef.current = null
@@ -380,11 +408,22 @@ export function Capture() {
 
       navigate(`/nota/${note.id}`, { replace: true })
     } catch (err) {
+      // Uma tentativa cancelada que falha tarde nao deve reescrever a tela do usuario.
+      if (superseded()) return
       setError(aiError(err, 'Falha ao processar. Tente novamente.'))
       setProcessing(false)
       // NAO apaga a gravacao pendente aqui: e o que permite o botao "Tentar novamente" (e,
       // numa proxima visita, o banner de recuperacao) reaproveitar o audio em vez de perde-lo.
     }
+  }
+
+  /** Sai do spinner de "processando" sem perder a gravacao: a chamada de rede que ficou
+   *  pendurada (rede movel instavel) continua invalidada em segundo plano, e o usuario pode
+   *  tentar de novo pelo botao. Resolve o "clico em tentar novamente e fica travado". */
+  function cancelProcessing() {
+    finalizeAttemptRef.current++ // invalida a tentativa em andamento
+    setProcessing(false)
+    setError('Processamento interrompido. Sua gravação foi salva — toque em "Tentar novamente".')
   }
 
   /** Repete a ultima tentativa com o MESMO audio (reaproveita a nota se ela ja foi criada). */
@@ -627,6 +666,14 @@ export function Capture() {
             />
           ))}
         </div>
+        {showCancel && (
+          <div className="mt-8">
+            <p className="text-sm text-content-muted mb-3">Está demorando mais que o normal?</p>
+            <button className="btn-outline h-9 px-4 text-sm" onClick={cancelProcessing}>
+              Cancelar
+            </button>
+          </div>
+        )}
       </div>
     )
   }
