@@ -65,7 +65,10 @@ export function UpdateBanner() {
   }
 
   return (
-    <div className="flex items-center gap-2.5 border border-accent/30 bg-accent/10 rounded-2xl px-4 py-2 mx-5 mt-4 text-sm">
+    // max-w + alinhado a esquerda: no app Windows a Home tem controles flutuantes no canto
+    // superior direito (pasta/atualizar/tema, position:fixed z-40) -- uma barra ate a borda
+    // direita deixava o botao "Atualizar agora" embaixo deles. Estreita, fica bem a esquerda.
+    <div className="flex items-center gap-2.5 border border-accent/30 bg-accent/10 rounded-2xl px-4 py-2 mx-5 mt-4 max-w-xl text-sm">
       <ArrowUpCircle size={16} className="text-accent shrink-0" />
       <span className="flex-1 min-w-0 text-content-primary">{t('update.available')}</span>
       <button onClick={update} className="btn-primary h-8 px-3 text-sm shrink-0">

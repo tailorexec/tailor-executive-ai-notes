@@ -1,7 +1,7 @@
 {
   "name": "tailor-executive-ai-notes",
   "private": true,
-  "version": "0.18.10",
+  "version": "0.18.12",
   "author": "Tailor Executive",
   "type": "module",
   "description": "Tailor Executive AI Notes - IA de anotacoes e transcricoes de reunioes",
@@ -61,6 +61,7 @@
     "files": [
       "electron/**/*",
       "!electron/build-icon.mjs",
+      "!electron/installer.nsh",
       "node_modules/**/*",
       "package.json",
       "build/icon.ico"
@@ -79,7 +80,8 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "artifactName": "ANA-by-Tailor-Setup-${version}.${ext}"
+      "artifactName": "ANA-by-Tailor-Setup-${version}.${ext}",
+      "include": "electron/installer.nsh"
     },
     "publish": {
       "provider": "github",
