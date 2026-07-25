@@ -28,12 +28,19 @@ const FRIENDLY = [
 const EXPECTED_LIMITS = ['limite diario', 'orcamento mensal', 'Muitas solicitacoes', 'temporariamente desativadas']
 
 /**
- * Subconjunto de FRIENDLY que a PROPRIA edge function ja loga no catch externo (severity=error,
- * category=system, source=edge:ai/edge:transcribe) antes de devolver a mensagem pro cliente --
- * logar de novo aqui so duplica a mesma falha em duas linhas (uma "warning/user", outra
- * "error/system") no /admin/audit, sem nenhuma informacao nova na segunda.
+ * Mensagens que a PROPRIA edge function ja loga (no catch OU nas barreiras de guarda -- ver
+ * logAuditServer em ai/index.ts e transcribe/index.ts), com contexto melhor (task, userId,
+ * tamanho). Logar de novo aqui so duplicaria a linha no /admin/audit. Tudo o que NAO estiver
+ * aqui (erro de rede, 413 do gateway, provedor fora do ar, mensagem inesperada) continua sendo
+ * logado pelo cliente -- que muitas vezes e a UNICA rede que ve esses casos.
  */
-const ALREADY_LOGGED_SERVER = ['nao conseguiu gerar']
+const ALREADY_LOGGED_SERVER = [
+  'nao conseguiu gerar',
+  'transcricao esta vazia',
+  'muito grande', // "Arquivo muito grande" / "Imagem muito grande"
+  'acima do limite', // "Audio acima do limite de 2 horas"
+  'task invalida',
+]
 
 /**
  * Funcao usada como `setError(aiError(err, ...))`/`toast(aiError(err, ...), 'error')` em toda

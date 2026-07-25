@@ -34,12 +34,23 @@ const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
  */
 async function unwrapError(error: unknown): Promise<Error> {
   const ctx = (error as { context?: Response })?.context
-  if (ctx && typeof ctx.json === 'function') {
+  if (ctx && typeof ctx.clone === 'function') {
     try {
       const body = await ctx.clone().json()
       if (body?.error) return new Error(String(body.error))
     } catch {
       /* corpo nao era JSON */
+    }
+    // Sem `{ error }` legivel: preserva status + corpo cru em vez de deixar o supabase-js
+    // devolver so "Edge Function returned a non-2xx status code". Isso e o que torna
+    // diagnosticavel um erro do gateway/plataforma (ex.: 413 payload grande) no log de auditoria,
+    // em vez de virar uma mensagem generica sem pista nenhuma.
+    try {
+      const status = ctx.status
+      const text = (await ctx.clone().text()).slice(0, 300).trim()
+      if (status || text) return new Error(`HTTP ${status || '?'}${text ? `: ${text}` : ''}`)
+    } catch {
+      /* corpo ilegivel */
     }
   }
   return error instanceof Error ? error : new Error(String(error))

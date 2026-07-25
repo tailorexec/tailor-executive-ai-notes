@@ -190,6 +190,14 @@ Deno.serve(async (req) => {
      */
     const NEEDS_TRANSCRIPT = new Set(['summary', 'detailed', 'action_items', 'analysis', 'mindmap', 'feedback'])
     if (NEEDS_TRANSCRIPT.has(task) && !transcript.trim()) {
+      await logAuditServer({
+        severity: 'warning',
+        category: 'user',
+        source: 'edge:ai',
+        message: 'A transcricao esta vazia. Nao ha o que processar.',
+        detail: { task },
+        user_id: userId,
+      })
       return new Response(JSON.stringify({ error: 'A transcricao esta vazia. Nao ha o que processar.' }), {
         status: 422,
         headers: { ...cors, 'content-type': 'application/json' },
@@ -357,6 +365,14 @@ Foque em: tom, perguntas feitas e sugeridas, ritmo/andamento, pontos fortes, mel
         })
       }
       if (img.data.length > MAX_IMAGE_B64_CHARS) {
+        await logAuditServer({
+          severity: 'warning',
+          category: 'user',
+          source: 'edge:ai',
+          message: 'Imagem muito grande. Limite de 5 MB.',
+          detail: { task, chars: img.data.length },
+          user_id: userId,
+        })
         return new Response(JSON.stringify({ error: 'Imagem muito grande. Limite de 5 MB.' }), {
           status: 413,
           headers: { ...cors, 'content-type': 'application/json' },
@@ -383,6 +399,14 @@ Foque em: tom, perguntas feitas e sugeridas, ritmo/andamento, pontos fortes, mel
       )
       out = { summary: text.trim() }
     } else {
+      await logAuditServer({
+        severity: 'warning',
+        category: 'system',
+        source: 'edge:ai',
+        message: `task invalida: ${task}`,
+        detail: { task },
+        user_id: userId,
+      })
       return new Response(JSON.stringify({ error: 'task invalida' }), {
         status: 400,
         headers: { ...cors, 'content-type': 'application/json' },

@@ -112,6 +112,14 @@ Deno.serve(async (req) => {
     const file = inForm.get('file') as File
     if (!file) throw new Error('Arquivo de audio ausente.')
     if (file.size > MAX_FILE_MB * 1024 * 1024) {
+      await logAuditServer({
+        severity: 'warning',
+        category: 'user',
+        source: 'edge:transcribe',
+        message: `Arquivo muito grande. Limite de ${MAX_FILE_MB} MB.`,
+        detail: { bytes: file.size },
+        user_id: userId,
+      })
       return new Response(
         JSON.stringify({ error: `Arquivo muito grande. Limite de ${MAX_FILE_MB} MB.` }),
         { status: 413, headers: { ...cors, 'content-type': 'application/json' } },
@@ -142,6 +150,14 @@ Deno.serve(async (req) => {
     })
 
     if (result.seconds > MAX_AUDIO_SECONDS) {
+      await logAuditServer({
+        severity: 'warning',
+        category: 'user',
+        source: 'edge:transcribe',
+        message: 'Audio acima do limite de 2 horas.',
+        detail: { seconds: result.seconds },
+        user_id: userId,
+      })
       return new Response(
         JSON.stringify({ error: 'Audio acima do limite de 2 horas.' }),
         { status: 413, headers: { ...cors, 'content-type': 'application/json' } },
