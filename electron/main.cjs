@@ -187,6 +187,12 @@ if (!gotSingleInstanceLock) {
     checkForUpdates(true)
   })
 
+  // Versao do instalador nativo instalado (package.json). O site (carregado ao vivo) compara
+  // com a ultima versao publicada pra saber se precisa avisar o usuario a atualizar o app.
+  ipcMain.on('ana:get-version', (e) => {
+    e.returnValue = app.getVersion()
+  })
+
   autoUpdater.on('update-available', (info) => {
     log.info('update-available:', info.version)
     sendUpdateStatus({ status: 'available', version: info.version })

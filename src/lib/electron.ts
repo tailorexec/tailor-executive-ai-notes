@@ -13,6 +13,9 @@ export type AnaUpdateStatus =
 
 export interface AnaElectronBridge {
   platform: 'win32'
+  /** Versao do instalador nativo instalado. `undefined` em instaladores antigos (anteriores a
+   *  este recurso) -- tratados como desatualizados pelo aviso de atualizacao. */
+  appVersion?: string
   onRecordHotkey: (cb: () => void) => () => void
   checkForUpdates: () => void
   onUpdateStatus: (cb: (payload: AnaUpdateStatus) => void) => () => void

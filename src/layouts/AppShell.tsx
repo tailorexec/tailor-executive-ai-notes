@@ -6,6 +6,7 @@ import { useAuth } from '../auth/AuthProvider'
 import { Logo } from '../components/Logo'
 import { Avatar } from '../components/ui'
 import { AnnouncementBanner } from '../components/AnnouncementBanner'
+import { UpdateBanner } from '../components/UpdateBanner'
 import { NewNoteSheet } from '../components/NewNoteSheet'
 import { NavTag } from '../components/NavTag'
 import { startCalendarReminders } from '../lib/calendarReminders'
@@ -327,6 +328,9 @@ export function AppShell() {
             showBanner ? 'has-announcement' : ''
           }`}
         >
+          {/* Aviso fino de "atualizacao disponivel" -- so aparece no app Windows quando o
+              instalador nativo esta atras da ultima versao (a propria UpdateBanner decide). */}
+          <UpdateBanner />
           {/* So no DESKTOP: no mobile (PWA/APK inclusive), aviso e dica atrapalhavam o topo da
               Home (empurravam "conversar com todas as reunioes" pra baixo) -- Home.tsx cuida da
               versao mobile, reposicionada depois daquele botao. Quando ha aviso, e ELE quem

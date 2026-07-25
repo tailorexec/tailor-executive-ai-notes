@@ -6,6 +6,9 @@ const { contextBridge, ipcRenderer } = require('electron')
 
 contextBridge.exposeInMainWorld('anaElectron', {
   platform: 'win32',
+  /** Versao do instalador nativo instalado (package.json). Lida uma vez, de forma sincrona,
+   *  no carregamento -- o site usa pra decidir se mostra o aviso de "atualizacao disponivel". */
+  appVersion: ipcRenderer.sendSync('ana:get-version'),
   /** Chama `cb` quando o atalho global de gravar (Ctrl+Shift+G) e pressionado. Devolve uma
    *  funcao para cancelar a inscricao (mesmo padrao de um addEventListener/useEffect). */
   onRecordHotkey(cb) {
