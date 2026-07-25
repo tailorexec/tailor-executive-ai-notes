@@ -247,10 +247,41 @@ if (!gotSingleInstanceLock) {
         cancelId: 1,
       })
       .then((r) => {
-        if (r.response === 0) {
-          app.isQuitting = true
-          autoUpdater.quitAndInstall()
+        if (r.response !== 0) return
+        // O app fica na bandeja: o handler de 'close' faz hide() em vez de deixar fechar, e
+        // isso trava o quitAndInstall (o instalador so roda depois que o app fecha DE VERDADE).
+        // Antes de instalar: marca que estamos saindo, tira o handler que esconde a janela,
+        // destroi a bandeja e libera o atalho global -- nada segurando o processo.
+        app.isQuitting = true
+        try {
+          if (mainWindow) mainWindow.removeAllListeners('close')
+        } catch (_) {}
+        try {
+          globalShortcut.unregisterAll()
+        } catch (_) {}
+        if (tray) {
+          try {
+            tray.destroy()
+          } catch (_) {}
+          tray = null
         }
+        // setImmediate: deixa o dialogo fechar antes de sair. isForceRunAfter=true reabre o app
+        // depois de instalar. Se por algum motivo o quitAndInstall nao disparar o instalador
+        // (relatado: "fecha tudo mas a instalacao nao comeca"), o fallback abre o .exe baixado
+        // direto pelo Windows e encerra o app -- o instalador novo se encarrega de fechar o
+        // processo (taskkill no installer.nsh).
+        setImmediate(() => {
+          try {
+            log.info('quitAndInstall: iniciando')
+            autoUpdater.quitAndInstall(false, true)
+          } catch (err) {
+            log.error('quitAndInstall falhou, tentando abrir o instalador manualmente:', err)
+            try {
+              if (info?.downloadedFile) shell.openPath(info.downloadedFile)
+            } catch (_) {}
+            app.quit()
+          }
+        })
       })
   })
 
