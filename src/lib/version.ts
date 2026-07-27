@@ -1,5 +1,5 @@
 /** Fonte unica da versao do app. Atualize aqui a cada deploy. */
-export const APP_VERSION = 'v0.18.16'
+export const APP_VERSION = 'v0.18.17'
 export const APP_NAME = 'ANA by Tailor'
 
 /**

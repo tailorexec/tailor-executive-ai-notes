@@ -212,6 +212,11 @@ export function useRecorder() {
           (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
         const ctx = new AudioCtx()
         audioCtxRef.current = ctx
+        // Um AudioContext pode nascer "suspended" (politica de autoplay). Suspenso, o
+        // MediaStreamDestination (a faixa que o MediaRecorder grava) nao recebe audio nenhum --
+        // a gravacao sai muda/vazia e o provedor devolve "could not process file". resume()
+        // e no-op se ja estiver rodando.
+        if (ctx.state === 'suspended') await ctx.resume().catch(() => {})
         const analyser = ctx.createAnalyser()
         analyser.fftSize = 512
         analyserRef.current = analyser

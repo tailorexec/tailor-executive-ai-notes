@@ -18,6 +18,7 @@ import {
 import { extractFile, extractLink, FileError, TEXT_FILE_ACCEPT } from '../lib/extract'
 import { IMAGE_ACCEPT, isSupportedImage, MAX_IMAGE_MB, prepareImage } from '../lib/image'
 import { aiError } from '../lib/aiError'
+import { logClientError } from '../lib/auditLog'
 import { useAuth } from '../auth/AuthProvider'
 import { useRecorder, canCaptureSystemAudio, supportsTabAudio } from '../lib/useRecorder'
 import { db, config } from '../lib/api'
@@ -351,9 +352,28 @@ export function Capture() {
             pendingKeyRef.current = null
             return
           }
-          const res = await transcribeAudio(opts.audioBlob, { diarize })
-          transcript = res.transcript
-          language = res.language
+          try {
+            const res = await transcribeAudio(opts.audioBlob, { diarize })
+            transcript = res.transcript
+            language = res.language
+          } catch (tErr) {
+            // Diagnostico: registra o TAMANHO e o FORMATO reais do audio que o provedor recusou.
+            // E o que distingue "gravacao vazia/corrompida" de "arquivo em formato estranho" --
+            // sem isto, "could not process file" nao diz nada sobre a causa.
+            logClientError({
+              severity: 'error',
+              category: 'system',
+              source: 'client:transcribeAudio',
+              message: tErr instanceof Error ? tErr.message : String(tErr),
+              detail: {
+                mode,
+                bytes: opts.audioBlob.size,
+                type: opts.audioBlob.type || '(vazio)',
+                durationSeconds: opts.duration ?? 0,
+              },
+            })
+            throw tErr
+          }
         }
 
         const meta = { template, context }
