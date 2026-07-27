@@ -63,6 +63,34 @@ async function invoke<T>(fn: string, body: Record<string, unknown>): Promise<T> 
   return data as T
 }
 
+/**
+ * O Whisper (Groq/OpenAI) detecta o formato do audio pela EXTENSAO do nome do arquivo. Uma
+ * gravacao e um Blob sem `.name`, e antes o codigo mandava tudo como "audio.webm" -- mas o
+ * MediaRecorder do iOS Safari (e de qualquer navegador sem suporte a webm) grava em audio/mp4.
+ * Um arquivo mp4 chamado "audio.webm" o provedor rejeita com "could not process file - is it a
+ * valid media file?" (erro real do Henrique e da Aline). Aqui derivamos a extensao do MIME real
+ * do blob, pra o nome bater com o conteudo. Uploads de arquivo (com `.name` de verdade) mantem
+ * o proprio nome.
+ */
+function audioFilename(audio: Blob): string {
+  const named = (audio as File).name
+  if (named) return named
+  const type = (audio.type || '').split(';')[0].trim().toLowerCase()
+  const ext =
+    type === 'audio/mp4' || type === 'video/mp4'
+      ? 'mp4'
+      : type === 'audio/mpeg'
+        ? 'mp3'
+        : type === 'audio/ogg'
+          ? 'ogg'
+          : type === 'audio/wav' || type === 'audio/x-wav'
+            ? 'wav'
+            : type === 'audio/aac'
+              ? 'aac'
+              : 'webm'
+  return `audio.${ext}`
+}
+
 export async function transcribeAudio(
   audio: Blob,
   opts: { diarize?: boolean } = {},
@@ -72,8 +100,7 @@ export async function transcribeAudio(
     return { transcript: opts.diarize ? mockDiarizedTranscript() : mockTranscript(), language: 'pt-BR' }
   }
   const form = new FormData()
-  // Usa o nome/extensao real do arquivo (ex.: video.mp4) para o provedor detectar o formato.
-  const filename = (audio as File).name || 'audio.webm'
+  const filename = audioFilename(audio)
   form.append('file', audio, filename)
   if (opts.diarize) form.append('diarize', 'true')
   // Edge function reads multipart and forwards to the transcription provider.

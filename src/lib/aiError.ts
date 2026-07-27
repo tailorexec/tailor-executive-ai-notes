@@ -18,6 +18,7 @@ const FRIENDLY = [
   'nao conseguiu gerar',
   'verificar o orcamento',
   'transcricao esta vazia',
+  'conseguimos ler', // "Nao conseguimos ler este audio..." (formato/arquivo invalido)
 ]
 
 /**
@@ -40,6 +41,7 @@ const ALREADY_LOGGED_SERVER = [
   'muito grande', // "Arquivo muito grande" / "Imagem muito grande"
   'acima do limite', // "Audio acima do limite de 2 horas"
   'task invalida',
+  'conseguimos ler', // "Nao conseguimos ler este audio..." (logado em edge:transcribe)
 ]
 
 /**

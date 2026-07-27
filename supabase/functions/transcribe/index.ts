@@ -168,14 +168,35 @@ Deno.serve(async (req) => {
       headers: { ...cors, 'content-type': 'application/json' },
     })
   } catch (err) {
+    const raw = String(err)
+    // Provedor recusou o arquivo (formato/container que ele nao le, ou audio corrompido/vazio).
+    // Devolve uma mensagem clara em vez do "groq 400: {...}" cru -- e marca como 'warning'/'user'
+    // (e conteudo do usuario, nao uma falha do sistema).
+    const invalidMedia = /could not process file|valid media file|invalid.*file|unsupported/i.test(raw)
+    if (invalidMedia) {
+      await logAuditServer({
+        severity: 'warning',
+        category: 'user',
+        source: 'edge:transcribe',
+        message: `Audio nao pode ser lido pelo provedor: ${raw.slice(0, 300)}`,
+        user_id: userId,
+      })
+      return new Response(
+        JSON.stringify({
+          error:
+            'Não conseguimos ler este áudio. Grave novamente (evite pausar/retomar em excesso) ou, se enviou um arquivo, tente outro formato (MP3, M4A, WAV, WEBM).',
+        }),
+        { status: 422, headers: { ...cors, 'content-type': 'application/json' } },
+      )
+    }
     await logAuditServer({
       severity: 'error',
       category: 'system',
       source: 'edge:transcribe',
-      message: String(err).slice(0, 500),
+      message: raw.slice(0, 500),
       user_id: userId,
     })
-    return new Response(JSON.stringify({ error: String(err) }), {
+    return new Response(JSON.stringify({ error: raw }), {
       status: 500,
       headers: { ...cors, 'content-type': 'application/json' },
     })
