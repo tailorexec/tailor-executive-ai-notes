@@ -24,6 +24,7 @@ import { config } from '../lib/config'
 import { setRememberMe } from '../lib/supabase'
 import { WINDOWS_APP_DOWNLOAD_URL } from '../lib/windowsApp'
 import { ANDROID_APK_DOWNLOAD_URL } from '../lib/androidApp'
+import { LATEST_WINDOWS_BUILD } from '../lib/version'
 
 /** Os 4 pilares da referencia. */
 const PILLARS = [
@@ -144,8 +145,13 @@ export function Login() {
                     className="w-full flex items-center gap-3 px-4 py-3 text-sm text-left text-white hover:bg-white/10"
                   >
                     <Monitor size={17} className="text-accent shrink-0" />
-                    <span>
-                      <span className="block font-medium">{t('login.downloadWindows')}</span>
+                    <span className="min-w-0">
+                      <span className="flex items-center gap-2 font-medium">
+                        {t('login.downloadWindows')}
+                        <span className="text-[10px] font-semibold text-white/60 border border-white/15 rounded-full px-1.5 py-0.5 shrink-0">
+                          v{LATEST_WINDOWS_BUILD}
+                        </span>
+                      </span>
                       <span className="block text-xs text-white/50 mt-0.5">{t('login.downloadWindowsSub')}</span>
                     </span>
                   </a>

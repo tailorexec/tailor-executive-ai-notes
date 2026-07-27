@@ -45,7 +45,7 @@ import { acceptTeamInvite, declineOrLeaveTeam, listPendingForMe, teamsEnabled } 
 import type { TeamEdge } from '../lib/types'
 import { NavTag } from '../components/NavTag'
 import { logSilentError } from '../lib/auditLog'
-import { APP_NAME, APP_VERSION } from '../lib/version'
+import { APP_NAME, APP_VERSION, LATEST_WINDOWS_BUILD } from '../lib/version'
 import { WINDOWS_APP_DOWNLOAD_URL } from '../lib/windowsApp'
 import { ANDROID_APK_DOWNLOAD_URL } from '../lib/androidApp'
 
@@ -497,6 +497,12 @@ export function Settings() {
           icon={<Monitor size={20} />}
           label={t('settings.downloadWindows')}
           onClick={() => window.open(WINDOWS_APP_DOWNLOAD_URL, '_blank')}
+          right={
+            <span className="flex items-center gap-1.5">
+              <span className="text-xs font-medium text-content-muted">v{LATEST_WINDOWS_BUILD}</span>
+              <ChevronRight size={18} className="text-content-muted" />
+            </span>
+          }
         />
         <Row
           icon={<Smartphone size={20} />}
