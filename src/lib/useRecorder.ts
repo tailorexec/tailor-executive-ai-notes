@@ -223,18 +223,19 @@ export function useRecorder() {
 
         // Microfone. Mono: um mic estereo gastaria metade do bitrate com um canal redundante.
         //
-        // echoCancellation: FALSE de proposito. Ele foi feito pra CHAMADAS ao vivo (impedir que
-        // o outro lado ouca o proprio eco) e cancela justamente o audio que sai dos ALTO-FALANTES.
-        // Num app de GRAVACAO, quem grava no viva-voz (sem fone) quer captar exatamente esse audio
-        // -- reuniao, video, a outra ponta da ligacao. Com ele ligado, gravar no viva-voz saia
-        // vazio/mudo (caso do Henrique: com fone funcionava, sem fone captava nada). noiseSuppression
-        // tambem sai: pode tratar o audio do alto-falante como "ruido" e atenuar. autoGainControl
-        // fica, porque so normaliza o volume (ajuda audio baixo), sem remover conteudo.
+        // echoCancellation/noiseSuppression dependem do MODO:
+        //  - Reuniao no PC (system=true): o audio da reuniao ja vem LIMPO do sistema (loopback/aba).
+        //    O mic e so pra SUA voz. Com EC ligado, o mic NAO capta de novo o som do alto-falante
+        //    -- sem isso, a reuniao entra duas vezes (loopback + mic) e vira ECO. => EC/NS LIGADOS.
+        //  - Gravacao padrao (so mic): quem grava no viva-voz (sem fone) quer captar o que sai do
+        //    alto-falante (ligacao, video). EC/NS cancelariam justamente esse audio. => DESLIGADOS.
+        // autoGainControl fica sempre: so normaliza volume, nao remove conteudo.
+        const cleanVoiceOnly = !!opts?.system
         const mic = await navigator.mediaDevices.getUserMedia({
           audio: {
             channelCount: 1,
-            echoCancellation: false,
-            noiseSuppression: false,
+            echoCancellation: cleanVoiceOnly,
+            noiseSuppression: cleanVoiceOnly,
             autoGainControl: true,
           },
         })
