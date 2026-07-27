@@ -26,8 +26,11 @@ keystore.properties
 
 # Instalador Windows gerado pelo electron-builder (nao versionar binario)
 release/
-# Icone .ico gerado a partir de assets/icon.png (`npm run electron:icon`) -- nao versionar
-build/
+# Icone .ico gerado a partir de assets/icon.png (`npm run electron:icon`) -- nao versionar.
+# build/* (nao build/) pra conseguir re-incluir um arquivo especifico abaixo.
+build/*
+# ...menos o script NSIS do instalador, que E versionado (fecha o app da bandeja no update).
+!build/installer.nsh
 
 # Certificado de assinatura de codigo Windows (NUNCA versionar)
 *.pfx
