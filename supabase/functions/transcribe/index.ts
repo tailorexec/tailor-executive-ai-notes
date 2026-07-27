@@ -90,10 +90,14 @@ async function assemblyDiarize(file: File): Promise<{ text: string; seconds: num
     })
     const data = await p.json()
     if (data.status === 'completed') {
-      if (Array.isArray(data.utterances) && data.utterances.length) {
-        return data.utterances.map((u: { speaker: string; text: string }) => `Falante ${u.speaker}: ${u.text}`).join('\n')
-      }
-      return data.text ?? ''
+      // BUG corrigido: antes retornava a STRING crua aqui, mas a funcao e tipada como
+      // { text, seconds } e o chamador le result.text -> vinha undefined -> a nota saia com
+      // transcript undefined ("transcricao vazia" / crash no cliente). Sempre devolver o objeto.
+      const text =
+        Array.isArray(data.utterances) && data.utterances.length
+          ? data.utterances.map((u: { speaker: string; text: string }) => `Falante ${u.speaker}: ${u.text}`).join('\n')
+          : (data.text ?? '')
+      return { text, seconds: Math.round(Number(data.audio_duration) || 0) }
     }
     if (data.status === 'error') return null
   }

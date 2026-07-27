@@ -354,8 +354,11 @@ export function Capture() {
           }
           try {
             const res = await transcribeAudio(opts.audioBlob, { diarize })
-            transcript = res.transcript
-            language = res.language
+            // `?? ''` defensivo: se o provedor devolver um corpo sem `transcript` (ja aconteceu
+            // com a diarizacao devolvendo o formato errado), nunca deixar `transcript` undefined
+            // -- senao o `.trim()` abaixo estoura ("Cannot read properties of undefined").
+            transcript = res.transcript ?? ''
+            language = res.language ?? 'pt-BR'
             // Transcricao voltou VAZIA (provedor devolveu 200 sem texto): registra as
             // caracteristicas REAIS do audio pra saber a causa. rms alto + sem texto = provedor
             // nao achou fala; rms baixo = o mic/loopback nao captou (ex.: cancelamento de eco no
