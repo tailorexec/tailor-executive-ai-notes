@@ -221,13 +221,20 @@ export function useRecorder() {
         analyser.fftSize = 512
         analyserRef.current = analyser
 
-        // Microfone (sua voz). Mono: um mic estereo gastaria metade do bitrate com um canal
-        // redundante. Os filtros de fala tambem ajudam o Whisper.
+        // Microfone. Mono: um mic estereo gastaria metade do bitrate com um canal redundante.
+        //
+        // echoCancellation: FALSE de proposito. Ele foi feito pra CHAMADAS ao vivo (impedir que
+        // o outro lado ouca o proprio eco) e cancela justamente o audio que sai dos ALTO-FALANTES.
+        // Num app de GRAVACAO, quem grava no viva-voz (sem fone) quer captar exatamente esse audio
+        // -- reuniao, video, a outra ponta da ligacao. Com ele ligado, gravar no viva-voz saia
+        // vazio/mudo (caso do Henrique: com fone funcionava, sem fone captava nada). noiseSuppression
+        // tambem sai: pode tratar o audio do alto-falante como "ruido" e atenuar. autoGainControl
+        // fica, porque so normaliza o volume (ajuda audio baixo), sem remover conteudo.
         const mic = await navigator.mediaDevices.getUserMedia({
           audio: {
             channelCount: 1,
-            echoCancellation: true,
-            noiseSuppression: true,
+            echoCancellation: false,
+            noiseSuppression: false,
             autoGainControl: true,
           },
         })
