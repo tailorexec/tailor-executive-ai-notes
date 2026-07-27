@@ -32,7 +32,7 @@ import {
   deletePendingRecording,
   prunePendingRecordings,
 } from '../lib/audioStore'
-import { isSilentAudio } from '../lib/audioLevel'
+import { isSilentAudio, audioRms } from '../lib/audioLevel'
 import { currentDevice } from '../lib/device'
 import { fmtClock, fmtDuration } from '../lib/format'
 import { Spinner } from '../components/ui'
@@ -356,6 +356,26 @@ export function Capture() {
             const res = await transcribeAudio(opts.audioBlob, { diarize })
             transcript = res.transcript
             language = res.language
+            // Transcricao voltou VAZIA (provedor devolveu 200 sem texto): registra as
+            // caracteristicas REAIS do audio pra saber a causa. rms alto + sem texto = provedor
+            // nao achou fala; rms baixo = o mic/loopback nao captou (ex.: cancelamento de eco no
+            // driver do Windows, mic longe do alto-falante, volume baixo). E o dado que faltava.
+            if (!transcript.trim()) {
+              const rms = await audioRms(opts.audioBlob).catch(() => -1)
+              logClientError({
+                severity: 'warning',
+                category: 'system',
+                source: 'client:emptyTranscript',
+                message: `Transcricao vazia -- rms=${rms.toFixed(4)} bytes=${opts.audioBlob.size}`,
+                detail: {
+                  mode,
+                  bytes: opts.audioBlob.size,
+                  type: opts.audioBlob.type || '(vazio)',
+                  durationSeconds: opts.duration ?? 0,
+                  rms,
+                },
+              })
+            }
           } catch (tErr) {
             // Diagnostico: registra o TAMANHO e o FORMATO reais do audio que o provedor recusou.
             // E o que distingue "gravacao vazia/corrompida" de "arquivo em formato estranho" --

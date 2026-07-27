@@ -3,7 +3,8 @@
 // (ex.: gravar durante uma ligacao real no celular, quando o sistema reserva o microfone).
 // Nesses casos, evitamos transcrever para nao gerar conteudo inventado.
 
-async function audioRms(blob: Blob): Promise<number> {
+/** RMS medio do audio (0 = mudo). Exportado tambem pra diagnostico de gravacao vazia. */
+export async function audioRms(blob: Blob): Promise<number> {
   try {
     const buf = await blob.arrayBuffer()
     const AudioCtx =
