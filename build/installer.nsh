@@ -1,23 +1,29 @@
-; Script NSIS customizado. Fica em build/installer.nsh: e o caminho PADRAO que o electron-builder
-; inclui automaticamente (getResource com include indefinido -> buildResources/installer.nsh).
+; Script NSIS customizado (build/installer.nsh e o caminho PADRAO que o electron-builder inclui
+; sozinho -- confirmado no fonte: getResource(undefined,"installer.nsh") -> buildResources/).
 ;
-; PROBLEMA: o ANA fica na BANDEJA do Windows -- fechar a janela so ESCONDE o app (o processo
-; continua vivo, ver electron/main.cjs). A checagem padrao do electron-builder
-; (_CHECK_APP_RUNNING) detecta o app rodando e, quando NAO e um update "in-place", abre o
-; dialogo "Nao e possivel fechar o ANA by Tailor... clique em Repetir" -- que trava o usuario.
+; PROBLEMA: o ANA fica na BANDEJA -- fechar a janela so ESCONDE, o processo continua vivo. O
+; instalador nao consegue fechar o app e trava no dialogo "Nao e possivel fechar o ANA by
+; Tailor... clique em Repetir".
 ;
-; SOLUCAO: `customCheckAppRunning` e um hook que, quando definido, SUBSTITUI toda a checagem
-; padrao (incluindo o dialogo). Aqui simplesmente encerramos o processo a forca e seguimos --
-; sem dialogo nenhum. ${APP_EXECUTABLE_FILENAME} e o nome exato do .exe definido pelo
-; electron-builder ("ANA by Tailor.exe"), entao o taskkill sempre bate no processo certo.
-!macro customCheckAppRunning
-  nsExec::Exec 'cmd.exe /c taskkill /F /T /IM "${APP_EXECUTABLE_FILENAME}"'
-  ; da tempo do Windows liberar os handles do .exe antes de sobrescrever
+; SOLUCAO: encerrar o processo A FORCA. As tentativas anteriores usavam `nsExec::Exec 'cmd.exe
+; /c taskkill ...'` (aspas simples + cmd.exe pelo PATH), que aparentemente nao executava no
+; ambiente do instalador. Aqui uso o MESMO padrao do proprio electron-builder (KILL_PROCESS):
+; caminho ABSOLUTO ($SYSDIR\taskkill.exe) e BACKTICKS como delimitador (as aspas duplas internas
+; passam literais). /IM sozinho ja mata TODOS os processos com esse nome (o Electron cria varios
+; helpers com o mesmo nome), entao nao precisa de /T.
+!macro _AnaForceKill
+  nsExec::Exec `"$SYSDIR\taskkill.exe" /F /IM "${APP_EXECUTABLE_FILENAME}"`
+  Pop $0
+  ; da tempo do Windows liberar os handles do .exe antes de sobrescrever os arquivos
   Sleep 2000
 !macroend
 
-; Reforco: mata o processo tambem no inicio (onInit), antes de qualquer copia de arquivo.
+; Substitui TODA a checagem padrao (incluindo o dialogo): so mata e segue.
+!macro customCheckAppRunning
+  !insertmacro _AnaForceKill
+!macroend
+
+; Reforco: mata tambem logo no inicio (onInit), antes de qualquer copia de arquivo.
 !macro customInit
-  nsExec::Exec 'cmd.exe /c taskkill /F /T /IM "${APP_EXECUTABLE_FILENAME}"'
-  Sleep 1000
+  !insertmacro _AnaForceKill
 !macroend
