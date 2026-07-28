@@ -78,6 +78,26 @@ if (!gotSingleInstanceLock) {
 
     mainWindow.loadURL(APP_URL)
 
+    // Ctrl+Shift+G com a janela em foco: se o atalho GLOBAL nao registrou (outro app do Windows
+    // ja usa esse atalho -- por isso so acontece em ALGUMAS maquinas), a tecla chegava ao Chromium,
+    // que a interpreta como "localizar anterior" e abre a barra de busca no topo (bug relatado).
+    // Interceptamos AQUI, antes do Chromium, pra sempre disparar a gravacao -- nunca a barra de
+    // busca. Tambem barra Ctrl+F/Ctrl+G, que abririam a mesma barra (o app nao e um documento
+    // pra buscar texto). Quando o atalho global ESTA registrado, a tecla nem chega aqui (o SO
+    // entrega pro globalShortcut), entao nao dispara em dobro.
+    mainWindow.webContents.on('before-input-event', (event, input) => {
+      if (input.type !== 'keyDown') return
+      const key = (input.key || '').toLowerCase()
+      const ctrlOrCmd = input.control || input.meta
+      if (ctrlOrCmd && input.shift && key === 'g') {
+        event.preventDefault()
+        triggerRecordHotkey()
+      } else if (ctrlOrCmd && !input.shift && (key === 'f' || key === 'g')) {
+        // Impede a barra de busca do Chromium (Ctrl+F / Ctrl+G) nesse app de tela unica.
+        event.preventDefault()
+      }
+    })
+
     // Fechar a janela minimiza pra bandeja em vez de encerrar o processo -- e o que permite o
     // atalho global funcionar mesmo com a janela "fechada" (o usuario so quis tirar da tela).
     mainWindow.on('close', (event) => {
