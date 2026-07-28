@@ -10,7 +10,7 @@ const log = require('electron-log/main')
 const path = require('node:path')
 
 const APP_URL = 'https://tailor-executive-ai-notes.vercel.app'
-const RECORD_HOTKEY = 'Alt+Shift+G'
+const RECORD_HOTKEY = 'CommandOrControl+Shift+G'
 const ICON_PATH = path.join(__dirname, '..', 'build', 'icon.ico')
 
 // Grava em arquivo (userData/logs/main.log) -- sem isto, um "buscar atualizacoes" que nao
@@ -89,13 +89,12 @@ if (!gotSingleInstanceLock) {
       if (input.type !== 'keyDown') return
       const key = (input.key || '').toLowerCase()
       const ctrlOrCmd = input.control || input.meta
-      if (input.alt && input.shift && key === 'g') {
-        // Novo atalho de gravar (Alt+Shift+G) -> inicia a gravacao de reuniao do PC.
+      if (ctrlOrCmd && input.shift && key === 'g') {
+        // Atalho de gravar (Ctrl+Shift+G) -> inicia a gravacao de reuniao do PC.
         event.preventDefault()
         triggerRecordHotkey()
-      } else if (ctrlOrCmd && (key === 'f' || key === 'g')) {
-        // Impede a barra de busca do Chromium (Ctrl+F / Ctrl+G / Ctrl+Shift+G) nesse app de
-        // tela unica -- nenhum deles deve abrir "localizar na pagina".
+      } else if (ctrlOrCmd && !input.shift && (key === 'f' || key === 'g')) {
+        // Impede a barra de busca do Chromium (Ctrl+F / Ctrl+G) nesse app de tela unica.
         event.preventDefault()
       }
     })
@@ -154,7 +153,7 @@ if (!gotSingleInstanceLock) {
     tray.setContextMenu(
       Menu.buildFromTemplate([
         { label: 'Abrir ANA', click: () => (mainWindow ? mainWindow.show() : createWindow()) },
-        { label: 'Gravar reunião (Alt+Shift+G)', click: triggerRecordHotkey },
+        { label: 'Gravar reunião (Ctrl+Shift+G)', click: triggerRecordHotkey },
         { type: 'separator' },
         { label: 'Buscar atualizações...', click: () => checkForUpdates(true) },
         { label: 'Abrir pasta de logs...', click: () => shell.showItemInFolder(log.transports.file.getFile().path) },

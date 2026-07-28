@@ -139,7 +139,7 @@ export function Capture() {
     if (start) void start()
   }
 
-  // Auto-iniciar (atalho Alt+Shift+G do app Windows -> ?autostart=1): ja dispara a gravacao de
+  // Auto-iniciar (atalho Ctrl+Shift+G do app Windows -> ?autostart=1): ja dispara a gravacao de
   // reuniao sem clicar em "Iniciar". So no modo reuniao e onde a captura do audio do PC existe.
   // O gesto que o getDisplayMedia exige vem do executeJavaScript(userGesture=true) no main.cjs.
   // Limpamos o param assim que dispara pra nao reiniciar em re-render/refresh.

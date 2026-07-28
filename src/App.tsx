@@ -60,7 +60,7 @@ export default function App() {
   const { profile, loading } = useAuth()
   const navigate = useNavigate()
 
-  // App Windows (Electron): o atalho global (Alt+Shift+G) traz a janela pra frente e JA INICIA a
+  // App Windows (Electron): o atalho global (Ctrl+Shift+G) traz a janela pra frente e JA INICIA a
   // gravacao de reuniao do PC. Instaladores NOVOS chamam window.__anaStartMeeting via
   // executeJavaScript(userGesture=true) -- o gesto simulado libera o getDisplayMedia, entao o
   // ?autostart=1 dispara o start sozinho. Instaladores ANTIGOS ainda usam o IPC onRecordHotkey,
