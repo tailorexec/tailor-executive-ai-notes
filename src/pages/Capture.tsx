@@ -53,7 +53,7 @@ const STEPS = ['Transcrevendo audio', 'Gerando resumo', 'Extraindo action items'
 const CHECKPOINT_MS = 20_000
 
 export function Capture() {
-  const [params] = useSearchParams()
+  const [params, setParams] = useSearchParams()
   const mode = (params.get('mode') as Mode) || 'record'
   const navigate = useNavigate()
   const { profile } = useAuth()
@@ -138,6 +138,25 @@ export function Capture() {
     pendingStartRef.current = null
     if (start) void start()
   }
+
+  // Auto-iniciar (atalho Alt+Shift+G do app Windows -> ?autostart=1): ja dispara a gravacao de
+  // reuniao sem clicar em "Iniciar". So no modo reuniao e onde a captura do audio do PC existe.
+  // O gesto que o getDisplayMedia exige vem do executeJavaScript(userGesture=true) no main.cjs.
+  // Limpamos o param assim que dispara pra nao reiniciar em re-render/refresh.
+  const autostart = params.get('autostart') === '1'
+  useEffect(() => {
+    if (!autostart || mode !== 'meeting' || !canCaptureSystemAudio()) return
+    if (recorder.state !== 'idle') return
+    setParams(
+      (prev) => {
+        prev.delete('autostart')
+        return prev
+      },
+      { replace: true },
+    )
+    withConsent(startMeeting)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autostart, mode])
 
   // No APK Android o modo microfone usa o gravador NATIVO: sobrevive a tela apagada.
   // (Gravar Meet continua no navegador — depende do getDisplayMedia.)

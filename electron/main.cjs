@@ -10,7 +10,7 @@ const log = require('electron-log/main')
 const path = require('node:path')
 
 const APP_URL = 'https://tailor-executive-ai-notes.vercel.app'
-const RECORD_HOTKEY = 'CommandOrControl+Shift+G'
+const RECORD_HOTKEY = 'Alt+Shift+G'
 const ICON_PATH = path.join(__dirname, '..', 'build', 'icon.ico')
 
 // Grava em arquivo (userData/logs/main.log) -- sem isto, um "buscar atualizacoes" que nao
@@ -89,11 +89,13 @@ if (!gotSingleInstanceLock) {
       if (input.type !== 'keyDown') return
       const key = (input.key || '').toLowerCase()
       const ctrlOrCmd = input.control || input.meta
-      if (ctrlOrCmd && input.shift && key === 'g') {
+      if (input.alt && input.shift && key === 'g') {
+        // Novo atalho de gravar (Alt+Shift+G) -> inicia a gravacao de reuniao do PC.
         event.preventDefault()
         triggerRecordHotkey()
-      } else if (ctrlOrCmd && !input.shift && (key === 'f' || key === 'g')) {
-        // Impede a barra de busca do Chromium (Ctrl+F / Ctrl+G) nesse app de tela unica.
+      } else if (ctrlOrCmd && (key === 'f' || key === 'g')) {
+        // Impede a barra de busca do Chromium (Ctrl+F / Ctrl+G / Ctrl+Shift+G) nesse app de
+        // tela unica -- nenhum deles deve abrir "localizar na pagina".
         event.preventDefault()
       }
     })
@@ -111,17 +113,31 @@ if (!gotSingleInstanceLock) {
     })
   }
 
-  /** Traz a janela pra frente e avisa o site (via preload) que o atalho de gravar foi pressionado. */
+  /**
+   * Traz a janela pra frente e JA INICIA a gravacao de reuniao do PC.
+   * O getDisplayMedia (captura da tela/audio do sistema) exige uma "ativacao transitoria" do
+   * usuario -- por isso chamamos via executeJavaScript(code, /*userGesture*\/ true): isso simula
+   * o gesto e da ~5s de janela, cobrindo navegar ate a tela de captura + montar + iniciar. Sem
+   * isso o navegador recusaria a captura. O site expoe window.__anaStartMeeting (definido no
+   * App.tsx) que navega pra /capturar?mode=meeting&autostart=1 e dispara o start.
+   */
+  function startMeetingWithGesture() {
+    if (!mainWindow) return
+    mainWindow.webContents
+      .executeJavaScript('window.__anaStartMeeting && window.__anaStartMeeting()', true)
+      .catch(() => {})
+  }
+
   function triggerRecordHotkey() {
     if (!mainWindow) {
       createWindow()
-      mainWindow.webContents.once('did-finish-load', () => mainWindow.webContents.send('ana:hotkey-record'))
+      mainWindow.webContents.once('did-finish-load', () => startMeetingWithGesture())
       return
     }
     if (mainWindow.isMinimized()) mainWindow.restore()
     mainWindow.show()
     mainWindow.focus()
-    mainWindow.webContents.send('ana:hotkey-record')
+    startMeetingWithGesture()
   }
 
   function createTray() {
@@ -138,7 +154,7 @@ if (!gotSingleInstanceLock) {
     tray.setContextMenu(
       Menu.buildFromTemplate([
         { label: 'Abrir ANA', click: () => (mainWindow ? mainWindow.show() : createWindow()) },
-        { label: 'Gravar reunião (Ctrl+Shift+G)', click: triggerRecordHotkey },
+        { label: 'Gravar reunião (Alt+Shift+G)', click: triggerRecordHotkey },
         { type: 'separator' },
         { label: 'Buscar atualizações...', click: () => checkForUpdates(true) },
         { label: 'Abrir pasta de logs...', click: () => shell.showItemInFolder(log.transports.file.getFile().path) },
