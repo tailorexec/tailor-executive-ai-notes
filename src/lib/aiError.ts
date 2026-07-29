@@ -45,6 +45,25 @@ const ALREADY_LOGGED_SERVER = [
 ]
 
 /**
+ * Falha de REDE na camada de conexao: a requisicao nem chegou ao servidor. Cada navegador usa uma
+ * frase diferente. NAO e bug do sistema -- e a internet do usuario que caiu/oscilou, ou o request
+ * foi abortado (troca de rede, app em segundo plano, reload da pagina no meio de um upload de
+ * audio, que e o caso mais comum no /capturar). Merece uma mensagem clara de conexao pro usuario e
+ * um registro como AVISO silencioso (nao deve inflar "Erros + criticos" no /admin/audit como se
+ * fosse um defeito nosso). Ex. real: Larissa Estrada, /capturar, 29/07 -- upload de audio cortado.
+ */
+const NETWORK = [
+  'Failed to fetch', // Chrome/Electron
+  'Load failed', // Safari/iOS
+  'NetworkError', // Firefox
+  'network request failed',
+  'ERR_NETWORK',
+  'ERR_INTERNET_DISCONNECTED',
+  'net::ERR',
+  'The Internet connection appears to be offline',
+]
+
+/**
  * Funcao usada como `setError(aiError(err, ...))`/`toast(aiError(err, ...), 'error')` em toda
  * tela que chama IA -- por isso PRECISA continuar sincrona (nunca vire async, nunca faça
  * `await logClientError(...)`): se retornasse uma Promise, `setError` receberia um objeto em
@@ -54,6 +73,18 @@ const ALREADY_LOGGED_SERVER = [
 export function aiError(err: unknown, fallback: string): string {
   const msg = describeUnknownError(err)
   if (!msg) return fallback
+
+  // Erro de rede: mensagem clara de conexao + registro como AVISO silencioso (nao como "erro").
+  if (NETWORK.some((n) => msg.includes(n))) {
+    logClientError({
+      severity: 'warning',
+      category: 'silent',
+      source: 'client:aiError',
+      message: `Falha de rede: ${msg}`,
+    })
+    return 'Sem conexão com o servidor agora. Verifique sua internet e tente novamente.'
+  }
+
   const matched = FRIENDLY.some((f) => msg.includes(f))
   const isExpectedLimit = EXPECTED_LIMITS.some((f) => msg.includes(f))
   const isAlreadyLoggedServer = ALREADY_LOGGED_SERVER.some((f) => msg.includes(f))

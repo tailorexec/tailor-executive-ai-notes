@@ -5,7 +5,7 @@ import { db } from '../lib/api'
 import { useAuth } from '../auth/AuthProvider'
 import { Avatar, Chip, Spinner } from '../components/ui'
 import { useToast } from '../components/Toast'
-import { fmtDate } from '../lib/format'
+import { fmtDate, fmtDateTime } from '../lib/format'
 import { periodDays, periodRange, type PeriodKey } from '../lib/apiUsage'
 import {
   listAuditLog,
@@ -105,7 +105,7 @@ function LogRow({
             </div>
             <p className={`text-sm break-words ${resolved ? 'line-through' : ''}`}>{row.message}</p>
             <div className="flex items-center flex-wrap gap-2 mt-1.5 text-[11px] text-content-muted">
-              <span>{fmtDate(row.created_at)}</span>
+              <span>{fmtDateTime(row.created_at)}</span>
               {row.route && <span>• {row.route}</span>}
               {person && (
                 <span className="flex items-center gap-1">
@@ -113,7 +113,7 @@ function LogRow({
                   {person.first_name} {person.last_name}
                 </span>
               )}
-              {resolved && <span>• resolvido em {fmtDate(row.resolved_at!)}</span>}
+              {resolved && <span>• resolvido em {fmtDateTime(row.resolved_at!)}</span>}
             </div>
           </div>
           {hasDetail && (
