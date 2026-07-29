@@ -41,10 +41,16 @@ export function UpdateBanner() {
   // Acompanha o auto-update em segundo plano: quando fica 'downloaded', o aviso vira o botao
   // "Reiniciar e atualizar" (instala na hora). Do contrario a instalacao acontece sozinha ao sair.
   const [status, setStatus] = useState<AnaUpdateStatus['status'] | null>(null)
+  const [percent, setPercent] = useState<number | null>(null)
 
   useEffect(() => {
     if (!isElectron() || typeof window.anaElectron!.onUpdateStatus !== 'function') return
-    return window.anaElectron!.onUpdateStatus((p) => setStatus(p.status))
+    return window.anaElectron!.onUpdateStatus((p) => {
+      setStatus(p.status)
+      // Guarda o % so enquanto baixa; zera nos estados finais pra nao "grudar" um numero velho.
+      if (p.status === 'downloading') setPercent(Math.round(p.percent))
+      else if (p.status !== 'available' && p.status !== 'checking') setPercent(null)
+    })
   }, [])
 
   if (!isElectron() || dismissed) return null
@@ -87,7 +93,13 @@ export function UpdateBanner() {
     <div className="flex items-center gap-2.5 border border-accent/30 bg-accent/10 rounded-2xl px-4 py-2 mx-5 mt-4 max-w-xl text-sm">
       <ArrowUpCircle size={16} className="text-accent shrink-0" />
       <span className="flex-1 min-w-0 text-content-primary">
-        {ready ? t('update.ready') : downloading ? t('update.downloading') : t('update.available')}
+        {ready
+          ? t('update.ready')
+          : status === 'downloading' && percent != null
+            ? `${t('update.downloading')} ${percent}%`
+            : downloading
+              ? t('update.downloading')
+              : t('update.available')}
       </span>
       {ready ? (
         <button onClick={restart} className="btn-primary h-8 px-3 text-sm shrink-0">
