@@ -208,12 +208,16 @@ if (!gotSingleInstanceLock) {
       } catch (_) {}
       tray = null
     }
-    // setImmediate: deixa o IPC/render responder antes de sair. quitAndInstall(isSilent=false,
-    // isForceRunAfter=true) reabre o app depois de instalar.
+    // setImmediate: deixa o IPC/render responder antes de sair.
+    // quitAndInstall(isSilent=TRUE, isForceRunAfter=true): instala em modo SILENCIOSO e reabre o app.
+    // O silencioso e o que ACABA com a tela "arquivo em uso / Repetir": na extracao, o template do
+    // electron-builder tenta copiar 5x e, se ainda travado, mostra um MessageBox com `/SD IDRETRY`
+    // -- em modo silencioso esse default IDRETRY e escolhido sozinho (o dialogo NAO aparece) e a
+    // extracao cai no overwrite de ultimo recurso ate concluir. Com isForceRunAfter o app reabre.
     setImmediate(() => {
       try {
-        log.info('quitAndInstall: iniciando (pedido do usuario)')
-        autoUpdater.quitAndInstall(false, true)
+        log.info('quitAndInstall: iniciando (silencioso, pedido do usuario)')
+        autoUpdater.quitAndInstall(true, true)
       } catch (err) {
         log.error('quitAndInstall falhou:', err)
         app.quit()
