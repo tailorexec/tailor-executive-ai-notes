@@ -1,5 +1,5 @@
 /** Fonte unica da versao do app. Atualize aqui a cada deploy. */
-export const APP_VERSION = 'v0.18.25'
+export const APP_VERSION = 'v0.18.26'
 export const APP_NAME = 'ANA by Tailor'
 
 /**
@@ -10,4 +10,4 @@ export const APP_NAME = 'ANA by Tailor'
  * em instaladores antigos), o site mostra o aviso "atualizacao disponivel". Bump aqui SO ao
  * publicar um instalador novo. Sem prefixo "v".
  */
-export const LATEST_WINDOWS_BUILD = '0.18.25'
+export const LATEST_WINDOWS_BUILD = '0.18.26'

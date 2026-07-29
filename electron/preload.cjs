@@ -21,6 +21,11 @@ contextBridge.exposeInMainWorld('anaElectron', {
   checkForUpdates() {
     ipcRenderer.send('ana:check-for-updates')
   },
+  /** Instala AGORA a atualizacao ja baixada e reabre o app (botao "Reiniciar e atualizar" do
+   *  aviso). So faz efeito depois do status 'downloaded'. */
+  quitAndInstall() {
+    ipcRenderer.send('ana:quit-and-install')
+  },
   /** Chama `cb` a cada mudanca de status da checagem/download de atualizacao (checando,
    *  achou, sem novidade, baixando com %, pronto, erro) -- da o feedback visivel que o
    *  dialogo nativo sozinho nao cobre (ex.: nada aparece enquanto so esta checando). */

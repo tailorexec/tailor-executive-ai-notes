@@ -21,10 +21,13 @@ log.initialize()
 log.transports.file.level = 'info'
 autoUpdater.logger = log
 
-// So baixa a atualizacao se o usuario confirmar (dialog abaixo) -- nunca baixa/instala sozinho
-// sem avisar, ja que o instalador nao e assinado e o Windows sempre vai pedir confirmacao.
-autoUpdater.autoDownload = false
-autoUpdater.autoInstallOnAppQuit = false
+// Atualizacao AUTOMATICA e SILENCIOSA (o instalador virou "oneClick", que fecha o app e instala
+// sozinho sem o dialogo bloqueante "nao e possivel fechar"). autoDownload: baixa em segundo plano
+// assim que acha uma versao nova; autoInstallOnAppQuit: aplica o que ja baixou quando o app fechar
+// de verdade (bandeja -> Sair, logoff, desligar). Quem quiser atualizar na hora usa o aviso
+// discreto do site (IPC ana:quit-and-install). Nenhum dialogo nativo trava o fluxo.
+autoUpdater.autoDownload = true
+autoUpdater.autoInstallOnAppQuit = true
 
 log.info(`ANA iniciando -- versao ${app.getVersion()}, plataforma ${process.platform}`)
 
@@ -181,6 +184,44 @@ if (!gotSingleInstanceLock) {
   }
 
   /**
+   * Instala AGORA a atualizacao ja baixada e reabre o app. Usado pelo caminho "na hora" (o botao
+   * "Reiniciar e atualizar" do aviso no site, via IPC ana:quit-and-install). O app vive na bandeja
+   * e o handler de 'close' faz hide() em vez de fechar de verdade -- isso travaria o quitAndInstall.
+   * Entao antes de instalar: marca que estamos saindo, tira o handler que esconde a janela, destroi
+   * a bandeja e libera o atalho global -- nada segurando o processo. Com o instalador oneClick, ele
+   * fecha qualquer resto e instala em silencio (sem o dialogo "nao e possivel fechar").
+   */
+  let installing = false
+  function installUpdateNow() {
+    if (installing) return
+    installing = true
+    app.isQuitting = true
+    try {
+      if (mainWindow) mainWindow.removeAllListeners('close')
+    } catch (_) {}
+    try {
+      globalShortcut.unregisterAll()
+    } catch (_) {}
+    if (tray) {
+      try {
+        tray.destroy()
+      } catch (_) {}
+      tray = null
+    }
+    // setImmediate: deixa o IPC/render responder antes de sair. quitAndInstall(isSilent=false,
+    // isForceRunAfter=true) reabre o app depois de instalar.
+    setImmediate(() => {
+      try {
+        log.info('quitAndInstall: iniciando (pedido do usuario)')
+        autoUpdater.quitAndInstall(false, true)
+      } catch (err) {
+        log.error('quitAndInstall falhou:', err)
+        app.quit()
+      }
+    })
+  }
+
+  /**
    * Checagem de atualizacao via GitHub Releases (mesmo repositorio, configurado em
    * package.json's build.publish). `manual` distingue quem clicou em "Buscar atualizacoes"
    * (sempre mostra um resultado, mesmo "ja esta atualizado") da checagem automatica silenciosa
@@ -222,6 +263,12 @@ if (!gotSingleInstanceLock) {
     checkForUpdates(true)
   })
 
+  // Aviso discreto do site ("Reiniciar e atualizar"): instala a atualizacao ja baixada na hora.
+  ipcMain.on('ana:quit-and-install', () => {
+    log.info('IPC ana:quit-and-install recebido do site')
+    installUpdateNow()
+  })
+
   // Versao do instalador nativo instalado (package.json). O site (carregado ao vivo) compara
   // com a ultima versao publicada pra saber se precisa avisar o usuario a atualizar o app.
   ipcMain.on('ana:get-version', (e) => {
@@ -229,27 +276,10 @@ if (!gotSingleInstanceLock) {
   })
 
   autoUpdater.on('update-available', (info) => {
-    log.info('update-available:', info.version)
+    // Com autoDownload=true o electron-updater ja comeca a baixar sozinho -- nao chamamos
+    // downloadUpdate() de novo (duplicaria). Sem dialogo bloqueante: so avisa o site (aviso discreto).
+    log.info('update-available (baixando em segundo plano):', info.version)
     sendUpdateStatus({ status: 'available', version: info.version })
-    dialog
-      .showMessageBox(mainWindow, {
-        type: 'info',
-        title: 'Atualização disponível',
-        message: `Uma nova versão (${info.version}) está disponível. Baixar agora?`,
-        detail: 'O app continua funcionando normalmente enquanto baixa em segundo plano.',
-        buttons: ['Baixar agora', 'Agora não'],
-        defaultId: 0,
-        cancelId: 1,
-      })
-      .then((r) => {
-        if (r.response === 0) {
-          autoUpdater.downloadUpdate()
-        } else {
-          // Usuario recusou baixar agora -- sem isto, o icone de "buscando atualizacao" do site
-          // ficava girando pra sempre, ja que nenhum evento de download nunca chegaria.
-          sendUpdateStatus({ status: 'cancelled' })
-        }
-      })
   })
 
   autoUpdater.on('update-not-available', (info) => {
@@ -270,54 +300,11 @@ if (!gotSingleInstanceLock) {
   })
 
   autoUpdater.on('update-downloaded', (info) => {
+    // Sem dialogo bloqueante. A instalacao acontece sozinha no proximo quit (autoInstallOnAppQuit),
+    // ou na hora se o usuario clicar em "Reiniciar e atualizar" no aviso do site (installUpdateNow).
     if (mainWindow) mainWindow.setProgressBar(-1)
+    log.info('update-downloaded (pronto; instala ao sair ou quando o usuario pedir):', info.version)
     sendUpdateStatus({ status: 'downloaded', version: info.version })
-    dialog
-      .showMessageBox(mainWindow, {
-        type: 'info',
-        title: 'Atualização pronta',
-        message: `A versão ${info.version} foi baixada. Reiniciar agora para instalar?`,
-        buttons: ['Reiniciar agora', 'Depois'],
-        defaultId: 0,
-        cancelId: 1,
-      })
-      .then((r) => {
-        if (r.response !== 0) return
-        // O app fica na bandeja: o handler de 'close' faz hide() em vez de deixar fechar, e
-        // isso trava o quitAndInstall (o instalador so roda depois que o app fecha DE VERDADE).
-        // Antes de instalar: marca que estamos saindo, tira o handler que esconde a janela,
-        // destroi a bandeja e libera o atalho global -- nada segurando o processo.
-        app.isQuitting = true
-        try {
-          if (mainWindow) mainWindow.removeAllListeners('close')
-        } catch (_) {}
-        try {
-          globalShortcut.unregisterAll()
-        } catch (_) {}
-        if (tray) {
-          try {
-            tray.destroy()
-          } catch (_) {}
-          tray = null
-        }
-        // setImmediate: deixa o dialogo fechar antes de sair. isForceRunAfter=true reabre o app
-        // depois de instalar. Se por algum motivo o quitAndInstall nao disparar o instalador
-        // (relatado: "fecha tudo mas a instalacao nao comeca"), o fallback abre o .exe baixado
-        // direto pelo Windows e encerra o app -- o instalador novo se encarrega de fechar o
-        // processo (taskkill no installer.nsh).
-        setImmediate(() => {
-          try {
-            log.info('quitAndInstall: iniciando')
-            autoUpdater.quitAndInstall(false, true)
-          } catch (err) {
-            log.error('quitAndInstall falhou, tentando abrir o instalador manualmente:', err)
-            try {
-              if (info?.downloadedFile) shell.openPath(info.downloadedFile)
-            } catch (_) {}
-            app.quit()
-          }
-        })
-      })
   })
 
   app.whenReady().then(() => {
@@ -347,9 +334,11 @@ if (!gotSingleInstanceLock) {
       console.warn(`Nao foi possivel registrar o atalho ${RECORD_HOTKEY} (em uso por outro app).`)
     }
 
-    // Checagem automatica e silenciosa ao abrir (so incomoda se houver novidade de verdade;
-    // "ja esta atualizado" nao aparece aqui, so quando o usuario pede pelo menu da bandeja).
+    // Checagem automatica e silenciosa ao abrir + a cada ~3h. O app vive na bandeja por dias, entao
+    // sem o reintervalo ele nunca acharia uma release publicada depois que ja estava aberto. Com
+    // autoDownload=true, achar = baixar em segundo plano; instala sozinho ao sair (autoInstallOnAppQuit).
     setTimeout(() => checkForUpdates(false), 5000)
+    setInterval(() => checkForUpdates(false), 3 * 60 * 60 * 1000)
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow()

@@ -6,7 +6,7 @@ export type AnaUpdateStatus =
   | { status: 'checking' }
   | { status: 'available'; version: string }
   | { status: 'not-available' }
-  | { status: 'downloading'; percent: number }
+  | { status: 'downloading'; percent: number; version?: string }
   | { status: 'downloaded'; version: string }
   | { status: 'error'; message: string }
   | { status: 'cancelled' }
@@ -19,6 +19,9 @@ export interface AnaElectronBridge {
   onRecordHotkey: (cb: () => void) => () => void
   checkForUpdates: () => void
   onUpdateStatus: (cb: (payload: AnaUpdateStatus) => void) => () => void
+  /** Instala agora a atualizacao ja baixada e reabre o app. `undefined` em instaladores antigos
+   *  (capability-gated) -- nesse caso o aviso cai no fallback de baixar por link. */
+  quitAndInstall?: () => void
 }
 
 declare global {

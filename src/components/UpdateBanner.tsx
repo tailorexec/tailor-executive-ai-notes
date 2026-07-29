@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ArrowUpCircle, X } from 'lucide-react'
-import { isElectron } from '../lib/electron'
+import { isElectron, type AnaUpdateStatus } from '../lib/electron'
 import { LATEST_WINDOWS_BUILD } from '../lib/version'
 import { WINDOWS_APP_DOWNLOAD_URL } from '../lib/windowsApp'
 import { useToast } from './Toast'
@@ -38,6 +38,14 @@ export function UpdateBanner() {
       return false
     }
   })
+  // Acompanha o auto-update em segundo plano: quando fica 'downloaded', o aviso vira o botao
+  // "Reiniciar e atualizar" (instala na hora). Do contrario a instalacao acontece sozinha ao sair.
+  const [status, setStatus] = useState<AnaUpdateStatus['status'] | null>(null)
+
+  useEffect(() => {
+    if (!isElectron() || typeof window.anaElectron!.onUpdateStatus !== 'function') return
+    return window.anaElectron!.onUpdateStatus((p) => setStatus(p.status))
+  }, [])
 
   if (!isElectron() || dismissed) return null
 
@@ -45,14 +53,22 @@ export function UpdateBanner() {
   const outdated = !installed || isOlder(installed, LATEST_WINDOWS_BUILD)
   if (!outdated) return null
 
+  const ready = status === 'downloaded' && typeof window.anaElectron!.quitAndInstall === 'function'
+  const downloading = status === 'downloading' || status === 'available' || status === 'checking'
+
   function update() {
     if (typeof window.anaElectron!.checkForUpdates === 'function') {
+      // Com autoDownload no app, isto so adianta a busca -- o download roda sozinho em segundo plano.
       window.anaElectron!.checkForUpdates()
       toast(t('update.checking'))
     } else {
       // Instalador antigo sem auto-updater: so resta baixar o novo manualmente.
       window.open(WINDOWS_APP_DOWNLOAD_URL, '_blank')
     }
+  }
+
+  function restart() {
+    window.anaElectron!.quitAndInstall!()
   }
 
   function dismiss() {
@@ -70,10 +86,18 @@ export function UpdateBanner() {
     // direita deixava o botao "Atualizar agora" embaixo deles. Estreita, fica bem a esquerda.
     <div className="flex items-center gap-2.5 border border-accent/30 bg-accent/10 rounded-2xl px-4 py-2 mx-5 mt-4 max-w-xl text-sm">
       <ArrowUpCircle size={16} className="text-accent shrink-0" />
-      <span className="flex-1 min-w-0 text-content-primary">{t('update.available')}</span>
-      <button onClick={update} className="btn-primary h-8 px-3 text-sm shrink-0">
-        {t('update.now')}
-      </button>
+      <span className="flex-1 min-w-0 text-content-primary">
+        {ready ? t('update.ready') : downloading ? t('update.downloading') : t('update.available')}
+      </span>
+      {ready ? (
+        <button onClick={restart} className="btn-primary h-8 px-3 text-sm shrink-0">
+          {t('update.restart')}
+        </button>
+      ) : (
+        <button onClick={update} disabled={downloading} className="btn-primary h-8 px-3 text-sm shrink-0 disabled:opacity-60">
+          {t('update.now')}
+        </button>
+      )}
       <button onClick={dismiss} aria-label={t('update.dismiss')} className="shrink-0 text-content-muted hover:text-content-primary">
         <X size={16} />
       </button>

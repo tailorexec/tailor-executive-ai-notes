@@ -1,7 +1,7 @@
 {
   "name": "tailor-executive-ai-notes",
   "private": true,
-  "version": "0.18.25",
+  "version": "0.18.26",
   "author": "Tailor Executive",
   "type": "module",
   "description": "Tailor Executive AI Notes - IA de anotacoes e transcricoes de reunioes",
@@ -15,7 +15,9 @@
     "electron:dev": "electron .",
     "electron:icon": "node electron/build-icon.mjs",
     "predist:win": "node electron/build-icon.mjs",
-    "dist:win": "electron-builder --win"
+    "dist:win": "electron-builder --win",
+    "prerelease:win": "node electron/build-icon.mjs",
+    "release:win": "electron-builder --win --publish always"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.1",
@@ -75,8 +77,8 @@
       "icon": "build/icon.ico"
     },
     "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
+      "oneClick": true,
+      "perMachine": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "artifactName": "ANA-by-Tailor-Setup-${version}.${ext}"

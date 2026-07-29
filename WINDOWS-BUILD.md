@@ -33,10 +33,10 @@ artefato do workflow (`ana-windows-setup`).
 
 ## O que o app nativo faz alem do site
 
-- **Atalho global `Ctrl+Shift+G`**: traz a janela pra frente e abre a tela de gravar reuniao
-  (`electron/main.cjs` + `src/lib/electron.ts` + `App.tsx`). Falta 1 clique em "Iniciar" -- o
-  navegador exige um gesto real do usuario para pedir microfone, entao esse ultimo passo nao da
-  para automatizar.
+- **Atalho global `Ctrl+Shift+G`**: traz a janela pra frente e JA INICIA a gravacao de reuniao do
+  PC (`electron/main.cjs` chama `window.__anaStartMeeting` via `executeJavaScript(code, true)` --
+  o `userGesture=true` simula o gesto que o `getDisplayMedia` exige; `App.tsx` navega pra
+  `?autostart=1` e o `Capture.tsx` dispara o start). Nao precisa mais clicar em "Iniciar".
 - **Captura de audio do sistema sem dialogo**: dentro do app nativo, "Gravar Meet" nao pede pra
   escolher a aba nem lembrar de marcar "compartilhar audio" -- `setDisplayMediaRequestHandler` no
   processo principal autoriza tela inteira + audio do sistema direto. Isso so funciona AQUI, nao
@@ -44,10 +44,14 @@ artefato do workflow (`ana-windows-setup`).
 - **Bandeja do sistema**: fechar a janela minimiza para a bandeja em vez de encerrar o app (o
   atalho global continua funcionando com a janela "fechada"). "Sair" no menu da bandeja encerra
   de verdade.
-- **Busca atualizacoes sozinho** (`electron-updater`): checa 5s apos abrir (silencioso, so avisa
-  se houver novidade) e pelo item "Buscar atualizacoes..." no menu da bandeja (sempre mostra um
-  resultado). So baixa/instala com confirmacao do usuario (`autoDownload = false`). Le a config
-  de `package.json`'s `build.publish` (provider github, mesmo repositorio das releases).
+- **Atualizacao AUTOMATICA e SILENCIOSA** (`electron-updater` + instalador `oneClick`): checa 5s
+  apos abrir e a cada ~3h (a bandeja mantem o app vivo por dias). `autoDownload = true` baixa
+  sozinho em segundo plano; `autoInstallOnAppQuit = true` instala ao fechar o app de verdade
+  (bandeja -> Sair, logoff, desligar). Nenhum dialogo nativo trava o fluxo. Quem quiser atualizar
+  na hora usa o aviso discreto do site (`UpdateBanner.tsx` -> IPC `ana:quit-and-install`). O
+  instalador `oneClick` (per-user, sem UAC) fecha o app e instala em silencio -- e o que ACABA com
+  o antigo dialogo bloqueante "nao e possivel fechar o ANA". Le `package.json`'s `build.publish`
+  (provider github, mesmo repositorio das releases).
 
 ## Publicar uma release (checklist -- os 3 primeiros SAO OBRIGATORIOS pro auto-update funcionar)
 
@@ -64,6 +68,12 @@ mesma release do GitHub:
 Faltar os itens 1-3 nao quebra o download manual (item 4 continua funcionando), mas quebra o
 auto-update em silencio: o app vai detectar que ha uma versao nova, tentar baixar, e falhar
 (404) sem avisar nada de util no dialogo de erro alem de "nao foi possivel verificar".
+
+**Automatizando (recomendado):** `npm run release:win` roda o electron-builder com
+`--publish always`, que sobe `.exe` + `.blockmap` + `latest.yml` juntos pra release do GitHub
+automaticamente (evita esquecer um e quebrar o auto-update). Precisa de um `GH_TOKEN` com permissao
+de repo no ambiente. Ainda assim, suba a copia de nome fixo (item 4) manualmente pro fallback do
+site, ou com `gh release upload <tag> release/ANA-Tailor-Setup-Windows.exe`.
 
 ## Assinatura de codigo (NAO configurada)
 
