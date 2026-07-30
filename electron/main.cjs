@@ -9,7 +9,7 @@ const { autoUpdater } = require('electron-updater')
 const log = require('electron-log/main')
 const path = require('node:path')
 
-const APP_URL = 'https://tailor-executive-ai-notes.vercel.app'
+const APP_URL = 'https://ana.nectarmd.com.br'
 const RECORD_HOTKEY = 'CommandOrControl+Shift+G'
 const ICON_PATH = path.join(__dirname, '..', 'build', 'icon.ico')
 

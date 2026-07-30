@@ -7,7 +7,7 @@ const config: CapacitorConfig = {
   // Carrega o app publicado: cada deploy web atualiza o app sem gerar novo APK.
   // Para uma build "offline"/loja, remova o bloco server e use os assets de webDir.
   server: {
-    url: 'https://tailor-executive-ai-notes.vercel.app',
+    url: 'https://ana.nectarmd.com.br',
     androidScheme: 'https',
   },
   android: {
