@@ -1,7 +1,7 @@
 {
   "name": "tailor-executive-ai-notes",
   "private": true,
-  "version": "0.18.30",
+  "version": "0.18.31",
   "author": "Tailor Executive",
   "type": "module",
   "description": "Tailor Executive AI Notes - IA de anotacoes e transcricoes de reunioes",
@@ -14,9 +14,9 @@
     "preelectron:dev": "node electron/build-icon.mjs",
     "electron:dev": "electron .",
     "electron:icon": "node electron/build-icon.mjs",
-    "predist:win": "node electron/build-icon.mjs",
+    "predist:win": "node electron/build-icon.mjs && node electron/patch-nsis.mjs",
     "dist:win": "electron-builder --win",
-    "prerelease:win": "node electron/build-icon.mjs",
+    "prerelease:win": "node electron/build-icon.mjs && node electron/patch-nsis.mjs",
     "release:win": "electron-builder --win --publish always"
   },
   "dependencies": {
