@@ -21,6 +21,7 @@ import { aiError } from '../lib/aiError'
 import { logClientError } from '../lib/auditLog'
 import { useAuth } from '../auth/AuthProvider'
 import { useRecorder, canCaptureSystemAudio, supportsTabAudio } from '../lib/useRecorder'
+import { isElectron } from '../lib/electron'
 import { db, config } from '../lib/api'
 import { uid } from '../lib/db'
 import { generateActionItems, generateSummary, summarizeImage, transcribeAudio } from '../lib/ai'
@@ -157,6 +158,26 @@ export function Capture() {
     withConsent(startMeeting)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autostart, mode])
+
+  // Diagnostico: registra no audit_log quando a reuniao no PC NAO capta o audio do sistema (so o
+  // mic). Sem isto, o caso "gravou so a minha voz" nao deixa rastro nenhum pro admin investigar
+  // (aconteceu com a Giovana em 31/07 -- chamada de WhatsApp cujo audio nao entrou no loopback).
+  const sysWarnLoggedRef = useRef(false)
+  useEffect(() => {
+    if (mode !== 'meeting') return
+    if (!recorder.systemAudioMissing && !recorder.systemSilent) return
+    if (sysWarnLoggedRef.current) return
+    sysWarnLoggedRef.current = true
+    logClientError({
+      severity: 'warning',
+      category: 'silent',
+      source: 'client:recorder',
+      message: recorder.systemAudioMissing
+        ? 'Reunião no PC: áudio do sistema AUSENTE (gravando só o microfone).'
+        : 'Reunião no PC: áudio do sistema MUDO por 30s+ (gravando só o microfone).',
+      detail: { inApp: isElectron(), missing: recorder.systemAudioMissing, silent: recorder.systemSilent },
+    })
+  }, [recorder.systemAudioMissing, recorder.systemSilent, mode])
 
   // No APK Android o modo microfone usa o gravador NATIVO: sobrevive a tela apagada.
   // (Gravar Meet continua no navegador — depende do getDisplayMedia.)
@@ -1035,25 +1056,43 @@ export function Capture() {
                   usuario decide. Anexar o audio da reuniao no meio do caminho e possivel. */}
               {mode === 'meeting' && recorder.systemAudioMissing && (
                 <div className="alert-error text-sm mt-3 max-w-sm text-left">
-                  <p>
-                    <span className="font-medium">Estou gravando só a sua voz.</span> O áudio da reunião não veio —
-                    no diálogo do navegador, escolha a <span className="font-medium">aba da reunião</span> e deixe
-                    marcado <span className="font-medium">"Compartilhar áudio da guia"</span>.
-                  </p>
+                  {isElectron() ? (
+                    <p>
+                      <span className="font-medium">Estou gravando só a sua voz.</span> Não recebi o áudio do
+                      computador. Confira se o som da chamada está saindo pelo{' '}
+                      <span className="font-medium">alto-falante/dispositivo padrão</span> do PC (se estiver de fones,
+                      o som pode ir só pro fone) e tente captar de novo.
+                    </p>
+                  ) : (
+                    <p>
+                      <span className="font-medium">Estou gravando só a sua voz.</span> O áudio da reunião não veio —
+                      no diálogo do navegador, escolha a <span className="font-medium">aba da reunião</span> e deixe
+                      marcado <span className="font-medium">"Compartilhar áudio da guia"</span>.
+                    </p>
+                  )}
                   <button className="btn-primary w-full mt-3" onClick={onAddSystemAudio}>
-                    <Headphones size={16} /> Adicionar áudio da reunião
+                    <Headphones size={16} /> {isElectron() ? 'Tentar captar o áudio do PC' : 'Adicionar áudio da reunião'}
                   </button>
                 </div>
               )}
 
               {mode === 'meeting' && !recorder.systemAudioMissing && recorder.systemSilent && (
                 <div className="alert-error text-sm mt-3 max-w-sm text-left">
-                  <p>
-                    <span className="font-medium">Não estou ouvindo a reunião</span> há mais de 30 segundos. Pode ser
-                    a aba errada. Sua voz continua sendo gravada normalmente.
-                  </p>
+                  {isElectron() ? (
+                    <p>
+                      <span className="font-medium">Não estou captando o áudio do computador</span> há mais de 30
+                      segundos. Se você estiver de fones, o som da chamada pode estar indo só pro fone — deixe o
+                      áudio sair pelo <span className="font-medium">alto-falante/dispositivo padrão</span> pra captar
+                      a outra pessoa. Sua voz continua sendo gravada.
+                    </p>
+                  ) : (
+                    <p>
+                      <span className="font-medium">Não estou ouvindo a reunião</span> há mais de 30 segundos. Pode ser
+                      a aba errada. Sua voz continua sendo gravada normalmente.
+                    </p>
+                  )}
                   <button className="btn-outline w-full mt-3" onClick={onAddSystemAudio}>
-                    <Headphones size={16} /> Trocar a aba compartilhada
+                    <Headphones size={16} /> {isElectron() ? 'Tentar captar de novo' : 'Trocar a aba compartilhada'}
                   </button>
                 </div>
               )}
