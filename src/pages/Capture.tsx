@@ -1059,9 +1059,9 @@ export function Capture() {
                   {isElectron() ? (
                     <p>
                       <span className="font-medium">Estou gravando só a sua voz.</span> Não recebi o áudio do
-                      computador. Confira se o som da chamada está saindo pelo{' '}
-                      <span className="font-medium">alto-falante/dispositivo padrão</span> do PC (se estiver de fones,
-                      o som pode ir só pro fone) e tente captar de novo.
+                      computador (a voz da outra pessoa). Confirme que a chamada está{' '}
+                      <span className="font-medium">tocando no PC</span> e tente captar de novo — funciona com fone
+                      de ouvido também.
                     </p>
                   ) : (
                     <p>
@@ -1081,9 +1081,9 @@ export function Capture() {
                   {isElectron() ? (
                     <p>
                       <span className="font-medium">Não estou captando o áudio do computador</span> há mais de 30
-                      segundos. Se você estiver de fones, o som da chamada pode estar indo só pro fone — deixe o
-                      áudio sair pelo <span className="font-medium">alto-falante/dispositivo padrão</span> pra captar
-                      a outra pessoa. Sua voz continua sendo gravada.
+                      segundos. Confirme que o som da chamada está saindo pelo{' '}
+                      <span className="font-medium">dispositivo de áudio padrão do Windows</span> (o fone serve). Sua
+                      voz continua sendo gravada.
                     </p>
                   ) : (
                     <p>
