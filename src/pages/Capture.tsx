@@ -31,7 +31,6 @@ import {
   listPendingRecordings,
   getPendingRecordingBlob,
   deletePendingRecording,
-  prunePendingRecordings,
 } from '../lib/audioStore'
 import { isSilentAudio, audioRms } from '../lib/audioLevel'
 import { currentDevice } from '../lib/device'
@@ -76,6 +75,9 @@ export function Capture() {
   const [showCancel, setShowCancel] = useState(false)
   const [step, setStep] = useState(0)
   const [error, setError] = useState<string | null>(null)
+  // A ultima tentativa parou no aviso de "gravacao silenciosa": habilita o botao de
+  // transcrever mesmo assim (a decisao e do usuario, nunca do app).
+  const [silentDetected, setSilentDetected] = useState(false)
   const fileRef = useRef<HTMLInputElement | null>(null)
 
   /**
@@ -95,12 +97,6 @@ export function Capture() {
   // Gravacoes de tentativas ANTERIORES (sessao/aba diferente) que ficaram sem processar.
   const [pendingRecordings, setPendingRecordings] = useState(() => listPendingRecordings())
   const [resumingKey, setResumingKey] = useState<string | null>(null)
-
-  // Descarta sozinho pendencias velhas (3 dias, mesma janela do retencao padrao de audio) antes
-  // de mostrar a lista: sem isto, uma gravacao que falhou de vez fica poluindo a tela para sempre.
-  useEffect(() => {
-    prunePendingRecordings().then(() => setPendingRecordings(listPendingRecordings()))
-  }, [])
 
   // "Cancelar" surge 12s apos comecar a processar (e some assim que o processamento termina).
   // Tempo suficiente pra um processamento normal terminar sozinho; se travou de vez, da a saida.
@@ -337,10 +333,13 @@ export function Capture() {
     summary?: string
     /** Conteudo sem action items (imagem): pula mais uma chamada. */
     skipActionItems?: boolean
+    /** O usuario mandou transcrever mesmo com o aviso de gravacao silenciosa. */
+    ignoreSilence?: boolean
   }) {
     if (!profile) return
     setProcessing(true)
     setError(null)
+    setSilentDetected(false)
     lastFinalizeOptsRef.current = opts
     // Esta tentativa deixa de valer se o usuario cancelar (ou reiniciar) enquanto ela roda.
     const attempt = ++finalizeAttemptRef.current
@@ -381,15 +380,17 @@ export function Capture() {
 
         if (opts.audioBlob) {
           setStep(0)
-          // Evita transcricao "alucinada" quando a gravacao ficou muda.
-          if (mode !== 'video' && (await isSilentAudio(opts.audioBlob))) {
+          // Evita transcricao "alucinada" quando a gravacao ficou muda. SO AVISA — jamais
+          // apaga: o audio segue salvo neste aparelho e o usuario decide se transcreve mesmo
+          // assim ou descarta. (Um delete que rodava aqui destruiu uma reuniao de 69 min em
+          // 04/08/2026 por um falso positivo de silencio.)
+          if (mode !== 'video' && !opts.ignoreSilence && (await isSilentAudio(opts.audioBlob))) {
             if (superseded()) return
+            setSilentDetected(true)
             setError(
-              'Nao captamos audio suficiente (gravacao silenciosa). Verifique o microfone e o viva-voz, e tente novamente.',
+              'Não captamos quase nenhum áudio nesta gravação. Ela continua salva neste aparelho — você pode transcrever mesmo assim.',
             )
             setProcessing(false)
-            await deletePendingRecording(pendingKey)
-            pendingKeyRef.current = null
             return
           }
           try {
@@ -523,10 +524,14 @@ export function Capture() {
     const blob = await getPendingRecordingBlob(key)
     if (!blob) {
       // O navegador pode ter limpado o IndexedDB (modo privado, storage cheio etc.): so
-      // sobra a entrada "fantasma", que nao tem mais o que recuperar.
+      // sobra a entrada "fantasma", que nao tem mais o que recuperar. Avisa em vez de sumir
+      // em silencio — o usuario merece saber que o audio se foi.
       await deletePendingRecording(key)
       setPendingRecordings((list) => list.filter((p) => p.key !== key))
       setResumingKey(null)
+      setError(
+        'O áudio desta gravação não está mais salvo neste aparelho (o navegador limpou o armazenamento local). Não há o que recuperar.',
+      )
       return
     }
     const { meta } = entry
@@ -783,10 +788,11 @@ export function Capture() {
       </header>
 
       {/* Gravacoes de uma tentativa ANTERIOR que falharam antes de virar nota (rede caiu,
-          sessao expirou etc.). O audio ficou salvo neste navegador; nada foi perdido. */}
+          sessao expirou etc.). O audio ficou salvo neste navegador; nada foi perdido.
+          Sem filtro por modo: um filtro `meta.mode === mode` escondia a gravacao de reuniao
+          de quem abria a tela no modo microfone — parecia perdida sem estar. */}
       {!recActive &&
         pendingRecordings
-          .filter((p) => p.meta.mode === mode)
           .map(({ key, meta }) => (
             <div key={key} className="card p-4 mb-4 border-accent/40">
               <p className="text-sm font-medium">Gravação não processada encontrada</p>
@@ -892,11 +898,24 @@ export function Capture() {
         <div className="alert-error mb-4">
           <p>{error}</p>
           {/* So aparece quando ha uma gravacao/arquivo salvo para reaproveitar: falhas antes
-              disso (ex.: audio mudo, arquivo invalido) nao tem o que "tentar de novo". */}
+              disso (ex.: arquivo invalido) nao tem o que "tentar de novo". */}
           {lastFinalizeOptsRef.current && (
-            <button className="btn-outline h-9 px-3 text-sm mt-3" onClick={retryFinalize}>
-              Tentar novamente
-            </button>
+            <div className="flex gap-2 mt-3">
+              {silentDetected && (
+                <button
+                  className="btn-primary h-9 px-3 text-sm"
+                  onClick={() => {
+                    const opts = lastFinalizeOptsRef.current
+                    if (opts) void finalize({ ...opts, ignoreSilence: true })
+                  }}
+                >
+                  Transcrever mesmo assim
+                </button>
+              )}
+              <button className="btn-outline h-9 px-3 text-sm" onClick={retryFinalize}>
+                Tentar novamente
+              </button>
+            </div>
           )}
         </div>
       )}
