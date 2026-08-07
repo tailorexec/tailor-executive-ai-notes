@@ -11,7 +11,9 @@ const PROVIDER = Deno.env.get('TRANSCRIPTION_PROVIDER') ?? 'groq'
 const ASSEMBLYAI_API_KEY = Deno.env.get('ASSEMBLYAI_API_KEY')
 
 // Limites no SERVIDOR: o cliente ja valida, mas a edge function e chamavel direto.
-const MAX_FILE_MB = 30
+// 60 MB cobre uploads externos (m4a/mp3 de outros gravadores); o Groq aceita ate 100 MB
+// no tier pago. O que passa daqui ainda esbarra no MAX_AUDIO_SECONDS de 2 h.
+const MAX_FILE_MB = 60
 const MAX_AUDIO_SECONDS = 2 * 60 * 60 // 2 horas
 
 // USD por SEGUNDO de audio (transcricao nao e cobrada por token).

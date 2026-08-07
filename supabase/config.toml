@@ -115,7 +115,9 @@ port = 54324
 [storage]
 enabled = true
 # The maximum file size allowed (e.g. "5MB", "500KB").
-file_size_limit = "50MiB"
+# 100MiB acompanha o limite de 60 MB da transcricao: um upload de 60 MB tambem precisa
+# caber no bucket `recordings` na hora de salvar o audio da nota.
+file_size_limit = "100MiB"
 
 # Uncomment to configure local storage buckets
 # [storage.buckets.images]
