@@ -37,6 +37,11 @@ const DISPLAY_OPTIONS = {
 const SILENCE_MS = 30_000
 /** Acima disto ja consideramos que ouvimos a reuniao (ruido de fundo passa longe do zero). */
 const SILENCE_RMS = 0.002
+/**
+ * Gravando ha tanto tempo sem UM BYTE entregue pelo MediaRecorder = o arquivo final sera
+ * vazio. Com o timeslice de 1s, qualquer captura sadia ja entregou dados muito antes disso.
+ */
+const NO_DATA_MS = 20_000
 
 export function isMobileBrowser(): boolean {
   return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
@@ -71,6 +76,8 @@ export function useRecorder() {
   const [systemAudioMissing, setSystemAudioMissing] = useState(false)
   /** O audio da reuniao esta anexado, porem mudo ha mais de 30s: fonte provavelmente errada. */
   const [systemSilent, setSystemSilent] = useState(false)
+  /** Gravando ha 20s+ sem NENHUM byte gravado: o arquivo vai sair vazio (0 byte). */
+  const [noAudioData, setNoAudioData] = useState(false)
 
   const mediaRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
@@ -92,6 +99,9 @@ export function useRecorder() {
   const startedAtRef = useRef<number>(0)
   const elapsedBeforePauseRef = useRef<number>(0)
   const mimeRef = useRef<string>('audio/webm')
+  /** Bytes ja entregues pelo MediaRecorder. Zero com a gravacao andando = arquivo vazio. */
+  const bytesRef = useRef(0)
+  const noDataSinceRef = useRef<number | null>(null)
 
   const rms = (analyser: AnalyserNode) => {
     const data = new Uint8Array(analyser.frequencyBinCount)
@@ -127,13 +137,32 @@ export function useRecorder() {
     if (Date.now() - since >= SILENCE_MS) setSystemSilent(true)
   }, [])
 
+  /**
+   * Vigia se o MediaRecorder esta REALMENTE recebendo audio. Sem isto, uma captura que morre
+   * no meio (ver onstatechange no start) so aparece na hora de transcrever, quando o provedor
+   * recusa o arquivo de 0 byte -- tarde demais. Entre 07/08 e 21/08 isso custou 4 reunioes,
+   * uma delas de 44 min. So avisa; nunca interrompe a gravacao.
+   */
+  const watchNoData = useCallback(() => {
+    if (mediaRef.current?.state !== 'recording') return
+    if (bytesRef.current > 0) {
+      noDataSinceRef.current = null
+      setNoAudioData(false)
+      return
+    }
+    const since = noDataSinceRef.current ?? Date.now()
+    noDataSinceRef.current = since
+    if (Date.now() - since >= NO_DATA_MS) setNoAudioData(true)
+  }, [])
+
   const tickLevel = useCallback(() => {
     const analyser = analyserRef.current
     if (!analyser) return
     setLevel(Math.min(1, rms(analyser) * 3))
     watchSilence()
+    watchNoData()
     rafRef.current = requestAnimationFrame(tickLevel)
-  }, [watchSilence])
+  }, [watchSilence, watchNoData])
 
   /**
    * Liga o audio da reuniao na mistura que ja esta sendo gravada. Devolve false quando o
@@ -203,6 +232,9 @@ export function useRecorder() {
       setEnded(false)
       setSystemAudioMissing(false)
       setSystemSilent(false)
+      setNoAudioData(false)
+      bytesRef.current = 0
+      noDataSinceRef.current = null
       sysHeardRef.current = false
       sysSilentSinceRef.current = null
       sysAttachedRef.current = false
@@ -217,6 +249,17 @@ export function useRecorder() {
         // a gravacao sai muda/vazia e o provedor devolve "could not process file". resume()
         // e no-op se ja estiver rodando.
         if (ctx.state === 'suspended') await ctx.resume().catch(() => {})
+        // O sistema pode SUSPENDER o contexto no meio da gravacao (bloqueio de tela, economia
+        // de energia, janela minimizada). No modo reuniao a faixa gravada sai do
+        // MediaStreamDestination DESTE contexto: suspenso, ele para de produzir audio e o
+        // MediaRecorder nao recebe mais nada -- enquanto o cronometro (Date.now) segue contando.
+        // E a assinatura exata dos arquivos de 0 byte com 22-44 min no audit_log, todos em modo
+        // reuniao. O resume() acima cobre so o estado inicial; isto mantem a captura viva.
+        ctx.onstatechange = () => {
+          if (ctx.state === 'suspended' && mediaRef.current?.state === 'recording') {
+            ctx.resume().catch(() => {})
+          }
+        }
         const analyser = ctx.createAnalyser()
         analyser.fftSize = 512
         analyserRef.current = analyser
@@ -278,7 +321,10 @@ export function useRecorder() {
         })
         chunksRef.current = []
         recorder.ondataavailable = (e) => {
-          if (e.data.size > 0) chunksRef.current.push(e.data)
+          if (e.data.size > 0) {
+            bytesRef.current += e.data.size
+            chunksRef.current.push(e.data)
+          }
         }
         recorder.onstop = () => {
           const blob = new Blob(chunksRef.current, { type: mimeRef.current })
@@ -377,6 +423,7 @@ export function useRecorder() {
     ended,
     systemAudioMissing,
     systemSilent,
+    noAudioData,
     start,
     addSystemAudio,
     pause,

@@ -384,6 +384,19 @@ export function Capture() {
           // apaga: o audio segue salvo neste aparelho e o usuario decide se transcreve mesmo
           // assim ou descarta. (Um delete que rodava aqui destruiu uma reuniao de 69 min em
           // 04/08/2026 por um falso positivo de silencio.)
+          // 0 byte: mandar pro provedor so devolve "groq 400: file is empty", que nao diz nada
+          // pro usuario -- e ele reenviava 3, 4 vezes seguidas (36 tentativas assim no
+          // audit_log entre 07/08 e 21/08). Barrar aqui troca isso por um motivo claro. Sem
+          // isto o `isSilentAudio` abaixo tambem nao pega: um blob vazio nem chega a decodificar.
+          // A gravacao NAO e descartada -- segue salva neste aparelho.
+          if (opts.audioBlob.size === 0) {
+            if (superseded()) return
+            setError(
+              'Esta gravação não capturou áudio nenhum (arquivo vazio) — provavelmente o computador suspendeu a captura no meio. Ela continua salva neste aparelho, mas não há áudio para transcrever.',
+            )
+            setProcessing(false)
+            return
+          }
           if (mode !== 'video' && !opts.ignoreSilence && (await isSilentAudio(opts.audioBlob))) {
             if (superseded()) return
             setSilentDetected(true)
@@ -1073,6 +1086,16 @@ export function Capture() {
 
               {/* A gravacao NAO para por causa disto: ela continua com o microfone enquanto o
                   usuario decide. Anexar o audio da reuniao no meio do caminho e possivel. */}
+              {recorder.noAudioData && (
+                <div className="alert-error text-sm mt-3 max-w-sm text-left">
+                  <p>
+                    <span className="font-medium">Esta gravação não está capturando áudio.</span> Já se passaram
+                    20 segundos sem nenhum som ser gravado — do jeito que está, o arquivo sairá vazio. Encerre e
+                    comece de novo; se persistir, reinicie o aplicativo.
+                  </p>
+                </div>
+              )}
+
               {mode === 'meeting' && recorder.systemAudioMissing && (
                 <div className="alert-error text-sm mt-3 max-w-sm text-left">
                   {isElectron() ? (
