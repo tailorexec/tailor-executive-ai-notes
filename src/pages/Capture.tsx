@@ -372,8 +372,8 @@ export function Capture() {
 
       let note = createdNoteRef.current
 
-      // Se uma tentativa anterior desta MESMA gravacao ja criou a nota (e so falhou depois,
-      // ex.: ao salvar o audio), nao criamos outra — vamos direto para o que faltou.
+      // Se uma tentativa anterior desta MESMA gravacao ja criou a nota (e so falhou depois --
+      // na IA, ao salvar o audio), nao criamos outra: vamos direto para o que faltou.
       if (!note) {
         let transcript = opts.transcript ?? ''
         let language = 'pt-BR'
@@ -453,16 +453,10 @@ export function Capture() {
           }
         }
 
-        const meta = { template, context }
-
-        setStep(1)
-        let summary = opts.summary
-        if (!summary) summary = await generateSummary(transcript, meta)
-
-        setStep(2)
-        const actionItems = opts.skipActionItems ? [] : await generateActionItems(transcript, meta)
-
-        setStep(3)
+        // A nota nasce AQUI, com o transcript e status 'processing' -- ANTES da IA. Na ordem
+        // antiga (resumir, depois criar) qualquer falha da IA descartava a transcricao inteira:
+        // em 26/08 um 401 da Anthropic jogou fora 83 min ja transcritos e pagos, e o usuario
+        // teria de transcrever tudo de novo. Agora uma falha custa so a etapa de IA.
         note = await db.createNote({
           user_id: profile.id,
           title: title.trim() || opts.fallbackTitle,
@@ -473,9 +467,9 @@ export function Capture() {
           duration_seconds: opts.duration ?? 0,
           language,
           transcript,
-          summary,
-          action_items: actionItems,
-          status: 'ready',
+          summary: '',
+          action_items: [],
+          status: 'processing',
         })
         createdNoteRef.current = note
 
@@ -485,6 +479,23 @@ export function Capture() {
           await db.logUsage(profile.id, 'recording')
           await db.logUsage(profile.id, 'transcription')
         }
+      }
+
+      // Resumo e itens de acao. Fica FORA do bloco acima de proposito: uma nota que parou aqui
+      // numa tentativa anterior (IA fora do ar, chave invalida, rede) e concluida agora
+      // reaproveitando o transcript ja salvo, em vez de transcrever o audio outra vez.
+      if (note.status !== 'ready') {
+        const meta = { template, context }
+
+        setStep(1)
+        const summary = opts.summary || (await generateSummary(note.transcript, meta))
+
+        setStep(2)
+        const actionItems = opts.skipActionItems ? [] : await generateActionItems(note.transcript, meta)
+
+        setStep(3)
+        note = await db.updateNote(note.id, { summary, action_items: actionItems, status: 'ready' })
+        createdNoteRef.current = note
         await db.logUsage(profile.id, 'ai_summary')
       }
 
@@ -507,7 +518,16 @@ export function Capture() {
     } catch (err) {
       // Uma tentativa cancelada que falha tarde nao deve reescrever a tela do usuario.
       if (superseded()) return
-      setError(aiError(err, 'Falha ao processar. Tente novamente.'))
+      // Com a nota ja criada, o transcript esta salvo e o "tentar novamente" so refaz a IA --
+      // dizer isso evita o usuario achar que perdeu a gravacao e regravar a reuniao.
+      setError(
+        aiError(
+          err,
+          createdNoteRef.current
+            ? 'Falha ao gerar o resumo. A transcrição já está salva na nota — toque em "Tentar novamente" para concluir.'
+            : 'Falha ao processar. Tente novamente.',
+        ),
+      )
       setProcessing(false)
       // NAO apaga a gravacao pendente aqui: e o que permite o botao "Tentar novamente" (e,
       // numa proxima visita, o banner de recuperacao) reaproveitar o audio em vez de perde-lo.

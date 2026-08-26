@@ -19,7 +19,7 @@ const SONNET = 'claude-sonnet-5'
 // USD por 1 milhao de tokens. Ajuste aqui se a Anthropic mudar a tabela.
 const PRICE_PER_MTOK: Record<string, { input: number; output: number }> = {
   [HAIKU]: { input: 1.0, output: 5.0 },
-  [SONNET]: { input: 3.0, output: 15.0 },
+  [SONNET]: { input: 2.0, output: 10.0 },
 }
 // Escrever no cache custa 1.25x a entrada; ler custa 0.10x.
 const CACHE_WRITE_MULT = 1.25
