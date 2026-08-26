@@ -22,6 +22,11 @@ export interface AnaElectronBridge {
   /** Instala agora a atualizacao ja baixada e reabre o app. `undefined` em instaladores antigos
    *  (capability-gated) -- nesse caso o aviso cai no fallback de baixar por link. */
   quitAndInstall?: () => void
+  /** Pede ao processo principal que reconecte o audio do sistema (loopback) apos o Windows
+   *  trocar o aparelho de saida. Precisa passar pelo main porque getDisplayMedia exige uma
+   *  ativacao transitoria, e so ele consegue simular o gesto. `undefined` em instaladores
+   *  antigos -- ali o aviso de audio mudo de 30s continua sendo a rede de protecao. */
+  requestSystemAudioReattach?: () => void
 }
 
 declare global {

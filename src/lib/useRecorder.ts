@@ -1,5 +1,11 @@
 import { useCallback, useRef, useState } from 'react'
 import { config } from './config'
+import { isElectron } from './electron'
+
+/** Gancho global que o processo principal do Electron chama com gesto simulado. */
+function reattachHook(): { __anaReattachSystemAudio?: () => void } {
+  return window as unknown as { __anaReattachSystemAudio?: () => void }
+}
 
 export type RecorderState = 'idle' | 'recording' | 'paused' | 'stopped'
 
@@ -42,6 +48,29 @@ const SILENCE_RMS = 0.002
  * vazio. Com o timeslice de 1s, qualquer captura sadia ja entregou dados muito antes disso.
  */
 const NO_DATA_MS = 20_000
+
+/** Identidade do aparelho de SAIDA padrao. Muda quando o Windows troca (fone que conecta). */
+async function defaultOutputKey(): Promise<string> {
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices()
+    const out = devices.find((d) => d.kind === 'audiooutput' && d.deviceId === 'default')
+    return out ? `${out.groupId}|${out.label}` : ''
+  } catch {
+    return ''
+  }
+}
+
+/**
+ * Pede ao processo principal do Electron que reconecte o audio do sistema. Tem que passar por
+ * ele: getDisplayMedia exige ativacao transitoria e o site nao consegue se dar um gesto -- o
+ * main devolve a chamada em __anaReattachSystemAudio com userGesture=true. Fora do app Windows,
+ * ou em instalador antigo (sem o metodo), nao ha o que fazer sozinho e a rede de protecao segue
+ * sendo o aviso de audio mudo de 30s.
+ */
+function requestSystemReattach(): void {
+  const bridge = window.anaElectron
+  if (typeof bridge?.requestSystemAudioReattach === 'function') bridge.requestSystemAudioReattach()
+}
 
 export function isMobileBrowser(): boolean {
   return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
@@ -110,6 +139,8 @@ export function useRecorder() {
   const micConstraintsRef = useRef<MediaTrackConstraints>({})
   const recoveringRef = useRef(false)
   const recoverMicRef = useRef<(() => Promise<void>) | null>(null)
+  /** Aparelho de saida padrao de quando o loopback foi capturado. */
+  const outputKeyRef = useRef<string>('')
 
   const rms = (analyser: AnalyserNode) => {
     const data = new Uint8Array(analyser.frequencyBinCount)
@@ -211,7 +242,21 @@ export function useRecorder() {
     setSystemAudioMissing(false)
 
     // Se o usuario parar o compartilhamento pelo navegador, encerramos.
-    sysTracks[0].onended = () => setEnded(true)
+    // No navegador isto e o usuario clicando em "Parar compartilhamento" -- encerrar e o certo.
+    // No app Windows esse botao nao existe: a faixa so morre se o aparelho de saida sumiu (fone
+    // que conecta/desconecta). Ali pedimos a reconexao em vez de encerrar a reuniao inteira.
+    sysTracks[0].onended = () => {
+      if (isElectron()) {
+        sysAttachedRef.current = false
+        requestSystemReattach()
+      } else {
+        setEnded(true)
+      }
+    }
+    // Guarda em qual aparelho de saida este loopback foi capturado, para detectar a troca.
+    void defaultOutputKey().then((k) => {
+      outputKeyRef.current = k
+    })
     return true
   }, [])
 
@@ -288,10 +333,24 @@ export function useRecorder() {
    * evento dispara a cada fone que entra ou sai, e reaquirir a toa cortaria audio sem motivo
    * (com a track viva, o proprio Chrome ja acompanha a troca do dispositivo padrao).
    */
+  /**
+   * O aparelho de SAIDA padrao mudou com a reuniao gravando? O loopback continua preso ao
+   * aparelho de quando a captura comecou -- e a razao de "conectei o fone e a reuniao saiu muda".
+   * Refazer a captura emenda no destino da mistura sem parar o MediaRecorder.
+   */
+  const checkOutputChanged = useCallback(async () => {
+    if (!sysAttachedRef.current || mediaRef.current?.state !== 'recording') return
+    const key = await defaultOutputKey()
+    if (!key || !outputKeyRef.current || key === outputKeyRef.current) return
+    outputKeyRef.current = key
+    requestSystemReattach()
+  }, [])
+
   const onDeviceChange = useCallback(() => {
     const track = micStreamRef.current?.getAudioTracks()[0]
     if (!track || track.readyState !== 'live' || track.muted) void recoverMicRef.current?.()
-  }, [])
+    void checkOutputChanged()
+  }, [checkOutputChanged])
 
   const startTimer = useCallback(() => {
     startedAtRef.current = Date.now()
@@ -367,6 +426,12 @@ export function useRecorder() {
           dest.channelCount = 1
           dest.channelCountMode = 'explicit'
           destRef.current = dest
+          // O main chama isto de volta com gesto simulado quando a saida troca (ver
+          // ana:reattach-system-audio em electron/main.cjs). addSystemAudio troca a fonte da
+          // reuniao na mistura que ja esta gravando.
+          reattachHook().__anaReattachSystemAudio = () => {
+            void addSystemAudio()
+          }
         }
 
         const mic = await navigator.mediaDevices.getUserMedia({ audio: micConstraintsRef.current })
@@ -437,7 +502,7 @@ export function useRecorder() {
         setState('idle')
       }
     },
-    [attachDisplay, startTimer, tickLevel, wireMic, onDeviceChange],
+    [attachDisplay, addSystemAudio, startTimer, tickLevel, wireMic, onDeviceChange],
   )
 
   const pause = useCallback(() => {
@@ -465,6 +530,7 @@ export function useRecorder() {
     navigator.mediaDevices?.removeEventListener?.('devicechange', onDeviceChange)
     micSourceRef.current?.disconnect()
     micSourceRef.current = null
+    delete reattachHook().__anaReattachSystemAudio
     micStreamRef.current?.getTracks().forEach((t) => t.stop())
     displayStreamRef.current?.getTracks().forEach((t) => t.stop())
     audioCtxRef.current?.close().catch(() => {})

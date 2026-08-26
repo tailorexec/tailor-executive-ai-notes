@@ -273,6 +273,19 @@ if (!gotSingleInstanceLock) {
     installUpdateNow()
   })
 
+  // O site percebeu que o Windows trocou o aparelho de saida com a reuniao gravando. O loopback
+  // fica preso ao aparelho de quando a captura comecou, entao ele precisa refazer o
+  // getDisplayMedia -- e isso exige ativacao transitoria, que o site nao consegue se dar. Aqui
+  // devolvemos a chamada com userGesture=true (mesmo truque do atalho global), e o site emenda
+  // a captura nova na mistura que ja esta sendo gravada, sem parar o MediaRecorder.
+  ipcMain.on('ana:reattach-system-audio', () => {
+    if (!mainWindow) return
+    log.info('IPC ana:reattach-system-audio: refazendo o loopback no aparelho novo')
+    mainWindow.webContents
+      .executeJavaScript('window.__anaReattachSystemAudio && window.__anaReattachSystemAudio()', true)
+      .catch((err) => log.warn('falha ao reconectar o audio do sistema:', err))
+  })
+
   // Versao do instalador nativo instalado (package.json). O site (carregado ao vivo) compara
   // com a ultima versao publicada pra saber se precisa avisar o usuario a atualizar o app.
   ipcMain.on('ana:get-version', (e) => {

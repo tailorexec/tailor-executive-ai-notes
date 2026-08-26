@@ -26,6 +26,12 @@ contextBridge.exposeInMainWorld('anaElectron', {
   quitAndInstall() {
     ipcRenderer.send('ana:quit-and-install')
   },
+  /** Pede a reconexao do audio do sistema quando o Windows troca o aparelho de saida no meio
+   *  da reuniao (fone bluetooth que conecta). O site nao consegue refazer o getDisplayMedia
+   *  sozinho -- falta a ativacao transitoria --, entao o main devolve a chamada com gesto. */
+  requestSystemAudioReattach() {
+    ipcRenderer.send('ana:reattach-system-audio')
+  },
   /** Chama `cb` a cada mudanca de status da checagem/download de atualizacao (checando,
    *  achou, sem novidade, baixando com %, pronto, erro) -- da o feedback visivel que o
    *  dialogo nativo sozinho nao cobre (ex.: nada aparece enquanto so esta checando). */
