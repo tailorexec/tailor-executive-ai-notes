@@ -78,6 +78,8 @@ export function useRecorder() {
   const [systemSilent, setSystemSilent] = useState(false)
   /** Gravando ha 20s+ sem NENHUM byte gravado: o arquivo vai sair vazio (0 byte). */
   const [noAudioData, setNoAudioData] = useState(false)
+  /** O microfone caiu e NAO deu pra recuperar sozinho: so a voz do usuario se perde. */
+  const [micLost, setMicLost] = useState(false)
 
   const mediaRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
@@ -102,6 +104,12 @@ export function useRecorder() {
   /** Bytes ja entregues pelo MediaRecorder. Zero com a gravacao andando = arquivo vazio. */
   const bytesRef = useRef(0)
   const noDataSinceRef = useRef<number | null>(null)
+  /** No do microfone dentro da cadeia. Guardado para poder desligar na troca de aparelho. */
+  const micSourceRef = useRef<MediaStreamAudioSourceNode | null>(null)
+  /** As mesmas restricoes do start(), para reaquirir o mic identico ao original. */
+  const micConstraintsRef = useRef<MediaTrackConstraints>({})
+  const recoveringRef = useRef(false)
+  const recoverMicRef = useRef<(() => Promise<void>) | null>(null)
 
   const rms = (analyser: AnalyserNode) => {
     const data = new Uint8Array(analyser.frequencyBinCount)
@@ -218,6 +226,73 @@ export function useRecorder() {
     }
   }, [attachDisplay])
 
+  /**
+   * Liga um microfone na cadeia de audio: medidor de nivel, mistura da reuniao (quando ela
+   * existe) e os vigias da propria track. Serve tanto para o start() quanto para a troca de
+   * aparelho -- e o que permite trocar o microfone SEM parar a gravacao, porque no modo
+   * reuniao o MediaRecorder grava o DESTINO da mistura, nunca a track do mic.
+   */
+  const wireMic = useCallback((mic: MediaStream, ctx: AudioContext) => {
+    micStreamRef.current = mic
+    const source = ctx.createMediaStreamSource(mic)
+    micSourceRef.current = source
+    if (analyserRef.current) source.connect(analyserRef.current)
+    if (destRef.current) source.connect(destRef.current)
+
+    const track = mic.getAudioTracks()[0]
+    if (!track) return
+    // Fone bluetooth que conecta, dispositivo padrao que o Windows troca, outro app que toma
+    // o microfone: a track MORRE (ended) ou o sistema a silencia (mute). Sem estes dois
+    // ganchos nada percebia -- a reuniao seguia "gravando" de uma fonte morta, e o usuario
+    // so descobria no fim, com a reuniao inteira perdida.
+    track.onended = () => void recoverMicRef.current?.()
+    track.onmute = () => void recoverMicRef.current?.()
+  }, [])
+
+  /**
+   * Pega o microfone de novo e o costura na mistura que JA esta sendo gravada. So da pra
+   * fazer isso no modo reuniao: la a faixa gravada e o destino da mistura, entao trocar a
+   * fonte por baixo e invisivel para o MediaRecorder. Na gravacao padrao a faixa gravada e a
+   * PROPRIA track do mic -- trocar exigiria reiniciar o gravador e cortaria o audio ja
+   * capturado, entao ali preferimos avisar a arriscar o que ja existe.
+   */
+  const recoverMic = useCallback(async () => {
+    const ctx = audioCtxRef.current
+    if (!ctx || !mediaRef.current || mediaRef.current.state === 'inactive') return
+    if (!destRef.current) {
+      setMicLost(true)
+      return
+    }
+    if (recoveringRef.current) return
+    recoveringRef.current = true
+    try {
+      const fresh = await navigator.mediaDevices.getUserMedia({ audio: micConstraintsRef.current })
+      const old = micStreamRef.current
+      micSourceRef.current?.disconnect()
+      old?.getTracks().forEach((t) => t.stop())
+      wireMic(fresh, ctx)
+      setMicLost(false)
+    } catch {
+      // Sem microfone nenhum disponivel. A gravacao continua (o audio da reuniao ainda entra
+      // pelo loopback); o que se perde e so a voz do usuario -- por isso avisamos, mas nunca
+      // interrompemos.
+      setMicLost(true)
+    } finally {
+      recoveringRef.current = false
+    }
+  }, [wireMic])
+  recoverMicRef.current = recoverMic
+
+  /**
+   * O Windows mexeu na lista de aparelhos. So reagimos quando a track REALMENTE morreu: o
+   * evento dispara a cada fone que entra ou sai, e reaquirir a toa cortaria audio sem motivo
+   * (com a track viva, o proprio Chrome ja acompanha a troca do dispositivo padrao).
+   */
+  const onDeviceChange = useCallback(() => {
+    const track = micStreamRef.current?.getAudioTracks()[0]
+    if (!track || track.readyState !== 'live' || track.muted) void recoverMicRef.current?.()
+  }, [])
+
   const startTimer = useCallback(() => {
     startedAtRef.current = Date.now()
     timerRef.current = window.setInterval(() => {
@@ -233,6 +308,7 @@ export function useRecorder() {
       setSystemAudioMissing(false)
       setSystemSilent(false)
       setNoAudioData(false)
+      setMicLost(false)
       bytesRef.current = 0
       noDataSinceRef.current = null
       sysHeardRef.current = false
@@ -274,28 +350,33 @@ export function useRecorder() {
         //    alto-falante (ligacao, video). EC/NS cancelariam justamente esse audio. => DESLIGADOS.
         // autoGainControl fica sempre: so normaliza volume, nao remove conteudo.
         const cleanVoiceOnly = !!opts?.system
-        const mic = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            channelCount: 1,
-            echoCancellation: cleanVoiceOnly,
-            noiseSuppression: cleanVoiceOnly,
-            autoGainControl: true,
-          },
-        })
-        micStreamRef.current = mic
-        ctx.createMediaStreamSource(mic).connect(analyser)
+        micConstraintsRef.current = {
+          channelCount: 1,
+          echoCancellation: cleanVoiceOnly,
+          noiseSuppression: cleanVoiceOnly,
+          autoGainControl: true,
+        }
 
-        let recordStream: MediaStream = mic
-
+        // O destino da mistura nasce ANTES do microfone: e nele que o wireMic pluga a voz, e e
+        // dele que o MediaRecorder grava. Com o destino pronto primeiro, trocar o microfone
+        // depois (fone que conecta, aparelho padrao que muda) nao encosta na gravacao.
         if (opts?.system) {
           // A gravacao sai sempre do destino da mistura, mesmo antes de existir audio da reuniao.
           // E o que permite anexar a reuniao no meio da gravacao, sem trocar a faixa do recorder.
           const dest = ctx.createMediaStreamDestination()
           dest.channelCount = 1
           dest.channelCountMode = 'explicit'
-          ctx.createMediaStreamSource(mic).connect(dest)
           destRef.current = dest
-          recordStream = dest.stream
+        }
+
+        const mic = await navigator.mediaDevices.getUserMedia({ audio: micConstraintsRef.current })
+        wireMic(mic, ctx)
+        // O Windows avisa aqui quando um aparelho entra ou sai (o fone bluetooth do caso tipico).
+        navigator.mediaDevices?.addEventListener?.('devicechange', onDeviceChange)
+
+        let recordStream: MediaStream = destRef.current ? destRef.current.stream : mic
+
+        if (opts?.system) {
 
           // Audio da aba/sistema (a outra ponta da reuniao). Se o usuario nao marcar a caixa de
           // audio, ou fechar o dialogo, seguimos gravando so a voz dele: perder a reuniao
@@ -356,7 +437,7 @@ export function useRecorder() {
         setState('idle')
       }
     },
-    [attachDisplay, startTimer, tickLevel],
+    [attachDisplay, startTimer, tickLevel, wireMic, onDeviceChange],
   )
 
   const pause = useCallback(() => {
@@ -381,6 +462,9 @@ export function useRecorder() {
   const cleanup = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current)
     if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    navigator.mediaDevices?.removeEventListener?.('devicechange', onDeviceChange)
+    micSourceRef.current?.disconnect()
+    micSourceRef.current = null
     micStreamRef.current?.getTracks().forEach((t) => t.stop())
     displayStreamRef.current?.getTracks().forEach((t) => t.stop())
     audioCtxRef.current?.close().catch(() => {})
@@ -388,7 +472,7 @@ export function useRecorder() {
     sysAnalyserRef.current = null
     sysAttachedRef.current = false
     setLevel(0)
-  }, [])
+  }, [onDeviceChange])
 
   /** Retrata o audio capturado ATE AGORA, sem parar a gravacao -- usado para checkpoints
    *  periodicos (a gravacao so vira Blob final de verdade no stop()). */
@@ -424,6 +508,7 @@ export function useRecorder() {
     systemAudioMissing,
     systemSilent,
     noAudioData,
+    micLost,
     start,
     addSystemAudio,
     pause,

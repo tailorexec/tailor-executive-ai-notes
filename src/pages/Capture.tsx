@@ -1116,6 +1116,17 @@ export function Capture() {
                 </div>
               )}
 
+              {recorder.micLost && (
+                <div className="alert-error text-sm mt-3 max-w-sm text-left">
+                  <p>
+                    <span className="font-medium">Perdemos seu microfone.</span> Algum aplicativo ou o próprio
+                    Windows mudou o dispositivo de entrada e não conseguimos reabrir outro. A gravação continua
+                    {mode === 'meeting' ? ' captando o áudio da reunião' : ''}, mas a sua voz não está entrando.
+                    Confira o microfone nas configurações de som.
+                  </p>
+                </div>
+              )}
+
               {mode === 'meeting' && recorder.systemAudioMissing && (
                 <div className="alert-error text-sm mt-3 max-w-sm text-left">
                   {isElectron() ? (
