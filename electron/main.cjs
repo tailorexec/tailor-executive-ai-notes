@@ -4,7 +4,7 @@
 // So o que precisa mesmo de codigo nativo vive aqui: atalho global e captura de audio do
 // sistema sem o dialogo de escolha do SO.
 
-const { app, BrowserWindow, Tray, Menu, globalShortcut, session, desktopCapturer, nativeImage, dialog, ipcMain, shell } = require('electron')
+const { app, BrowserWindow, Tray, Menu, globalShortcut, session, desktopCapturer, nativeImage, dialog, ipcMain, shell, Notification } = require('electron')
 const { autoUpdater } = require('electron-updater')
 const log = require('electron-log/main')
 const path = require('node:path')
@@ -192,9 +192,25 @@ if (!gotSingleInstanceLock) {
    * fecha qualquer resto e instala em silencio (sem o dialogo "nao e possivel fechar").
    */
   let installing = false
-  function installUpdateNow() {
+  function installUpdateNow(notice) {
     if (installing) return
     installing = true
+    // A instalacao roda em silencio de proposito (ver o quitAndInstall mais abaixo), e com o app
+    // encerrado nenhuma janela nossa sobrevive pra mostrar progresso. A notificacao do Windows e
+    // a unica coisa que continua visivel nesse intervalo: sem ela o usuario ve o ANA fechar
+    // sozinho e sumir por ~20s, o que parece defeito. Os textos vem do site ja traduzidos.
+    try {
+      if (Notification.isSupported()) {
+        new Notification({
+          title: (notice && notice.title) || 'Atualizando o ANA...',
+          body:
+            (notice && notice.body) ||
+            'A janela vai fechar e reabrir sozinha em alguns segundos. E normal -- nao precisa fazer nada.',
+        }).show()
+      }
+    } catch (err) {
+      log.warn('nao foi possivel notificar a atualizacao:', err)
+    }
     app.isQuitting = true
     try {
       if (mainWindow) mainWindow.removeAllListeners('close')
@@ -268,9 +284,9 @@ if (!gotSingleInstanceLock) {
   })
 
   // Aviso discreto do site ("Reiniciar e atualizar"): instala a atualizacao ja baixada na hora.
-  ipcMain.on('ana:quit-and-install', () => {
+  ipcMain.on('ana:quit-and-install', (_e, notice) => {
     log.info('IPC ana:quit-and-install recebido do site')
-    installUpdateNow()
+    installUpdateNow(notice)
   })
 
   // O site percebeu que o Windows trocou o aparelho de saida com a reuniao gravando. O loopback

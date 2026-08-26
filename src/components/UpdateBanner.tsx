@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { ArrowUpCircle, X } from 'lucide-react'
+import { createPortal } from 'react-dom'
+import { ArrowUpCircle, Loader2, X } from 'lucide-react'
 import { isElectron, type AnaUpdateStatus } from '../lib/electron'
 import { LATEST_WINDOWS_BUILD } from '../lib/version'
 import { WINDOWS_APP_DOWNLOAD_URL } from '../lib/windowsApp'
@@ -20,6 +21,8 @@ function isOlder(a: string, b: string): boolean {
 }
 
 const DISMISS_KEY = 'tailor.updateBanner.dismissed'
+/** Ultima versao do instalador que este aparelho viu -- fecha o ciclo do "deu certo?". */
+const LAST_SEEN_KEY = 'tailor.lastSeenAppVersion'
 
 /**
  * Aviso fino no topo, so no app Windows (Electron), quando o instalador nativo instalado esta
@@ -42,6 +45,23 @@ export function UpdateBanner() {
   // "Reiniciar e atualizar" (instala na hora). Do contrario a instalacao acontece sozinha ao sair.
   const [status, setStatus] = useState<AnaUpdateStatus['status'] | null>(null)
   const [percent, setPercent] = useState<number | null>(null)
+  /** Instalando: a janela vai sumir em instantes e o usuario precisa saber disso. */
+  const [installing, setInstalling] = useState(false)
+
+  // Depois de atualizar, o app so "sumiu e voltou": nada confirma que deu certo. Comparar a
+  // versao instalada com a ultima que este aparelho viu fecha esse ciclo com um aviso curto.
+  useEffect(() => {
+    if (!isElectron()) return
+    const now = window.anaElectron?.appVersion
+    if (!now) return
+    try {
+      const prev = localStorage.getItem(LAST_SEEN_KEY)
+      localStorage.setItem(LAST_SEEN_KEY, now)
+      if (prev && isOlder(prev, now)) toast(`${t('update.done')} ${now}.`)
+    } catch {
+      /* ignore */
+    }
+  }, [toast, t])
 
   useEffect(() => {
     if (!isElectron() || typeof window.anaElectron!.onUpdateStatus !== 'function') return
@@ -74,7 +94,16 @@ export function UpdateBanner() {
   }
 
   function restart() {
-    window.anaElectron!.quitAndInstall!()
+    // O instalador roda em SILENCIO de proposito (ver main.cjs: o modo visivel traz de volta a
+    // tela "arquivo em uso / Repetir" que a v0.18.26 matou). Sem este aviso o usuario so ve o
+    // app fechar sozinho e some tudo -- parece que quebrou. Mostramos o que esta acontecendo
+    // antes da janela sumir, e mandamos os textos ja traduzidos para a notificacao do Windows,
+    // que sobrevive ao app fechar e cobre o intervalo da instalacao.
+    setInstalling(true)
+    window.anaElectron!.quitAndInstall!({
+      title: t('update.installing.title'),
+      body: t('update.installing.body'),
+    })
   }
 
   function dismiss() {
@@ -87,10 +116,25 @@ export function UpdateBanner() {
   }
 
   return (
-    // max-w + alinhado a esquerda: no app Windows a Home tem controles flutuantes no canto
-    // superior direito (pasta/atualizar/tema, position:fixed z-40) -- uma barra ate a borda
-    // direita deixava o botao "Atualizar agora" embaixo deles. Estreita, fica bem a esquerda.
-    <div className="flex items-center gap-2.5 border border-accent/30 bg-accent/10 rounded-2xl px-4 py-2 mx-5 mt-4 max-w-xl text-sm">
+    <>
+      {installing &&
+        createPortal(
+          // Portal: a barra vive dentro de containers com stacking context proprio, e um overlay
+          // preso ali dentro ficaria atras do resto da tela.
+          <div className="fixed inset-0 z-[90] flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/70" />
+            <div className="relative w-full max-w-sm mx-5 bg-surface-card border border-surface-border rounded-3xl shadow-float px-6 py-7 text-center">
+              <Loader2 size={32} className="mx-auto text-accent animate-spin" />
+              <h2 className="font-display font-semibold text-lg mt-4">{t('update.installing.title')}</h2>
+              <p className="text-sm text-content-secondary mt-2">{t('update.installing.body')}</p>
+            </div>
+          </div>,
+          document.body,
+        )}
+      {/* max-w + alinhado a esquerda: no app Windows a Home tem controles flutuantes no canto
+          superior direito (pasta/atualizar/tema, position:fixed z-40) -- uma barra ate a borda
+          direita deixava o botao "Atualizar agora" embaixo deles. Estreita, fica bem a esquerda. */}
+      <div className="flex items-center gap-2.5 border border-accent/30 bg-accent/10 rounded-2xl px-4 py-2 mx-5 mt-4 max-w-xl text-sm">
       <ArrowUpCircle size={16} className="text-accent shrink-0" />
       <span className="flex-1 min-w-0 text-content-primary">
         {ready
@@ -113,6 +157,7 @@ export function UpdateBanner() {
       <button onClick={dismiss} aria-label={t('update.dismiss')} className="shrink-0 text-content-muted hover:text-content-primary">
         <X size={16} />
       </button>
-    </div>
+      </div>
+    </>
   )
 }

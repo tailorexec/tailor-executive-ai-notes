@@ -23,8 +23,8 @@ contextBridge.exposeInMainWorld('anaElectron', {
   },
   /** Instala AGORA a atualizacao ja baixada e reabre o app (botao "Reiniciar e atualizar" do
    *  aviso). So faz efeito depois do status 'downloaded'. */
-  quitAndInstall() {
-    ipcRenderer.send('ana:quit-and-install')
+  quitAndInstall(notice) {
+    ipcRenderer.send('ana:quit-and-install', notice)
   },
   /** Pede a reconexao do audio do sistema quando o Windows troca o aparelho de saida no meio
    *  da reuniao (fone bluetooth que conecta). O site nao consegue refazer o getDisplayMedia
