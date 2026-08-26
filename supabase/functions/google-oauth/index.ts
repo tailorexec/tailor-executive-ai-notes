@@ -16,9 +16,14 @@ import { adminClient, callerId, logAuditServer } from '../_shared/guard.ts'
 const CLIENT_ID = Deno.env.get('GOOGLE_CLIENT_ID')!
 const CLIENT_SECRET = Deno.env.get('GOOGLE_CLIENT_SECRET')!
 
-/** Origens onde o ANA roda de verdade: os 3 aliases fixos de producao + previews do mesmo
- *  projeto Vercel + dev local. Conferido com `vercel inspect` em 2026-07-10. */
+/** Origens onde o ANA roda de verdade: o dominio proprio + os 3 aliases fixos de producao
+ *  + previews do mesmo projeto Vercel + dev local. Se o app passar a carregar outra origem,
+ *  ela PRECISA entrar aqui e tambem no console do Google (Authorized redirect URIs). */
 const ALLOWED_ORIGINS = [
+  // Dominio proprio: e o que o app Windows (electron/main.cjs) e o APK Android
+  // (capacitor.config.ts) carregam desde 30/07/2026 (v0.18.30). Sem ele aqui, o Calendario
+  // quebra NOS DOIS: o CORS volta 'null' e o redirect_uri cai em 'nao permitido'.
+  /^https:\/\/ana\.nectarmd\.com\.br$/,
   /^https:\/\/tailor-executive-ai-notes\.vercel\.app$/,
   /^https:\/\/tailor-executive-ai-notes-nectar-marketing-digital\.vercel\.app$/,
   /^https:\/\/tailor-executive-ai-notes-contato-1552-nectar-marketing-digital\.vercel\.app$/,
