@@ -28,11 +28,26 @@ for (const f of FILES) {
     continue
   }
   const before = readFileSync(f, 'utf8')
-  const after = before.replace(/\$\{if\} \$R1 < 5\b/g, `\${if} $R1 < ${RETRIES}`)
+  // Duas etapas do template travam pelo MESMO motivo (Defender segurando o .exe), mas cada uma
+  // tem seu proprio laco -- e so a primeira estava sendo corrigida:
+  //
+  //  1. EXTRACAO (`$R1 < 5`): o MessageBox e /SD IDRETRY, ou seja, no silencioso ele insiste
+  //     sozinho. La o limite baixo so incomodava na instalacao MANUAL.
+  //  2. DESINSTALAR O ANTIGO (`$R5 > 5`, em installUtil.nsh): o MessageBox e /SD IDCANCEL -- no
+  //     silencioso ele DESISTE sozinho. Estouradas as 5 tentativas (~5s), o auto-update morre com
+  //     "Falha ao desinstalar os arquivos do aplicativo antigo: 2" e o app nem reabre. Pegou
+  //     todos os usuarios na atualizacao 0.18.33 -> 0.18.34 (27/08/2026).
+  //
+  // NAO troque esse /SD IDCANCEL por IDRETRY: apos o MessageBox o fluxo volta ao laco com $R5 ja
+  // estourado, e o modo silencioso ficaria preso em loop infinito. Subir o contador e o correto:
+  // 30 tentativas com Sleep 1000 dao ~30s, folga suficiente pro Defender liberar o binario.
+  const after = before
+    .replace(/\$\{if\} \$R1 < 5\b/g, `\${if} $R1 < ${RETRIES}`)
+    .replace(/\$\{if\} \$R5 > 5\b/g, `\${if} $R5 > ${RETRIES}`)
   if (after !== before) {
     writeFileSync(f, after)
     changed++
-    console.log(`patch-nsis: ${f} -> tentativas de copia 5 => ${RETRIES}`)
+    console.log(`patch-nsis: ${f} -> tentativas (copia e desinstalacao) 5 => ${RETRIES}`)
   }
 }
 if (!changed) console.log('patch-nsis: nada a alterar (ja aplicado ou template diferente)')
