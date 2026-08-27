@@ -18,6 +18,13 @@ const ICON_PATH = path.join(__dirname, '..', 'build', 'icon.ico')
 // arquivo pro usuario mostra exatamente onde a checagem parou (rede, GitHub, parse do
 // latest.yml, etc.) em vez de adivinhar as cegas.
 log.initialize()
+
+// Identidade do app para o Windows. Sem isto a Central de Acoes nao sabe de quem e a
+// notificacao e simplesmente NAO a mostra -- era o caso do aviso "Atualizando o ANA...", que
+// existe justamente para cobrir o intervalo em que o app esta fechado instalando (~66s medidos
+// na atualizacao 0.18.33 -> 0.18.35). Precisa bater com o appId do electron-builder e ser
+// chamado antes de qualquer janela ou notificacao.
+app.setAppUserModelId('br.com.tailorexec.tena.desktop')
 log.transports.file.level = 'info'
 autoUpdater.logger = log
 
