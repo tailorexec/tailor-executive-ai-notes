@@ -50,14 +50,32 @@ async function whisperOnce(file: File): Promise<{ text: string; seconds: number 
  * NAO e silencio de verdade (quem chega aqui ja passou pelo filtro de audio silencioso no
  * cliente); tenta de novo antes de desistir.
  */
+/**
+ * Falhas do PROVEDOR que valem reenviar o mesmo arquivo. "could not process file" entra aqui
+ * porque ja apareceu em gravacoes que o proprio navegador decodifica sem problema (o cliente so
+ * chega ate aqui depois de passar pelo filtro de audio silencioso, que DECODIFICA o blob). Sob
+ * carga o provedor tambem devolve 5xx e 429. Reenviar custa pouco perto de perder uma reuniao.
+ */
+function isRetriableProviderError(err: unknown): boolean {
+  const m = err instanceof Error ? err.message : String(err)
+  return /could not process file/i.test(m) || /\s5\d\d:\s/.test(m) || /\s429:\s/.test(m)
+}
+
 async function whisper(file: File): Promise<{ text: string; seconds: number }> {
   const MIN_SECONDS_TO_EXPECT_TEXT = 3
   const MAX_ATTEMPTS = 3
   let last: { text: string; seconds: number } | null = null
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    const result = await whisperOnce(file)
-    last = result
-    if (result.text.trim() || result.seconds < MIN_SECONDS_TO_EXPECT_TEXT) return result
+    try {
+      const result = await whisperOnce(file)
+      last = result
+      if (result.text.trim() || result.seconds < MIN_SECONDS_TO_EXPECT_TEXT) return result
+    } catch (err) {
+      // Antes, QUALQUER erro aqui matava a transcricao na primeira tentativa -- inclusive os
+      // transitorios, que o bloco de texto-vazio acima ja tratava havia tempos. Uma reuniao de
+      // 30 min da Aline (31/08) se perdeu exatamente assim, num unico "could not process file".
+      if (!isRetriableProviderError(err) || attempt === MAX_ATTEMPTS) throw err
+    }
     if (attempt < MAX_ATTEMPTS) await new Promise((r) => setTimeout(r, 1500 * attempt))
   }
   return last!
