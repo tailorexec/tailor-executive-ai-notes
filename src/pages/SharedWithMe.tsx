@@ -21,12 +21,13 @@ export function SharedWithMePage() {
   const [authors, setAuthors] = useState<Map<string, PersonRef>>(new Map())
   const [pendingLeave, setPendingLeave] = useState<Note | null>(null)
 
-  /** So sai da MINHA lista (RPC leave_shared_note) -- quem compartilhou continua com o arquivo. */
+  /** A copia e MINHA (0037): remover = mandar para a minha lixeira. A nota de quem
+   *  compartilhou continua intacta. */
   async function confirmLeave() {
     const target = pendingLeave
     if (!target) return
     try {
-      await db.leaveSharedNote(target.id)
+      await db.deleteNote(target.id)
       setNotes((prev) => (prev ? prev.filter((x) => x.id !== target.id) : prev))
       toast(t('home.left'))
     } catch (err) {
@@ -39,12 +40,12 @@ export function SharedWithMePage() {
     if (!profile) return
     let alive = true
 
-    // listNotes ja devolve minhas + as compartilhadas comigo (RLS). Aqui fico so com as dos outros.
+    // Desde 0037, compartilhar cria copia: recebidas = minhas notas com shared_by marcado.
     db.listNotes(profile.id)
       .then(async (all) => {
-        const shared = all.filter((n) => n.user_id !== profile.id)
+        const shared = all.filter((n) => n.shared_by)
         // Nome de quem compartilhou vem do diretorio (profiles nao expoe perfil alheio).
-        const people = await directoryByIds([...new Set(shared.map((n) => n.user_id))])
+        const people = await directoryByIds([...new Set(shared.map((n) => n.shared_by as string))])
         if (!alive) return
         setNotes(shared)
         setAuthors(people)
@@ -86,7 +87,7 @@ export function SharedWithMePage() {
       ) : (
         <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 pb-28 md:pb-10">
           {notes.map((n) => {
-            const a = authors.get(n.user_id)
+            const a = n.shared_by ? authors.get(n.shared_by) : undefined
             const name = a ? `${a.first_name} ${a.last_name}`.trim() : '—'
             return (
               <li key={n.id} className="relative">

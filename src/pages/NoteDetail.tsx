@@ -47,6 +47,7 @@ import { Sheet } from '../components/ui'
 import type { Folder } from '../lib/types'
 import { logSilentError } from '../lib/auditLog'
 import { stripInlineMd } from '../lib/textPreview'
+import { directoryByIds } from '../lib/directory'
 
 type Tab = 'summary' | 'detailed' | 'analysis' | 'transcript'
 
@@ -88,6 +89,22 @@ export function NoteDetail() {
   useEffect(() => {
     if (profile) db.listFolders(profile.id).then(setFolders)
   }, [profile])
+
+  // Copia recebida (0037): mostra de quem veio. O nome sai do diretorio publico.
+  const [sharedByName, setSharedByName] = useState('')
+  useEffect(() => {
+    const from = note?.shared_by
+    if (!from) {
+      setSharedByName('')
+      return
+    }
+    directoryByIds([from])
+      .then((people) => {
+        const p = people.get(from)
+        setSharedByName(p ? `${p.first_name} ${p.last_name}`.trim() : '')
+      })
+      .catch(() => setSharedByName(''))
+  }, [note?.shared_by])
 
   async function assignFolder(folderId: string | null) {
     if (!note) return
@@ -392,6 +409,7 @@ export function NoteDetail() {
           {fmtDateTime(note.created_at)}
           {note.duration_seconds ? ` • ${fmtDuration(note.duration_seconds)}` : ''}
           {note.folder ? ` • ${note.folder}` : ''}
+          {sharedByName ? ` • ${t('shared.by').replace('{name}', sharedByName)}` : ''}
         </p>
         <div className="flex flex-wrap items-center gap-2 mt-2">
           {note.priority && <PriorityBadge level={note.priority} className="px-2.5 py-1 text-[11px]" />}
@@ -560,6 +578,10 @@ export function NoteDetail() {
           {tab === 'detailed' &&
             (note.detailed_summary ? (
               <ProseBlock text={note.detailed_summary} />
+            ) : !canEdit ? (
+              // Sem o dono nao ha o que gerar: a RLS barra o salvamento (e a chamada de IA
+              // seria cobrada a toa) -- origem dos 5 erros da Larissa em /admin/audit.
+              <p className="text-sm text-content-muted py-8 text-center">{t('note.ownerOnly')}</p>
             ) : (
               <GenerateCta
                 title={t('note.detailedTitle')}
@@ -573,6 +595,8 @@ export function NoteDetail() {
           {tab === 'analysis' &&
             (hasAnalysis(note.analysis) ? (
               <AnalysisView analysis={note.analysis} t={t} />
+            ) : !canEdit ? (
+              <p className="text-sm text-content-muted py-8 text-center">{t('note.ownerOnly')}</p>
             ) : (
               <GenerateCta
                 title={t('note.analysisTitle')}
@@ -686,7 +710,7 @@ export function NoteDetail() {
       />
 
       {shareOpen && (
-        <ShareSheet note={note} open={shareOpen} onClose={() => setShareOpen(false)} onUpdated={setNote} />
+        <ShareSheet note={note} open={shareOpen} onClose={() => setShareOpen(false)} />
       )}
       {feedbackOpen && <FeedbackSheet note={note} open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />}
       {translateOpen && <TranslateSheet note={note} open={translateOpen} onClose={() => setTranslateOpen(false)} />}

@@ -201,7 +201,12 @@ export interface Note {
   mindmap: MindMap | null
   action_items: ActionItem[]
   chat: ChatMessage[]
+  /** Legado do modelo por referencia: hoje vive vazio (compartilhar cria copia, ver 0037). */
   shared_with: string[] // profile ids
+  /** Copia recebida: quem enviou. null = nota criada pelo proprio usuario. */
+  shared_by: string | null
+  /** Copia recebida: nota de origem (evita duplicar a copia num reenvio). */
+  shared_from_note_id: string | null
   status: 'processing' | 'ready' | 'error'
   priority: NotePriority | null
   keep_audio: boolean

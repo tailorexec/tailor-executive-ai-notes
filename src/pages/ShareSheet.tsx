@@ -5,7 +5,6 @@ import { useAuth } from '../auth/AuthProvider'
 import type { Note, PersonRef } from '../lib/types'
 import { Avatar, Sheet } from '../components/ui'
 import { listAcceptedFriends } from '../lib/friends'
-import { listDirectory } from '../lib/directory'
 import { useT } from '../lib/i18n'
 import {
   copyToClipboard,
@@ -33,12 +32,10 @@ export function ShareSheet({
   note,
   open,
   onClose,
-  onUpdated,
 }: {
   note: Note
   open: boolean
   onClose: () => void
-  onUpdated: (n: Note) => void
 }) {
   const { profile } = useAuth()
   const t = useT()
@@ -47,18 +44,15 @@ export function ShareSheet({
   const [term, setTerm] = useState('')
   const [copied, setCopied] = useState(false)
   const [savingShare, setSavingShare] = useState(false)
+  // Quem ja recebeu a copia NESTA sessao (o check e feedback local: a copia e do outro
+  // usuario e nao da para "des-enviar" -- ele exclui a dele se quiser).
+  const [sentTo, setSentTo] = useState<Set<string>>(new Set())
 
-  // So amigos aceitos podem receber a nota. Quem ja recebeu antes continua na lista
-  // (ainda que nao seja amigo) para que dê para revogar o compartilhamento.
+  // So amigos aceitos podem receber a nota.
   useEffect(() => {
     if (!profile) return
-    const me = profile.id
-    Promise.all([listAcceptedFriends(me), listDirectory()])
-      .then(([friends, all]) => {
-        const known = new Set(friends.map((f) => f.id))
-        const legacy = all.filter((p) => note.shared_with.includes(p.id) && !known.has(p.id) && p.id !== me)
-        setPartners([...friends, ...legacy])
-      })
+    listAcceptedFriends(profile.id)
+      .then(setPartners)
       .catch(() => setPartners([]))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile])
@@ -71,21 +65,16 @@ export function ShareSheet({
     )
   }, [partners, term])
 
-  async function togglePartner(id: string) {
+  /** Envia uma COPIA da nota (RPC share_note_copy, 0037): sem audio e sem chat; o amigo
+   *  vira dono da copia dele e pode editar/gerar o que quiser. */
+  async function sendCopy(id: string) {
     setSavingShare(true)
     try {
-      // Le a nota "fresca" antes de decidir o toggle: `shared_with` e gravado como array
-      // inteiro, entao duas acoes concorrentes (duas abas, ou dono e convidado mexendo ao
-      // mesmo tempo) fariam uma sobrescrever a outra. Isto reduz a janela da corrida; nao
-      // a elimina por completo (resolver de vez exigiria um RPC atomico no servidor).
-      const fresh = (await db.getNote(note.id)) ?? note
-      const shared = fresh.shared_with.includes(id)
-        ? fresh.shared_with.filter((x) => x !== id)
-        : [...fresh.shared_with, id]
-      const updated = await db.updateNote(note.id, { shared_with: shared })
-      onUpdated(updated)
+      const status = await db.shareNoteCopy(note.id, id)
+      setSentTo((prev) => new Set(prev).add(id))
+      toast(status === 'exists' ? t('sh.alreadyHas') : t('sh.sentCopy'))
     } catch (err) {
-      logSilentError('client:ShareSheet.togglePartner', err)
+      logSilentError('client:ShareSheet.sendCopy', err)
       toast(t('common.error'), 'error')
     } finally {
       setSavingShare(false)
@@ -166,12 +155,12 @@ export function ShareSheet({
             )
           )}
           {visible.map((p) => {
-            const active = note.shared_with.includes(p.id)
+            const active = sentTo.has(p.id)
             return (
               <button
                 key={p.id}
-                onClick={() => togglePartner(p.id)}
-                disabled={savingShare}
+                onClick={() => sendCopy(p.id)}
+                disabled={savingShare || active}
                 className={`w-full flex items-center gap-3 rounded-2xl px-3 py-2.5 border text-left transition-colors ${
                   active ? 'border-brand-solid bg-accent/5' : 'border-surface-border bg-surface-elevated'
                 }`}

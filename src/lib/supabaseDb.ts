@@ -294,11 +294,13 @@ export const supabaseDb: Db = {
   },
 
   async listNotes(userId) {
+    // Desde 0037 compartilhar cria COPIA (user_id do destinatario), entao a lista e so o
+    // que o usuario possui -- copias recebidas inclusas (elas carregam shared_by).
     const { data, error } = await client()
       .from('notes')
       .select('*')
       .is('deleted_at', null)
-      .or(`user_id.eq.${userId},shared_with.cs.{${userId}}`)
+      .eq('user_id', userId)
       .order('created_at', { ascending: false })
     if (error) throw error
     return (data ?? []) as unknown as Note[]
@@ -323,6 +325,15 @@ export const supabaseDb: Db = {
   async deleteNotePermanent(id) {
     const { error } = await client().from('notes').delete().eq('id', id)
     if (error) throw error
+  },
+
+  async shareNoteCopy(noteId, recipientId) {
+    const { data, error } = await client().rpc('share_note_copy', {
+      p_note_id: noteId,
+      p_recipient: recipientId,
+    })
+    if (error) throw error
+    return data === 'exists' ? 'exists' : 'sent'
   },
 
   async leaveSharedNote(id) {

@@ -214,7 +214,8 @@ export function Home() {
       // Notifica novas notas compartilhadas comigo (se habilitado).
       try {
         if (getNotifPrefs().shared) {
-          const sharedIds = ns.filter((n) => n.user_id !== profile.id).map((n) => n.id)
+          // Copias recebidas (0037) chegam com user_id meu; o marcador e shared_by.
+          const sharedIds = ns.filter((n) => n.shared_by).map((n) => n.id)
           const raw = localStorage.getItem('tailor.seenShared')
           const seen = new Set<string>(raw ? JSON.parse(raw) : [])
           const fresh = sharedIds.filter((id) => !seen.has(id))

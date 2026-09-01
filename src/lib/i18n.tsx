@@ -489,10 +489,13 @@ const pt: Dict = {
   'sh.copied': 'Copiado',
   'sh.moreDevice': 'Mais opções do dispositivo',
   'sh.withPartners': 'Compartilhar com parceiros',
-  'sh.partnersDesc': 'Parceiros selecionados recebem esta nota (transcrição e resumo) diretamente no app.',
+  'sh.partnersDesc': 'Cada parceiro recebe uma cópia desta nota (transcrição, resumos e análises — sem o áudio) e pode editá-la à vontade.',
   'sh.noPartners': 'Nenhum outro usuário cadastrado ainda.',
   'sh.searchPartners': 'Buscar entre seus amigos',
   'sh.noFriends': 'Adicione amigos em Config > Amigos para compartilhar notas.',
+  'sh.sentCopy': 'Cópia enviada!',
+  'sh.alreadyHas': 'Esta pessoa já tem uma cópia desta nota.',
+  'note.ownerOnly': 'Somente quem criou a nota pode gerar este conteúdo.',
 }
 
 const en: Dict = {
@@ -977,10 +980,13 @@ const en: Dict = {
   'sh.copied': 'Copied',
   'sh.moreDevice': 'More device options',
   'sh.withPartners': 'Share with partners',
-  'sh.partnersDesc': 'Selected partners receive this note (transcript and summary) directly in the app.',
+  'sh.partnersDesc': 'Each partner receives a copy of this note (transcript, summaries and analyses — without the audio) and can edit it freely.',
   'sh.noPartners': 'No other user registered yet.',
   'sh.searchPartners': 'Search among your friends',
   'sh.noFriends': 'Add friends in Settings > Friends to share notes.',
+  'sh.sentCopy': 'Copy sent!',
+  'sh.alreadyHas': 'This person already has a copy of this note.',
+  'note.ownerOnly': 'Only the note creator can generate this content.',
 }
 
 const es: Dict = {
@@ -1465,10 +1471,13 @@ const es: Dict = {
   'sh.copied': 'Copiado',
   'sh.moreDevice': 'Más opciones del dispositivo',
   'sh.withPartners': 'Compartir con socios',
-  'sh.partnersDesc': 'Los socios seleccionados reciben esta nota (transcripción y resumen) directamente en la app.',
+  'sh.partnersDesc': 'Cada socio recibe una copia de esta nota (transcripción, resúmenes y análisis — sin el audio) y puede editarla libremente.',
   'sh.noPartners': 'Aún no hay otro usuario registrado.',
   'sh.searchPartners': 'Buscar entre tus amigos',
   'sh.noFriends': 'Agrega amigos en Config > Amigos para compartir notas.',
+  'sh.sentCopy': '¡Copia enviada!',
+  'sh.alreadyHas': 'Esta persona ya tiene una copia de esta nota.',
+  'note.ownerOnly': 'Solo quien creó la nota puede generar este contenido.',
 }
 
 const DICTS: Record<AppLang, Dict> = { pt, en, es }

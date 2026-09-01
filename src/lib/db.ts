@@ -60,8 +60,12 @@ export interface Db {
   restoreNote(id: string): Promise<void>
   /** Remove definitivamente (o audio deve ser apagado pelo chamador). */
   deleteNotePermanent(id: string): Promise<void>
-  /** So pra quem RECEBEU a nota (nao e dono): tira o proprio usuario de shared_with -- a
-   *  nota do dono e o resto de shared_with continuam intactos, so some da MINHA lista. */
+  /** Envia uma COPIA da nota para um amigo aceito. A copia leva transcricao, resumos,
+   *  analise, action items etc., mas NAO o audio nem o chat; o destinatario vira dono
+   *  dela e edita a vontade. 'exists' = a pessoa ja tem uma copia viva desta nota. */
+  shareNoteCopy(noteId: string, recipientId: string): Promise<'sent' | 'exists'>
+  /** Legado do modelo por referencia (pre-0037): tira o proprio usuario de shared_with.
+   *  Mantido so para sessoes antigas em cache; copias recebidas usam deleteNote normal. */
   leaveSharedNote(id: string): Promise<void>
 
   // --- usage / admin ---

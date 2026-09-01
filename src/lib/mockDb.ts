@@ -252,8 +252,9 @@ export const mockDb: Db = {
     seed()
     cleanupExpiredAudio()
     const notes = read<Note[]>(K.notes, [])
+    // Igual a producao pos-0037: compartilhar cria copia, entao a lista e so o que e meu.
     return notes
-      .filter((n) => !n.deleted_at && (n.user_id === userId || n.shared_with.includes(userId)))
+      .filter((n) => !n.deleted_at && n.user_id === userId)
       .sort((a, b) => b.created_at.localeCompare(a.created_at))
   },
 
@@ -287,6 +288,36 @@ export const mockDb: Db = {
   async deleteNotePermanent(id) {
     const notes = read<Note[]>(K.notes, [])
     write(K.notes, notes.filter((n) => n.id !== id))
+  },
+
+  async shareNoteCopy(noteId, recipientId) {
+    // Espelha o RPC share_note_copy (0037): copia sem audio, sem chat e sem pasta.
+    const notes = read<Note[]>(K.notes, [])
+    const src = notes.find((n) => n.id === noteId)
+    if (!src) throw new Error('Nota nao encontrada.')
+    const existing = notes.find(
+      (n) => n.shared_from_note_id === noteId && n.user_id === recipientId && !n.deleted_at,
+    )
+    if (existing) return 'exists'
+    notes.push({
+      ...src,
+      id: uid('n_'),
+      user_id: recipientId,
+      folder: null,
+      folder_id: null,
+      audio_url: null,
+      keep_audio: false,
+      audio_deleted_at: null,
+      chat: [],
+      shared_with: [],
+      shared_by: src.user_id,
+      shared_from_note_id: src.id,
+      status: 'ready',
+      deleted_at: null,
+      updated_at: new Date().toISOString(),
+    })
+    write(K.notes, notes)
+    return 'sent'
   },
 
   async leaveSharedNote(id) {
@@ -331,6 +362,8 @@ export const mockDb: Db = {
       action_items: input.action_items ?? [],
       chat: input.chat ?? [],
       shared_with: input.shared_with ?? [],
+      shared_by: input.shared_by ?? null,
+      shared_from_note_id: input.shared_from_note_id ?? null,
       status: input.status ?? 'processing',
       priority: input.priority ?? null,
       keep_audio: input.keep_audio ?? false,
