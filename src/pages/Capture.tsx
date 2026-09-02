@@ -399,7 +399,12 @@ export function Capture() {
             setProcessing(false)
             return
           }
-          if (mode !== 'video' && !opts.ignoreSilence && (await isSilentAudio(opts.audioBlob))) {
+          // So GRAVACOES proprias passam pelo filtro de silencio -- e para elas que ele existe
+          // (mic reservado por ligacao, loopback mudo). Um ARQUIVO enviado e ato deliberado, e o
+          // filtro decodifica o audio INTEIRO para PCM na memoria (um m4a de ~50 MB/53 min vira
+          // ~1 GB) antes mesmo de comecar o upload -- risco de travar/estourar memoria a troco
+          // de nada (2026-09-02, upload de m4a grande no app Windows).
+          if (opts.type === 'recording' && !opts.ignoreSilence && (await isSilentAudio(opts.audioBlob))) {
             if (superseded()) return
             setSilentDetected(true)
             setError(
