@@ -16,6 +16,7 @@ import {
   Info,
 } from 'lucide-react'
 import { extractFile, extractLink, FileError, TEXT_FILE_ACCEPT } from '../lib/extract'
+import { AUDIO_ACCEPT, VIDEO_ACCEPT, isAudioFile, isVideoFile } from '../lib/mediaKind'
 import { IMAGE_ACCEPT, isSupportedImage, MAX_IMAGE_MB, prepareImage } from '../lib/image'
 import { aiError } from '../lib/aiError'
 import { logClientError } from '../lib/auditLog'
@@ -311,7 +312,8 @@ export function Capture() {
     const file = takePendingUpload()
     if (!file) return
     sharedHandledRef.current = true
-    const isVideo = file.type.startsWith('video/')
+    // isVideoFile (e nao File.type direto): share do Android tambem chega sem MIME as vezes.
+    const isVideo = isVideoFile(file) && !isAudioFile(file)
     void finalize({
       type: isVideo ? 'video' : 'upload',
       audioBlob: file,
@@ -631,42 +633,52 @@ export function Capture() {
     await recorder.addSystemAudio()
   }
 
+  /**
+   * Usado pelos modos "Enviar audio" E "Enviar video": decide pelo ARQUIVO, nao pelo botao.
+   * Motivo (2026-09-02): .m4a no Windows chega com File.type VAZIO (MIME nao registrado no
+   * sistema) e a checagem antiga `type.startsWith('audio/')` barrava audio valido nos dois
+   * modos. isAudioFile/isVideoFile caem para a extensao quando o MIME falta — e quem escolhe
+   * um audio no modo video (ou um video no modo audio) e atendido em vez de ver erro.
+   */
+  async function processPickedMedia(file: File) {
+    setError(null)
+    if (isAudioFile(file)) {
+      await finalize({
+        type: 'upload',
+        audioBlob: file,
+        duration: 0,
+        fallbackTitle: file.name.replace(/\.[^.]+$/, ''),
+      })
+      return
+    }
+    if (isVideoFile(file)) {
+      if (file.size > MAX_VIDEO_MB * 1024 * 1024) {
+        setError(`Video muito grande. Limite de ${MAX_VIDEO_MB} MB (a IA extrai apenas o audio).`)
+        return
+      }
+      // Envia o video: o provedor extrai o audio para transcrever. O video NAO e armazenado.
+      await finalize({
+        type: 'video',
+        audioBlob: file,
+        duration: 0,
+        fallbackTitle: file.name.replace(/\.[^.]+$/, ''),
+        skipAudioStore: true,
+      })
+      return
+    }
+    setError('Formato nao reconhecido. Envie audio (MP3, M4A, WAV, OGG, WEBM) ou video (MP4, MOV, MKV).')
+  }
+
   async function onUploadAudio(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    setError(null)
-    if (!file.type.startsWith('audio/')) {
-      setError('Este arquivo nao e um audio. Envie MP3, M4A, WAV, WEBM ou OGG.')
-      return
-    }
-    await finalize({
-      type: 'upload',
-      audioBlob: file,
-      duration: 0,
-      fallbackTitle: file.name.replace(/\.[^.]+$/, ''),
-    })
+    await processPickedMedia(file)
   }
 
   async function onUploadVideo(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    setError(null)
-    if (!file.type.startsWith('video/')) {
-      setError('Este arquivo nao e um video. Envie MP4, MOV, WEBM ou MKV.')
-      return
-    }
-    if (file.size > MAX_VIDEO_MB * 1024 * 1024) {
-      setError(`Video muito grande. Limite de ${MAX_VIDEO_MB} MB (a IA extrai apenas o audio).`)
-      return
-    }
-    // Envia o video: o provedor extrai o audio para transcrever. O video NAO e armazenado.
-    await finalize({
-      type: 'video',
-      audioBlob: file,
-      duration: 0,
-      fallbackTitle: file.name.replace(/\.[^.]+$/, ''),
-      skipAudioStore: true,
-    })
+    await processPickedMedia(file)
   }
 
   // Apenas CARREGA o arquivo (nao processa). O processamento so ocorre ao clicar em "Processar".
@@ -1191,7 +1203,7 @@ export function Capture() {
             <p className="font-medium">Selecionar arquivo de áudio</p>
             <p className="text-sm text-content-muted">MP3, M4A, WAV, WEBM</p>
           </button>
-          <input ref={fileRef} type="file" accept="audio/*" className="hidden" onChange={onUploadAudio} />
+          <input ref={fileRef} type="file" accept={AUDIO_ACCEPT} className="hidden" onChange={onUploadAudio} />
         </div>
       )}
 
@@ -1205,7 +1217,7 @@ export function Capture() {
             <p className="font-medium">Selecionar vídeo</p>
             <p className="text-sm text-content-muted">MP4, MOV, WEBM • ate {MAX_VIDEO_MB} MB</p>
           </button>
-          <input ref={fileRef} type="file" accept="video/*" className="hidden" onChange={onUploadVideo} />
+          <input ref={fileRef} type="file" accept={VIDEO_ACCEPT} className="hidden" onChange={onUploadVideo} />
           <p className="text-xs text-content-muted mt-4 max-w-xs text-center">
             A IA extrai apenas o audio para transcrever. O video nao e armazenado.
           </p>

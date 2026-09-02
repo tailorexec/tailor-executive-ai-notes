@@ -5,6 +5,7 @@
 
 import { config } from './config'
 import { supabase } from './supabase'
+import { audioContentType } from './mediaKind'
 
 const DB_NAME = 'tailor-audio'
 const STORE = 'blobs'
@@ -68,9 +69,11 @@ export async function saveAudio(noteId: string, userId: string, blob: Blob): Pro
   }
   if (!supabase) return null
   const path = `${userId}/${noteId}.webm`
+  // audioContentType: .m4a no Windows chega com type vazio; content-type errado (webm)
+  // atrapalha o player. O caminho segue .webm por compatibilidade com a retencao/policies.
   const { error } = await supabase.storage
     .from(BUCKET)
-    .upload(path, blob, { contentType: blob.type || 'audio/webm', upsert: true })
+    .upload(path, blob, { contentType: audioContentType(blob), upsert: true })
   return error ? null : path
 }
 

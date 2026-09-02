@@ -5,6 +5,7 @@
 import { config } from './config'
 import { supabase } from './supabase'
 import { describeUnknownError } from './errorMessage'
+import { isAudioFile, isVideoFile } from './mediaKind'
 
 export const TEXT_FILE_ACCEPT = '.pdf,.txt,.md,.csv,.docx'
 const TEXT_EXTS = ['pdf', 'docx', 'txt', 'md', 'csv']
@@ -73,10 +74,12 @@ export async function extractFile(file: File): Promise<string> {
   if (file.type.startsWith('image/')) {
     throw new FileError('Isto e uma imagem. Use a opcao "Resumir imagem" para a IA ler o conteudo.')
   }
-  if (file.type.startsWith('audio/')) {
+  // isAudioFile/isVideoFile: .m4a (e afins) chega sem MIME no Windows -- so File.type
+  // deixava o audio cair no erro generico de "formato nao suportado".
+  if (isAudioFile(file)) {
     throw new FileError('Isto e um audio. Use "Enviar audio" para transcrever.')
   }
-  if (file.type.startsWith('video/')) {
+  if (isVideoFile(file)) {
     throw new FileError('Isto e um video. Use "Enviar video" para transcrever.')
   }
   if (ext === 'doc') {
