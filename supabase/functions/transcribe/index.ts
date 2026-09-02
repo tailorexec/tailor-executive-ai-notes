@@ -193,6 +193,29 @@ Deno.serve(async (req) => {
     })
   } catch (err) {
     const raw = String(err)
+    // Provedor recusou pelo TAMANHO: o Groq aceita 25 MB por arquivo no tier gratuito e
+    // 100 MB no pago -- MENOS que o MAX_FILE_MB daqui (60 MB), entao um arquivo pode passar
+    // pela nossa barreira e morrer la. Sem este mapeamento o erro cru caia no fallback
+    // generico "Falha ao processar. Tente novamente." sem dizer a causa (caso real:
+    // m4a/3gp de 49 MB e 53 min, 2026-09-02). "muito grande" na mensagem casa com o
+    // FRIENDLY do cliente (aiError) e evita log duplicado (ALREADY_LOGGED_SERVER).
+    const tooLarge = /too large|entity too large|content size|file size|exceeds.*(size|limit)|\s413:\s/i.test(raw)
+    if (tooLarge) {
+      await logAuditServer({
+        severity: 'warning',
+        category: 'user',
+        source: 'edge:transcribe',
+        message: `Audio muito grande para o provedor: ${raw.slice(0, 300)}`,
+        user_id: userId,
+      })
+      return new Response(
+        JSON.stringify({
+          error:
+            'Este áudio é muito grande para o provedor de transcrição no plano atual. Comprima o arquivo (ex.: converta para MP3) ou fale com o administrador.',
+        }),
+        { status: 413, headers: { ...cors, 'content-type': 'application/json' } },
+      )
+    }
     // Provedor recusou o arquivo (formato/container que ele nao le, ou audio corrompido/vazio).
     // Devolve uma mensagem clara em vez do "groq 400: {...}" cru -- e marca como 'warning'/'user'
     // (e conteudo do usuario, nao uma falha do sistema).

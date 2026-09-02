@@ -54,6 +54,7 @@ const ALREADY_LOGGED_SERVER = [
  */
 const NETWORK = [
   'Failed to fetch', // Chrome/Electron
+  'Failed to send a request', // supabase-js FunctionsFetchError: o fetch em si falhou (upload grande abortado, rede)
   'Load failed', // Safari/iOS
   'NetworkError', // Firefox
   'network request failed',
