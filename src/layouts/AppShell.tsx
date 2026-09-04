@@ -205,9 +205,16 @@ function NavItem({ to, icon, label }: { to: string; icon: React.ReactNode; label
   )
 }
 
+/**
+ * Sempre 2 itens de cada lado do microfone, para TODO usuario. Antes o segundo slot da esquerda
+ * era o Discador (admin-only): quem nao e admin via um menu de 4 itens com o microfone fora do
+ * centro e um "buraco" ao lado de Notas -- parecia icone faltando (relato de 2026-09-04, PWA
+ * iPhone). Tarefas ja era item principal na sidebar do desktop e vale para todo mundo; o
+ * Discador (so uma tela explicando que gravar ligacao e impossivel no celular) segue no menu
+ * do desktop e pela rota /discador.
+ */
 function BottomNav() {
   const t = useT()
-  const { isAdmin } = useAuth()
   const [newOpen, setNewOpen] = useState(false)
 
   return (
@@ -215,7 +222,7 @@ function BottomNav() {
       <div className="mx-auto max-w-2xl">
         <div className="relative flex items-center h-16 px-2">
           <NavItem to="/" icon={<Home size={20} />} label={t('nav.notes')} />
-          {isAdmin && <NavItem to="/discador" icon={<Phone size={20} />} label={t('nav.dialer')} />}
+          <NavItem to="/tarefas" icon={<ListChecks size={20} />} label={t('nav.tasks')} />
 
           {/* Microfone central: abre TODAS as formas de criar nota (inclusive Gravacao inteligente) */}
           <div className="flex-1 flex justify-center">

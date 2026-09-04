@@ -21,8 +21,15 @@ import { IMAGE_ACCEPT, isSupportedImage, MAX_IMAGE_MB, prepareImage } from '../l
 import { aiError } from '../lib/aiError'
 import { logClientError } from '../lib/auditLog'
 import { useAuth } from '../auth/AuthProvider'
-import { useRecorder, canCaptureSystemAudio, supportsTabAudio } from '../lib/useRecorder'
+import {
+  useRecorder,
+  canCaptureSystemAudio,
+  supportsTabAudio,
+  isMobileBrowser,
+  canKeepScreenAwake,
+} from '../lib/useRecorder'
 import { isElectron } from '../lib/electron'
+import { useToast } from '../components/Toast'
 import { db, config } from '../lib/api'
 import { uid } from '../lib/db'
 import { generateActionItems, generateSummary, summarizeImage, transcribeAudio } from '../lib/ai'
@@ -59,6 +66,7 @@ export function Capture() {
   const navigate = useNavigate()
   const { profile } = useAuth()
   const recorder = useRecorder()
+  const toast = useToast()
 
   // Prefill via query (ex.: vindo de um evento do calendario).
   const [title, setTitle] = useState(params.get('title') ?? '')
@@ -324,7 +332,7 @@ export function Capture() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile])
 
-  async function finalize(opts: {
+  async function finalize(input: {
     type: NoteSourceType
     transcript?: string
     duration?: number
@@ -339,10 +347,10 @@ export function Capture() {
     ignoreSilence?: boolean
   }) {
     if (!profile) return
+    let opts = input
     setProcessing(true)
     setError(null)
     setSilentDetected(false)
-    lastFinalizeOptsRef.current = opts
     // Esta tentativa deixa de valer se o usuario cancelar (ou reiniciar) enquanto ela roda.
     const attempt = ++finalizeAttemptRef.current
     const superseded = () => finalizeAttemptRef.current !== attempt
@@ -351,6 +359,39 @@ export function Capture() {
     // blobs duplicados nem confunde qual gravacao pendente pertence a qual tentativa.
     if (!pendingKeyRef.current) pendingKeyRef.current = uid('rec_')
     const pendingKey = pendingKeyRef.current
+
+    // 0 byte: o gravador morreu no meio e o stop() veio vazio. Mandar pro provedor so devolve
+    // "groq 400: file is empty", que nao diz nada -- e o usuario reenviava 3, 4 vezes seguidas
+    // (36 tentativas assim no audit_log entre 07/08 e 21/08). Sem isto o `isSilentAudio` abaixo
+    // tambem nao pega: um blob vazio nem chega a decodificar.
+    //
+    // ANTES de desistir, olha o checkpoint: a cada 20s a gravacao em andamento e salva neste
+    // aparelho sob a mesma chave. Se o gravador morreu depois disso, o checkpoint e a UNICA
+    // copia do audio -- e ate a v0.19.3 este mesmo finalize o SOBRESCREVIA com o blob vazio
+    // logo abaixo, destruindo a copia enquanto a tela dizia "continua salva neste aparelho"
+    // (2026-09-04, iPhone: 49 min de gravacao, 0 byte no fim).
+    if (opts.audioBlob && opts.audioBlob.size === 0 && !createdNoteRef.current) {
+      const saved = await getPendingRecordingBlob(pendingKey).catch(() => null)
+      if (superseded()) return
+      if (saved && saved.size > 0) {
+        const meta = listPendingRecordings().find((p) => p.key === pendingKey)?.meta
+        // A duracao REAL e a do checkpoint (o cronometro seguiu contando depois que o gravador
+        // morreu); sem meta, fica sem duracao em vez de inventar uma.
+        opts = { ...opts, audioBlob: saved, duration: meta?.duration ?? 0 }
+        toast('A gravação foi interrompida no meio. Recuperamos o áudio salvo até o último ponto de segurança.', 'info')
+      } else {
+        // Nao ha o que tentar de novo com este audio: sem o botao "Tentar novamente".
+        lastFinalizeOptsRef.current = null
+        setError(
+          isMobileBrowser()
+            ? 'Esta gravação não capturou áudio nenhum (arquivo vazio): o celular tirou o microfone do ANA no meio (tela bloqueada, câmera ou outro app) e nada chegou a ser gravado. Não há áudio para transcrever. Da próxima vez, mantenha o ANA aberto e a tela ligada até encerrar.'
+            : 'Esta gravação não capturou áudio nenhum (arquivo vazio) — provavelmente o computador suspendeu a captura no meio. Não há áudio para transcrever.',
+        )
+        setProcessing(false)
+        return
+      }
+    }
+    lastFinalizeOptsRef.current = opts
 
     try {
       // Salva o audio no IndexedDB do navegador ANTES de qualquer chamada de rede. Se algo
@@ -386,19 +427,7 @@ export function Capture() {
           // apaga: o audio segue salvo neste aparelho e o usuario decide se transcreve mesmo
           // assim ou descarta. (Um delete que rodava aqui destruiu uma reuniao de 69 min em
           // 04/08/2026 por um falso positivo de silencio.)
-          // 0 byte: mandar pro provedor so devolve "groq 400: file is empty", que nao diz nada
-          // pro usuario -- e ele reenviava 3, 4 vezes seguidas (36 tentativas assim no
-          // audit_log entre 07/08 e 21/08). Barrar aqui troca isso por um motivo claro. Sem
-          // isto o `isSilentAudio` abaixo tambem nao pega: um blob vazio nem chega a decodificar.
-          // A gravacao NAO e descartada -- segue salva neste aparelho.
-          if (opts.audioBlob.size === 0) {
-            if (superseded()) return
-            setError(
-              'Esta gravação não capturou áudio nenhum (arquivo vazio) — provavelmente o computador suspendeu a captura no meio. Ela continua salva neste aparelho, mas não há áudio para transcrever.',
-            )
-            setProcessing(false)
-            return
-          }
+          // (O caso de 0 byte e barrado antes de salvar o pendente, no inicio do finalize.)
           // So GRAVACOES proprias passam pelo filtro de silencio -- e para elas que ele existe
           // (mic reservado por ligacao, loopback mudo). Um ARQUIVO enviado e ato deliberado, e o
           // filtro decodifica o audio INTEIRO para PCM na memoria (um m4a de ~50 MB/53 min vira
@@ -1059,6 +1088,16 @@ export function Capture() {
                   A gravacao continua mesmo com a tela apagada.
                 </p>
               )}
+              {/* Navegador/PWA no celular (iPhone em especial): o sistema tira o microfone de
+                  quem esta em segundo plano. Nao e limitacao nossa e nao tem como contornar --
+                  o que da pra fazer e avisar antes e segurar a tela acesa. */}
+              {!useNative && isMobileBrowser() && (
+                <p className="text-xs text-accent mt-2">
+                  Mantenha o ANA aberto e a tela ligada até encerrar: o celular tira o microfone de apps em
+                  segundo plano (tela bloqueada, câmera, outro app).
+                  {canKeepScreenAwake() ? ' A tela fica acesa sozinha enquanto grava.' : ''}
+                </p>
+              )}
               <button className="btn-primary w-full mt-5" onClick={() => withConsent(startRecord)}>
                 <Mic size={18} /> Iniciar gravacao
               </button>
@@ -1126,21 +1165,30 @@ export function Capture() {
               {recorder.noAudioData && (
                 <div className="alert-error text-sm mt-3 max-w-sm text-left">
                   <p>
-                    <span className="font-medium">Esta gravação não está capturando áudio.</span> Já se passaram
-                    20 segundos sem nenhum som ser gravado — do jeito que está, o arquivo sairá vazio. Encerre e
-                    comece de novo; se persistir, reinicie o aplicativo.
+                    <span className="font-medium">Esta gravação não está capturando áudio.</span> Há mais de 20
+                    segundos nenhum som chega ao gravador — o que já foi gravado fica guardado, mas daqui em diante
+                    o arquivo sai sem som. Encerre e comece uma gravação nova; se persistir, reinicie o aplicativo.
                   </p>
                 </div>
               )}
 
               {recorder.micLost && (
                 <div className="alert-error text-sm mt-3 max-w-sm text-left">
-                  <p>
-                    <span className="font-medium">Perdemos seu microfone.</span> Algum aplicativo ou o próprio
-                    Windows mudou o dispositivo de entrada e não conseguimos reabrir outro. A gravação continua
-                    {mode === 'meeting' ? ' captando o áudio da reunião' : ''}, mas a sua voz não está entrando.
-                    Confira o microfone nas configurações de som.
-                  </p>
+                  {isMobileBrowser() ? (
+                    <p>
+                      <span className="font-medium">Perdemos seu microfone.</span> O celular tirou o microfone do
+                      ANA (tela bloqueada, câmera ou outro app usando o som). Volte para o ANA e mantenha a tela
+                      ligada — reconectamos sozinhos assim que o sistema devolver o microfone. Até lá, a sua voz
+                      não está entrando.
+                    </p>
+                  ) : (
+                    <p>
+                      <span className="font-medium">Perdemos seu microfone.</span> Algum aplicativo ou o próprio
+                      Windows mudou o dispositivo de entrada e não conseguimos reabrir outro. A gravação continua
+                      {mode === 'meeting' ? ' captando o áudio da reunião' : ''}, mas a sua voz não está entrando.
+                      Confira o microfone nas configurações de som.
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -1190,7 +1238,9 @@ export function Capture() {
               <p className="text-xs text-content-muted mt-2 max-w-xs text-center">
                 {mode === 'meeting'
                   ? 'Mantenha a aba da reuniao aberta. Encerrar aqui ou "Parar compartilhamento" finaliza a gravacao.'
-                  : 'Dica: em reunioes por telefone, use o viva-voz para captar melhor as duas vozes.'}
+                  : isMobileBrowser()
+                    ? 'Mantenha o ANA aberto e a tela ligada até encerrar. Em ligações, use o viva-voz para captar as duas vozes.'
+                    : 'Dica: em reunioes por telefone, use o viva-voz para captar melhor as duas vozes.'}
               </p>
               <RecordingNotice />
             </>

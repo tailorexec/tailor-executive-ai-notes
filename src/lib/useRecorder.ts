@@ -76,6 +76,15 @@ export function isMobileBrowser(): boolean {
   return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
 }
 
+/**
+ * O navegador consegue segurar a tela acesa (Screen Wake Lock)? Safari iOS 16.4+, Chrome e
+ * Edge sim. E o que evita o caso mais comum de gravacao perdida no celular: a tela apaga
+ * sozinha, o sistema poe o app em segundo plano e tira o microfone dele.
+ */
+export function canKeepScreenAwake(): boolean {
+  return typeof navigator !== 'undefined' && 'wakeLock' in navigator
+}
+
 /** Captura de audio interno (aba/sistema) so existe no desktop via getDisplayMedia. */
 export function canCaptureSystemAudio(): boolean {
   const md = navigator.mediaDevices as MediaDevices | undefined
@@ -99,7 +108,9 @@ export function useRecorder() {
   const [seconds, setSeconds] = useState(0)
   const [level, setLevel] = useState(0)
   const [error, setError] = useState<string | null>(null)
-  /** Fica true quando a captura termina sozinha (ex.: usuario clicou em "Parar compartilhamento"). */
+  /** Fica true quando a captura termina sozinha: usuario clicou em "Parar compartilhamento", ou
+   *  o proprio MediaRecorder morreu (pagina suspensa pelo sistema). A tela encerra e fica com
+   *  o que foi gravado ate ali. */
   const [ended, setEnded] = useState(false)
   /** Gravando, mas sem o audio da reuniao: so a voz do usuario. Ele pode anexar depois. */
   const [systemAudioMissing, setSystemAudioMissing] = useState(false)
@@ -107,7 +118,8 @@ export function useRecorder() {
   const [systemSilent, setSystemSilent] = useState(false)
   /** Gravando ha 20s+ sem NENHUM byte gravado: o arquivo vai sair vazio (0 byte). */
   const [noAudioData, setNoAudioData] = useState(false)
-  /** O microfone caiu e NAO deu pra recuperar sozinho: so a voz do usuario se perde. */
+  /** O microfone caiu e (ainda) NAO deu pra recuperar: a voz do usuario nao esta entrando.
+   *  Volta a false sozinho quando o mic original retorna (unmute) ou um novo e costurado. */
   const [micLost, setMicLost] = useState(false)
 
   const mediaRef = useRef<MediaRecorder | null>(null)
@@ -118,8 +130,14 @@ export function useRecorder() {
   const rafRef = useRef<number | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
   const audioCtxRef = useRef<AudioContext | null>(null)
-  /** Destino da mistura mic + reuniao. Existe so no modo reuniao, para dar pra anexar o audio depois. */
+  /**
+   * Destino da mistura: e a faixa DELE que o MediaRecorder grava, nos dois modos. Ela nunca
+   * morre nem e silenciada pelo sistema -- so as fontes ligadas nela (mic, reuniao) -- entao
+   * trocar o microfone por baixo, ou anexar a reuniao depois, e invisivel para o gravador.
+   */
   const destRef = useRef<MediaStreamAudioDestinationNode | null>(null)
+  /** Modo reuniao (mic + audio do sistema)? Decide o que faz sentido reconectar. */
+  const meetingRef = useRef(false)
   /** Analyser exclusivo da reuniao: o do nivel mistura o microfone e nunca ficaria mudo. */
   const sysAnalyserRef = useRef<AnalyserNode | null>(null)
   const sysSilentSinceRef = useRef<number | null>(null)
@@ -132,7 +150,8 @@ export function useRecorder() {
   const mimeRef = useRef<string>('audio/webm')
   /** Bytes ja entregues pelo MediaRecorder. Zero com a gravacao andando = arquivo vazio. */
   const bytesRef = useRef(0)
-  const noDataSinceRef = useRef<number | null>(null)
+  /** Quando chegou o ultimo pedaco de audio. Parado ha 20s+ = a captura travou (ou nunca andou). */
+  const lastDataAtRef = useRef(0)
   /** No do microfone dentro da cadeia. Guardado para poder desligar na troca de aparelho. */
   const micSourceRef = useRef<MediaStreamAudioSourceNode | null>(null)
   /** As mesmas restricoes do start(), para reaquirir o mic identico ao original. */
@@ -141,6 +160,9 @@ export function useRecorder() {
   const recoverMicRef = useRef<(() => Promise<void>) | null>(null)
   /** Aparelho de saida padrao de quando o loopback foi capturado. */
   const outputKeyRef = useRef<string>('')
+  /** Segura a tela acesa enquanto grava (ver canKeepScreenAwake). */
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null)
+  const visibleTimerRef = useRef<number | null>(null)
 
   const rms = (analyser: AnalyserNode) => {
     const data = new Uint8Array(analyser.frequencyBinCount)
@@ -180,18 +202,21 @@ export function useRecorder() {
    * Vigia se o MediaRecorder esta REALMENTE recebendo audio. Sem isto, uma captura que morre
    * no meio (ver onstatechange no start) so aparece na hora de transcrever, quando o provedor
    * recusa o arquivo de 0 byte -- tarde demais. Entre 07/08 e 21/08 isso custou 4 reunioes,
-   * uma delas de 44 min. So avisa; nunca interrompe a gravacao.
+   * uma delas de 44 min. Vale tanto para "nunca chegou nada" quanto para "parou de chegar"
+   * (contexto de audio que ficou suspenso depois de voltar do segundo plano no celular).
+   * So avisa; nunca interrompe a gravacao.
    */
   const watchNoData = useCallback(() => {
     if (mediaRef.current?.state !== 'recording') return
-    if (bytesRef.current > 0) {
-      noDataSinceRef.current = null
+    if (Date.now() - lastDataAtRef.current < NO_DATA_MS) {
       setNoAudioData(false)
       return
     }
-    const since = noDataSinceRef.current ?? Date.now()
-    noDataSinceRef.current = since
-    if (Date.now() - since >= NO_DATA_MS) setNoAudioData(true)
+    // Contexto suspenso e o motivo classico de a faixa gravada parar de produzir: tenta
+    // religar antes de so avisar.
+    const ctx = audioCtxRef.current
+    if (ctx && ctx.state !== 'running' && ctx.state !== 'closed') ctx.resume().catch(() => {})
+    setNoAudioData(true)
   }, [])
 
   const tickLevel = useCallback(() => {
@@ -262,7 +287,7 @@ export function useRecorder() {
 
   /** Anexa (ou troca) o audio da reuniao com a gravacao ja rolando. */
   const addSystemAudio = useCallback(async (): Promise<boolean> => {
-    if (!destRef.current) return false
+    if (!destRef.current || !meetingRef.current) return false
     try {
       const display = await navigator.mediaDevices.getDisplayMedia(DISPLAY_OPTIONS)
       return attachDisplay(display)
@@ -287,46 +312,99 @@ export function useRecorder() {
     const track = mic.getAudioTracks()[0]
     if (!track) return
     // Fone bluetooth que conecta, dispositivo padrao que o Windows troca, outro app que toma
-    // o microfone: a track MORRE (ended) ou o sistema a silencia (mute). Sem estes dois
-    // ganchos nada percebia -- a reuniao seguia "gravando" de uma fonte morta, e o usuario
-    // so descobria no fim, com a reuniao inteira perdida.
+    // o microfone, iPhone que bloqueia a tela ou abre a camera: a track MORRE (ended) ou o
+    // sistema a silencia (mute). Sem estes ganchos nada percebia -- a gravacao seguia
+    // "gravando" de uma fonte morta, e o usuario so descobria no fim, com tudo perdido.
     track.onended = () => void recoverMicRef.current?.()
     track.onmute = () => void recoverMicRef.current?.()
+    // No celular o mute e o caso normal de ir pra segundo plano: ao voltar, o proprio sistema
+    // devolve o som (unmute) sem precisar de mic novo -- e o aviso de "perdemos o microfone"
+    // tem que sumir sozinho.
+    track.onunmute = () => {
+      if (track.readyState === 'live' && !track.muted) setMicLost(false)
+    }
   }, [])
 
   /**
-   * Pega o microfone de novo e o costura na mistura que JA esta sendo gravada. So da pra
-   * fazer isso no modo reuniao: la a faixa gravada e o destino da mistura, entao trocar a
-   * fonte por baixo e invisivel para o MediaRecorder. Na gravacao padrao a faixa gravada e a
-   * PROPRIA track do mic -- trocar exigiria reiniciar o gravador e cortaria o audio ja
-   * capturado, entao ali preferimos avisar a arriscar o que ja existe.
+   * Pega o microfone de novo e o costura na mistura que JA esta sendo gravada. Funciona nos
+   * dois modos porque a faixa gravada e sempre o destino da mistura: trocar a fonte por baixo
+   * e invisivel para o MediaRecorder. (Ate a v0.19.3 a gravacao padrao gravava a PROPRIA track
+   * do mic; quando o iPhone a matava -- tela bloqueada, foto tirada no meio -- o gravador
+   * parava sozinho e o stop() devolvia um arquivo de 0 byte depois de 49 min, 2026-09-04.)
    */
   const recoverMic = useCallback(async () => {
     const ctx = audioCtxRef.current
     if (!ctx || !mediaRef.current || mediaRef.current.state === 'inactive') return
-    if (!destRef.current) {
-      setMicLost(true)
+    if (recoveringRef.current) return
+    const old = micStreamRef.current
+    const oldTrack = old?.getAudioTracks()[0]
+    // Se a track original ja se recuperou sozinha (unmute ao voltar pro app), nao ha o que
+    // trocar -- reabrir o mic a toa cortaria um instante de audio sem motivo.
+    if (oldTrack && oldTrack.readyState === 'live' && !oldTrack.muted) {
+      setMicLost(false)
       return
     }
-    if (recoveringRef.current) return
     recoveringRef.current = true
     try {
       const fresh = await navigator.mediaDevices.getUserMedia({ audio: micConstraintsRef.current })
-      const old = micStreamRef.current
       micSourceRef.current?.disconnect()
       old?.getTracks().forEach((t) => t.stop())
       wireMic(fresh, ctx)
       setMicLost(false)
     } catch {
-      // Sem microfone nenhum disponivel. A gravacao continua (o audio da reuniao ainda entra
-      // pelo loopback); o que se perde e so a voz do usuario -- por isso avisamos, mas nunca
-      // interrompemos.
+      // Sem microfone disponivel AGORA. No celular isso e o app em segundo plano (o sistema
+      // nao entrega o mic a quem nao esta na tela): o vigia de visibilidade tenta de novo
+      // assim que o usuario volta. A gravacao continua (no modo reuniao o audio do sistema
+      // ainda entra); o que se perde e so a voz enquanto isso -- avisamos, nunca interrompemos.
       setMicLost(true)
     } finally {
       recoveringRef.current = false
     }
   }, [wireMic])
   recoverMicRef.current = recoverMic
+
+  /** Segura a tela acesa. Sem suporte ou negado (bateria baixa), segue sem -- e so conforto. */
+  const acquireWakeLock = useCallback(async () => {
+    if (!canKeepScreenAwake() || document.visibilityState !== 'visible') return
+    if (wakeLockRef.current && !wakeLockRef.current.released) return
+    try {
+      wakeLockRef.current = await navigator.wakeLock.request('screen')
+    } catch {
+      wakeLockRef.current = null
+    }
+  }, [])
+
+  const releaseWakeLock = useCallback(() => {
+    wakeLockRef.current?.release().catch(() => {})
+    wakeLockRef.current = null
+  }, [])
+
+  /**
+   * O usuario voltou para o app (tela desbloqueada, saiu da camera, trocou de app de volta).
+   * No celular e SO AQUI que da pra consertar o que o sistema desfez em segundo plano: o
+   * AudioContext que ficou "interrupted"/suspenso, o wake lock que o sistema solta ao esconder
+   * a pagina, e o microfone que morreu. Espera 1s porque o iOS devolve o mic original (unmute)
+   * logo depois de mostrar a pagina -- reabrir antes disso trocaria um mic bom por outro.
+   */
+  const onVisibilityChange = useCallback(() => {
+    if (document.visibilityState !== 'visible') return
+    const rec = mediaRef.current
+    if (!rec || rec.state === 'inactive') return
+    const ctx = audioCtxRef.current
+    if (ctx && ctx.state !== 'running' && ctx.state !== 'closed') ctx.resume().catch(() => {})
+    void acquireWakeLock()
+    // Em segundo plano nada chega mesmo: o vigia de dados recomeca a contar daqui, senao
+    // avisaria "nao esta capturando" no instante em que o usuario volta.
+    lastDataAtRef.current = Date.now()
+    if (visibleTimerRef.current) window.clearTimeout(visibleTimerRef.current)
+    visibleTimerRef.current = window.setTimeout(() => {
+      visibleTimerRef.current = null
+      if (!mediaRef.current || mediaRef.current.state === 'inactive') return
+      const track = micStreamRef.current?.getAudioTracks()[0]
+      if (!track || track.readyState !== 'live' || track.muted) void recoverMicRef.current?.()
+      else setMicLost(false)
+    }, 1000)
+  }, [acquireWakeLock])
 
   /**
    * O Windows mexeu na lista de aparelhos. So reagimos quando a track REALMENTE morreu: o
@@ -369,7 +447,6 @@ export function useRecorder() {
       setNoAudioData(false)
       setMicLost(false)
       bytesRef.current = 0
-      noDataSinceRef.current = null
       sysHeardRef.current = false
       sysSilentSinceRef.current = null
       sysAttachedRef.current = false
@@ -390,8 +467,12 @@ export function useRecorder() {
         // MediaRecorder nao recebe mais nada -- enquanto o cronometro (Date.now) segue contando.
         // E a assinatura exata dos arquivos de 0 byte com 22-44 min no audit_log, todos em modo
         // reuniao. O resume() acima cobre so o estado inicial; isto mantem a captura viva.
+        // (O iOS tem ainda um estado proprio, "interrupted", quando outro app toma o audio --
+        // ligacao, camera. Vale o mesmo: tenta voltar; se o sistema nao deixar agora, o vigia
+        // de visibilidade tenta de novo quando o usuario voltar ao app.)
         ctx.onstatechange = () => {
-          if (ctx.state === 'suspended' && mediaRef.current?.state === 'recording') {
+          const s = ctx.state as string
+          if ((s === 'suspended' || s === 'interrupted') && mediaRef.current?.state === 'recording') {
             ctx.resume().catch(() => {})
           }
         }
@@ -416,16 +497,18 @@ export function useRecorder() {
           autoGainControl: true,
         }
 
-        // O destino da mistura nasce ANTES do microfone: e nele que o wireMic pluga a voz, e e
-        // dele que o MediaRecorder grava. Com o destino pronto primeiro, trocar o microfone
-        // depois (fone que conecta, aparelho padrao que muda) nao encosta na gravacao.
+        // O destino da mistura nasce ANTES do microfone, NOS DOIS MODOS: e nele que o wireMic
+        // pluga a voz, e e dele que o MediaRecorder grava. A faixa do destino nunca morre nem e
+        // silenciada pelo sistema -- so as fontes ligadas nela -- entao trocar o microfone depois
+        // (fone que conecta, aparelho padrao que muda, iPhone que tira o mic do app em segundo
+        // plano) nao encosta na gravacao. Gravar a track do mic direto, como a gravacao padrao
+        // fazia antes, deixava o gravador morrer junto com ela.
+        const dest = ctx.createMediaStreamDestination()
+        dest.channelCount = 1
+        dest.channelCountMode = 'explicit'
+        destRef.current = dest
+        meetingRef.current = !!opts?.system
         if (opts?.system) {
-          // A gravacao sai sempre do destino da mistura, mesmo antes de existir audio da reuniao.
-          // E o que permite anexar a reuniao no meio da gravacao, sem trocar a faixa do recorder.
-          const dest = ctx.createMediaStreamDestination()
-          dest.channelCount = 1
-          dest.channelCountMode = 'explicit'
-          destRef.current = dest
           // O main chama isto de volta com gesto simulado quando a saida troca (ver
           // ana:reattach-system-audio em electron/main.cjs). addSystemAudio troca a fonte da
           // reuniao na mistura que ja esta gravando.
@@ -438,8 +521,10 @@ export function useRecorder() {
         wireMic(mic, ctx)
         // O Windows avisa aqui quando um aparelho entra ou sai (o fone bluetooth do caso tipico).
         navigator.mediaDevices?.addEventListener?.('devicechange', onDeviceChange)
+        // Celular: e ao VOLTAR para o app que da pra reaver o que o sistema tirou (mic, contexto).
+        document.addEventListener('visibilitychange', onVisibilityChange)
 
-        let recordStream: MediaStream = destRef.current ? destRef.current.stream : mic
+        const recordStream: MediaStream = dest.stream
 
         if (opts?.system) {
 
@@ -469,13 +554,23 @@ export function useRecorder() {
         recorder.ondataavailable = (e) => {
           if (e.data.size > 0) {
             bytesRef.current += e.data.size
+            lastDataAtRef.current = Date.now()
             chunksRef.current.push(e.data)
           }
         }
         recorder.onstop = () => {
+          // Ninguem pediu o stop: o gravador morreu sozinho (navegador suspendeu a pagina,
+          // sistema matou a captura). Os pedacos ja entregues continuam em chunksRef; avisar
+          // `ended` faz a tela encerrar e o stop() abaixo devolve o que existe, em vez de o
+          // cronometro seguir "gravando" de um gravador morto ate o usuario clicar e receber
+          // um arquivo de 0 byte (era exatamente isso ate a v0.19.3).
+          if (!resolveRef.current) {
+            setEnded(true)
+            return
+          }
           const blob = new Blob(chunksRef.current, { type: mimeRef.current })
           const url = URL.createObjectURL(blob)
-          resolveRef.current?.({
+          resolveRef.current({
             blob,
             durationSeconds: Math.round(elapsedBeforePauseRef.current),
             url,
@@ -486,12 +581,16 @@ export function useRecorder() {
         // navegador travar/fechar/perder energia antes do usuario clicar em Encerrar, a
         // gravacao inteira se perderia (nada existe em memoria para salvar). Com o timeslice,
         // `snapshot()` sempre tem o audio capturado ate agora, permitindo checkpoints.
+        lastDataAtRef.current = Date.now()
         recorder.start(1000)
 
         elapsedBeforePauseRef.current = 0
         setSeconds(0)
         setState('recording')
         startTimer()
+        // Tela acesa enquanto grava: no celular, a tela apagando e o que manda o app para
+        // segundo plano e faz o sistema tirar o microfone dele.
+        void acquireWakeLock()
       } catch (err) {
         const name = (err as DOMException)?.name
         if (name === 'NotAllowedError') {
@@ -502,7 +601,7 @@ export function useRecorder() {
         setState('idle')
       }
     },
-    [attachDisplay, addSystemAudio, startTimer, tickLevel, wireMic, onDeviceChange],
+    [attachDisplay, addSystemAudio, startTimer, tickLevel, wireMic, onDeviceChange, onVisibilityChange, acquireWakeLock],
   )
 
   const pause = useCallback(() => {
@@ -519,6 +618,8 @@ export function useRecorder() {
     const rec = mediaRef.current
     if (rec && rec.state === 'paused') {
       rec.resume()
+      // Pausado nao chega dado nenhum, e isso nao e travamento.
+      lastDataAtRef.current = Date.now()
       startTimer()
       setState('recording')
     }
@@ -527,7 +628,12 @@ export function useRecorder() {
   const cleanup = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current)
     if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    if (visibleTimerRef.current) window.clearTimeout(visibleTimerRef.current)
+    visibleTimerRef.current = null
     navigator.mediaDevices?.removeEventListener?.('devicechange', onDeviceChange)
+    document.removeEventListener('visibilitychange', onVisibilityChange)
+    releaseWakeLock()
+    meetingRef.current = false
     micSourceRef.current?.disconnect()
     micSourceRef.current = null
     delete reattachHook().__anaReattachSystemAudio
@@ -538,7 +644,7 @@ export function useRecorder() {
     sysAnalyserRef.current = null
     sysAttachedRef.current = false
     setLevel(0)
-  }, [onDeviceChange])
+  }, [onDeviceChange, onVisibilityChange, releaseWakeLock])
 
   /** Retrata o audio capturado ATE AGORA, sem parar a gravacao -- usado para checkpoints
    *  periodicos (a gravacao so vira Blob final de verdade no stop()). */
@@ -559,6 +665,14 @@ export function useRecorder() {
           resolve(r)
         }
         mediaRef.current.stop()
+      } else if (mediaRef.current) {
+        // O gravador ja tinha parado sozinho (ver recorder.onstop). Tudo o que ele entregou
+        // ate morrer continua em memoria: e ISSO que devolvemos -- nunca um Blob vazio, que
+        // jogaria fora a gravacao inteira e ainda deixaria a tela em "Gravando..." para sempre.
+        const blob = new Blob(chunksRef.current, { type: mimeRef.current })
+        cleanup()
+        setState('stopped')
+        resolve({ blob, durationSeconds: seconds, url: blob.size ? URL.createObjectURL(blob) : '' })
       } else {
         resolve({ blob: new Blob(), durationSeconds: seconds, url: '' })
       }
